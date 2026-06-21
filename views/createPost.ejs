@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Discussion - KravN</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Krav<span>N</span></div>
+      <div class="nav-links">
+        <a class="muted" href="/feed">← Back to feed</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-narrow">
+    <h1 style="font-size: 1.6rem;">Start a discussion</h1>
+    <p class="auth-subtitle">Got a theory? Lay it out below.</p>
+
+    <form action="/posts" method="POST">
+      <div class="movie-autocomplete">
+        <input
+          type="text"
+          name="movie_name"
+          id="movie-input"
+          placeholder="Movie or show name"
+          value="<%= prefilledMovie %>"
+          autocomplete="off"
+          required
+        >
+        <div id="movie-suggestions" class="suggestions-dropdown"></div>
+      </div>
+      <input type="text" name="title" placeholder="Discussion title" required>
+      <textarea name="content" placeholder="Your theory..." required></textarea>
+      <button type="submit">Post discussion</button>
+    </form>
+  </div>
+
+  <script src="/js/movieAutocomplete.js"></script>
+  <script>
+    attachMovieAutocomplete({
+      inputId: 'movie-input',
+      dropdownId: 'movie-suggestions'
+    });
+  </script>
+</body>
+</html>

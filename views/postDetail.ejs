@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= post.title %> - KravN</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+    <div class="brand">Krav<span>N</span></div>
+    <div class="nav-links">
+        <a href="/dashboard">Dashboard</a>
+      <a class="muted" href="/feed">← Back to feed</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="detail-header">
+      <% if (post.poster_url && post.poster_url !== 'N/A') { %>
+        <img class="detail-poster" src="<%= post.poster_url %>" alt="<%= post.movie_name %>">
+      <% } else { %>
+        <div class="post-poster-placeholder" style="width:110px; height:165px; font-size:2rem;">🎬</div>
+      <% } %>
+      <div class="detail-title-block">
+        <div class="post-eyebrow">
+          <span><%= post.movie_name %></span>
+          <% if (post.imdb_rating && post.imdb_rating !== 'N/A') { %>
+            <span class="post-rating">· IMDb <%= post.imdb_rating %></span>
+          <% } %>
+        </div>
+        <h1><%= post.title %></h1>
+        <p class="post-meta">Posted by <%= post.username %></p>
+      </div>
+    </div>
+
+    <p class="detail-content"><%= post.content %></p>
+
+    <div class="like-row">
+      <form action="/posts/<%= post.id %>/like" method="POST">
+        <button class="like-btn" type="submit">♥ Like (<%= likeCount %>)</button>
+      </form>
+    </div>
+        <% if (post.user_id === currentUserId) { %>
+  <form action="/posts/<%= post.id %>/delete" method="POST" onsubmit="return confirm('Delete this discussion permanently?');">
+    <button type="submit" class="secondary" style="color: var(--danger); border-color: var(--danger);">Delete</button>
+  </form>
+<% } %>
+    <div class="sprocket-divider">
+      <div class="holes"><span></span><span></span><span></span></div>
+    </div>
+
+    <h2 style="font-size: 1.2rem;">Comments</h2>
+
+    <form class="comment-form" action="/posts/<%= post.id %>/comments" method="POST">
+      <textarea name="content" placeholder="Add a comment..." required></textarea>
+      <button type="submit">Comment</button>
+    </form>
+
+    <% if (comments.length === 0) { %>
+      <p class="post-meta">No comments yet.</p>
+    <% } %>
+
+    <% comments.forEach(comment => { %>
+      <div class="comment">
+        <div class="comment-author"><%= comment.username %></div>
+        <p class="comment-text"><%= comment.content %></p>
+      </div>
+    <% }); %>
+  </div>
+</body>
+</html>

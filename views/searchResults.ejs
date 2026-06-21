@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search - KravN</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+    <div class="brand">Krav<span>N</span></div>
+    <div class="nav-links">
+        <a href="/dashboard">Dashboard</a>
+      <a class="muted" href="/feed">← Back to feed</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <h1 style="font-size: 1.4rem;">Results for "<%= query %>"</h1>
+
+    <% if (posts.length === 0) { %>
+      <div class="empty-state">
+        <p>No discussions found. Try a different title.</p>
+      </div>
+    <% } %>
+
+    <% posts.forEach((post, i) => { %>
+      <div class="post-card">
+        <% if (post.poster_url && post.poster_url !== 'N/A') { %>
+          <img class="post-poster" src="<%= post.poster_url %>" alt="<%= post.movie_name %>">
+        <% } else { %>
+          <div class="post-poster-placeholder">🎬</div>
+        <% } %>
+        <div class="post-body">
+          <div class="post-eyebrow">
+            <span><%= post.movie_name %></span>
+            <% if (post.imdb_rating && post.imdb_rating !== 'N/A') { %>
+              <span class="post-rating">· IMDb <%= post.imdb_rating %></span>
+            <% } %>
+          </div>
+          <h3><a href="/posts/<%= post.id %>"><%= post.title %></a></h3>
+          <p class="post-excerpt"><%= post.content %></p>
+          <p class="post-meta">Posted by <%= post.username %></p>
+        </div>
+      </div>
+      <% if (i < posts.length - 1) { %>
+        <div class="sprocket-divider">
+          <div class="holes"><span></span><span></span><span></span></div>
+        </div>
+      <% } %>
+    <% }); %>
+  </div>
+</body>
+</html>
