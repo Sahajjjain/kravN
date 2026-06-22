@@ -141,23 +141,87 @@ router.get('/posts/:id', requireLogin, async (req, res) => {
       [postId]
     );
 
-    const [likeCountRows] = await pool.query(
-      'SELECT COUNT(*) AS count FROM likes WHERE post_id = ?',
+    const [likers] = await pool.query(
+      `SELECT users.id, users.username
+       FROM likes JOIN users ON likes.user_id = users.id
+       WHERE likes.post_id = ?
+       ORDER BY likes.id DESC`,
       [postId]
     );
 
     res.render('postDetail', {
-  post: postRows[0],
-  comments,
-  likeCount: likeCountRows[0].count,
-  currentUserId: req.session.userId
-});
+      post: postRows[0],
+      comments,
+      likeCount: likers.length,
+      likers,
+      currentUserId: req.session.userId
+    });
   } catch (err) {
     console.error(err);
     res.send('Something went wrong: ' + err.message);
   }
 });
 
+router.get('/users/:username', requireLogin, async (req, res) => {
+  const { username } = req.params;
+
+  try {
+    const [userRows] = await pool.query(
+      'SELECT id, username, created_at FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (userRows.length === 0) {
+      return res.send('User not found.');
+    }
+
+    const user = userRows[0];
+
+    const [posts] = await pool.query(
+      `SELECT posts.*,
+        (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) AS like_count,
+        (SELECT COUNT(*) FROM comments WHERE comments.post_id = posts.id) AS comment_count
+       FROM posts
+       WHERE posts.user_id = ?
+       ORDER BY posts.created_at DESC`,
+      [user.id]
+    );
+
+    res.render('userProfile', {
+      profileUser: user,
+      posts,
+      isOwnProfile: req.session.userId === user.id
+    });
+  } catch (err) {
+    console.error(err);
+    res.send('Something went wrong: ' + err.message);
+  }
+});
+router.get('/posts/:id/likes', requireLogin, async (req, res) => {
+  const postId = req.params.id;
+
+  try {
+    const [postRows] = await pool.query(
+      'SELECT posts.*, users.username FROM posts JOIN users ON posts.user_id = users.id WHERE posts.id = ?',
+      [postId]
+    );
+
+    if (postRows.length === 0) return res.send('Post not found.');
+
+    const [likers] = await pool.query(
+      `SELECT users.id, users.username, users.created_at
+       FROM likes JOIN users ON likes.user_id = users.id
+       WHERE likes.post_id = ?
+       ORDER BY likes.id DESC`,
+      [postId]
+    );
+
+    res.render('likesPage', { post: postRows[0], likers });
+  } catch (err) {
+    console.error(err);
+    res.send('Something went wrong: ' + err.message);
+  }
+});
 router.post('/posts/:id/comments', requireLogin, async (req, res) => {
   const postId = req.params.id;
   const { content } = req.body;
@@ -216,5 +280,64 @@ router.post('/posts/:id/delete', requireLogin, async (req, res) => {
     res.send('Something went wrong: ' + err.message);
   }
 });
+// Delete a comment
+router.post('/comments/:id/delete', requireLogin, async (req, res) => {
+  const commentId = req.params.id;
+  const userId = req.session.userId;
 
+  try {
+    const [rows] = await pool.query('SELECT * FROM comments WHERE id = ?', [commentId]);
+
+    if (rows.length === 0) return res.send('Comment not found.');
+    if (rows[0].user_id !== userId) return res.status(403).send('Not your comment.');
+
+    const postId = rows[0].post_id;
+    await pool.query('DELETE FROM comments WHERE id = ?', [commentId]);
+    res.redirect(`/posts/${postId}`);
+  } catch (err) {
+    console.error(err);
+    res.send('Something went wrong: ' + err.message);
+  }
+});
+
+// Show edit comment form
+router.get('/comments/:id/edit', requireLogin, async (req, res) => {
+  const commentId = req.params.id;
+  const userId = req.session.userId;
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT comments.*, posts.movie_name, posts.title AS post_title FROM comments JOIN posts ON comments.post_id = posts.id WHERE comments.id = ?',
+      [commentId]
+    );
+
+    if (rows.length === 0) return res.send('Comment not found.');
+    if (rows[0].user_id !== userId) return res.status(403).send('Not your comment.');
+
+    res.render('editComment', { comment: rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.send('Something went wrong: ' + err.message);
+  }
+});
+
+// Handle edit comment submission
+router.post('/comments/:id/edit', requireLogin, async (req, res) => {
+  const commentId = req.params.id;
+  const userId = req.session.userId;
+  const { content } = req.body;
+
+  try {
+    const [rows] = await pool.query('SELECT * FROM comments WHERE id = ?', [commentId]);
+
+    if (rows.length === 0) return res.send('Comment not found.');
+    if (rows[0].user_id !== userId) return res.status(403).send('Not your comment.');
+
+    await pool.query('UPDATE comments SET content = ? WHERE id = ?', [content, commentId]);
+    res.redirect(`/posts/${rows[0].post_id}`);
+  } catch (err) {
+    console.error(err);
+    res.send('Something went wrong: ' + err.message);
+  }
+});
 module.exports = router;

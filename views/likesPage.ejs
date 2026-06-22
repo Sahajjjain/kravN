@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Likes - KravN</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Krav<span>N</span></div>
+      <div class="nav-links">
+        <a class="muted" href="/posts/<%= post.id %>">← Back to post</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-narrow">
+    <h1 style="font-size: 1.4rem; margin-bottom: 0.25rem;">People who liked this</h1>
+    <p class="auth-subtitle" style="margin-bottom: 1.5rem;"><%= post.movie_name %>: <%= post.title %></p>
+
+    <% if (likers.length === 0) { %>
+      <div class="empty-state"><p>No likes yet.</p></div>
+    <% } %>
+
+    <% likers.forEach(user => { %>
+      <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
+        <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; color: var(--accent); font-size: 1rem; flex-shrink: 0;">
+          <%= user.username[0].toUpperCase() %>
+        </div>
+        <a href="/users/<%= user.username %>"><%= user.username %></a>
+      </div>
+    <% }); %>
+  </div>
+</body>
+</html>

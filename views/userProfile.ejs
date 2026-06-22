@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= profileUser.username %> - KravN</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Krav<span>N</span></div>
+      <div class="nav-links">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/posts/new">+ New Discussion</a>
+        <a class="muted" href="/about">About</a>
+        <a class="muted" href="/logout">Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 1.6rem; margin-bottom: 0.25rem;">
+        <%= profileUser.username %>
+        <% if (isOwnProfile) { %>
+          <span style="font-size: 0.9rem; color: var(--accent); font-family: 'Inter', sans-serif; font-weight: 400;">· you</span>
+        <% } %>
+      </h1>
+      <p class="post-meta">Member since <%= new Date(profileUser.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeZone: 'Asia/Kolkata' }) %></p>
+      <p class="post-meta"><%= posts.length %> discussion<%= posts.length !== 1 ? 's' : '' %></p>
+    </div>
+
+    <% if (posts.length === 0) { %>
+      <div class="empty-state">
+        <p><%= profileUser.username %> hasn't posted anything yet.</p>
+      </div>
+    <% } %>
+
+    <div class="feed-grid">
+      <% posts.forEach(post => { %>
+        <div class="post-card">
+          <% if (post.poster_url && post.poster_url !== 'N/A') { %>
+            <img class="post-poster" src="<%= post.poster_url %>" alt="<%= post.movie_name %>">
+          <% } else { %>
+            <div class="post-poster-placeholder">🎬</div>
+          <% } %>
+          <div class="post-body">
+            <div class="post-eyebrow">
+              <span><%= post.movie_name %></span>
+            </div>
+            <h3><a href="/posts/<%= post.id %>"><%= post.title %></a></h3>
+            <p class="post-excerpt"><%= post.content %></p>
+            <p class="post-meta">
+              <span class="like-count"><%= post.like_count %></span> likes
+              &nbsp;·&nbsp;
+              <%= post.comment_count %> comments
+              &nbsp;·&nbsp;
+              <%= new Date(post.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) %>
+            </p>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</body>
+</html>

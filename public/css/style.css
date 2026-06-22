@@ -501,7 +501,49 @@ button.like-btn:hover {
   flex-wrap: wrap;
 }
 
-/* ---------- Movie autocomplete ---------- */
+/* ---------- Floating poster background (auth pages) ---------- */
+
+.poster-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.poster-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(15,14,13,0.55) 0%, rgba(15,14,13,0.92) 75%);
+  z-index: 1;
+}
+
+.poster-backdrop img {
+  position: absolute;
+  width: 160px;
+  border-radius: 8px;
+  opacity: 0.35;
+  filter: blur(1px) saturate(0.7);
+  animation: posterFloat 40s ease-in-out infinite;
+}
+
+@keyframes posterFloat {
+  0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
+  50% { transform: translateY(-25px) rotate(var(--tilt, 0deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poster-backdrop img {
+    animation: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .poster-backdrop img {
+    width: 110px;
+  }
+}
 
 .movie-autocomplete {
   position: relative;

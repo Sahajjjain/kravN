@@ -3,11 +3,30 @@ const router = express.Router();
 
 const bcrypt = require('bcrypt');
 const pool = require('../config/db');
+const { searchMovies } = require('../config/movieApi');
+
+// A small pool of acclaimed/recognizable titles to seed background poster art.
+const POSTER_SEED_TERMS = ['inception', 'interstellar', 'dark knight', 'parasite', 'oldboy', 'whiplash', 'her', 'arrival'];
+
+async function getBackgroundPosters() {
+  try {
+    const randomTerm = POSTER_SEED_TERMS[Math.floor(Math.random() * POSTER_SEED_TERMS.length)];
+    const results = await searchMovies(randomTerm);
+    return results
+      .map(m => m.poster)
+      .filter(p => p && p !== 'N/A')
+      .slice(0, 8);
+  } catch (err) {
+    console.error('Poster fetch failed:', err);
+    return [];
+  }
+}
 
 // ---------- REGISTER ----------
 
-router.get('/register', (req, res) => {
-  res.render('register', { error: null });
+router.get('/register', async (req, res) => {
+  const posters = await getBackgroundPosters();
+  res.render('register', { error: null, posters });
 });
 
 router.post('/register', async (req, res) => {
@@ -24,14 +43,16 @@ router.post('/register', async (req, res) => {
     res.redirect('/login');
   } catch (err) {
     console.error(err);
-    res.render('register', { error: 'Something went wrong. Try a different username or email.' });
+    const posters = await getBackgroundPosters();
+    res.render('register', { error: 'Something went wrong. Try a different username or email.', posters });
   }
 });
 
 // ---------- LOGIN ----------
 
-router.get('/login', (req, res) => {
-  res.render('login', { error: null });
+router.get('/login', async (req, res) => {
+  const posters = await getBackgroundPosters();
+  res.render('login', { error: null, posters });
 });
 
 router.post('/login', async (req, res) => {
@@ -41,14 +62,16 @@ router.post('/login', async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
 
     if (rows.length === 0) {
-      return res.render('login', { error: 'No account with that email.' });
+      const posters = await getBackgroundPosters();
+      return res.render('login', { error: 'No account with that email.', posters });
     }
 
     const user = rows[0];
     const match = await bcrypt.compare(password, user.password);
 
     if (!match) {
-      return res.render('login', { error: 'Incorrect password.' });
+      const posters = await getBackgroundPosters();
+      return res.render('login', { error: 'Incorrect password.', posters });
     }
 
     req.session.userId = user.id;
@@ -57,7 +80,8 @@ router.post('/login', async (req, res) => {
     res.redirect('/feed');
   } catch (err) {
     console.error(err);
-    res.render('login', { error: 'Something went wrong. Please try again.' });
+    const posters = await getBackgroundPosters();
+    res.render('login', { error: 'Something went wrong. Please try again.', posters });
   }
 });
 

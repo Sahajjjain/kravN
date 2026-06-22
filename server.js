@@ -1,8 +1,10 @@
 const express = require('express');
 const path = require('path');
 
+
 const app = express();
 const PORT = 3000;
+
 
 // Tell Express to use EJS for rendering pages
 app.set('view engine', 'ejs');
@@ -12,8 +14,27 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // A route: when someone visits "/", render the home page
-app.get('/', (req, res) => {
-  res.render('home');
+const { searchMovies } = require('./config/movieApi');
+
+const POSTER_SEED_TERMS = ['inception', 'interstellar', 'dark knight', 'parasite', 'oldboy', 'whiplash', 'her', 'arrival'];
+
+async function getBackgroundPosters() {
+  try {
+    const randomTerm = POSTER_SEED_TERMS[Math.floor(Math.random() * POSTER_SEED_TERMS.length)];
+    const results = await searchMovies(randomTerm);
+    return results
+      .map(m => m.poster)
+      .filter(p => p && p !== 'N/A')
+      .slice(0, 8);
+  } catch (err) {
+    console.error('Poster fetch failed:', err);
+    return [];
+  }
+}
+
+app.get('/', async (req, res) => {
+  const posters = await getBackgroundPosters();
+  res.render('home', { posters });
 });
 app.get('/about', (req, res) => {
   res.render('about');

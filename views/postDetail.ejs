@@ -32,7 +32,7 @@
           <% } %>
         </div>
         <h1><%= post.title %></h1>
-        <p class="post-meta">Posted by <%= post.username %></p>
+        <p class="post-meta">Posted by <a href="/users/<%= post.username %>"><%= post.username %></a> · <%= new Date(post.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) %></p>
       </div>
     </div>
 
@@ -43,6 +43,13 @@
         <button class="like-btn" type="submit">♥ Like (<%= likeCount %>)</button>
       </form>
     </div>
+
+    <% if (likeCount > 0) { %>
+  <p class="post-meta" style="margin-bottom: 1.5rem;">
+    <a href="/posts/<%= post.id %>/likes">♥ <%= likeCount %> <%= likeCount === 1 ? 'person' : 'people' %> liked this</a>
+  </p>
+<% } %>
+
         <% if (post.user_id === currentUserId) { %>
   <form action="/posts/<%= post.id %>/delete" method="POST" onsubmit="return confirm('Delete this discussion permanently?');">
     <button type="submit" class="secondary" style="color: var(--danger); border-color: var(--danger);">Delete</button>
@@ -64,11 +71,23 @@
     <% } %>
 
     <% comments.forEach(comment => { %>
-      <div class="comment">
-        <div class="comment-author"><%= comment.username %></div>
-        <p class="comment-text"><%= comment.content %></p>
+  <div class="comment">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div class="comment-author">
+        <a href="/users/<%= comment.username %>"><%= comment.username %></a>
       </div>
-    <% }); %>
+      <% if (comment.user_id === currentUserId) { %>
+        <div style="display: flex; gap: 0.5rem;">
+          <a href="/comments/<%= comment.id %>/edit" style="font-size: 0.8rem; color: var(--text-muted);">Edit</a>
+          <form action="/comments/<%= comment.id %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Delete this comment?');">
+            <button type="submit" style="background: none; border: none; color: var(--danger); font-size: 0.8rem; cursor: pointer; padding: 0;">Delete</button>
+          </form>
+        </div>
+      <% } %>
+    </div>
+    <p class="comment-text"><%= comment.content %></p>
+  </div>
+<% }); %>
   </div>
 </body>
 </html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Comment - KravN</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Krav<span>N</span></div>
+      <div class="nav-links">
+        <a class="muted" href="/posts/<%= comment.post_id %>">← Cancel</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-narrow">
+    <h1 style="font-size: 1.4rem; margin-bottom: 0.25rem;">Edit comment</h1>
+    <p class="auth-subtitle" style="margin-bottom: 1.5rem;">
+      On: <%= comment.movie_name %> — <%= comment.post_title %>
+    </p>
+
+    <form action="/comments/<%= comment.id %>/edit" method="POST">
+      <textarea name="content" required><%= comment.content %></textarea>
+      <button type="submit">Save changes</button>
+    </form>
+  </div>
+</body>
+</html>
