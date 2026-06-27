@@ -235,40 +235,33 @@ h3 { font-size: 1.05rem; }
   color: var(--text-muted);
 }
 
-.nav-toggle {
-  display: none;
-  align-items: center;
-  background: transparent;
-  border: 1px solid var(--border-mid);
-  color: var(--text-secondary);
-  padding: 6px var(--space-3);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 1rem;
-}
+/* nav-toggle kept for optional JS enhancement only — hidden by default */
+.nav-toggle { display: none; }
 
 @media (max-width: 640px) {
-  .nav-toggle { display: flex; }
-
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    gap: 2px;
-    background: var(--surface-1);
-    border-bottom: 1px solid var(--border);
-    padding: var(--space-3) var(--space-4) var(--space-4);
+  /* Topbar becomes a column so nav wraps below the brand */
+  .topbar-inner {
+    flex-wrap: wrap;
+    height: auto;
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-2);
   }
 
-  .nav-links.open { display: flex; }
+  .nav-links {
+    /* Always visible on mobile — full-width row that wraps */
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    width: 100%;
+    gap: 2px;
+    padding-bottom: var(--space-1);
+  }
 
   .nav-links a {
-    width: 100%;
-    padding: var(--space-3) var(--space-4);
-    font-size: 0.92rem;
+    padding: 6px var(--space-3);
+    font-size: 0.82rem;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
   }
 }
 
