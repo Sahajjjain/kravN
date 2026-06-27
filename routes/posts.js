@@ -232,6 +232,18 @@ router.post('/posts/:id/comments', requireLogin, async (req, res) => {
       'INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)',
       [postId, userId, content]
     );
+
+    // Get post owner
+    const [postRows] = await pool.query('SELECT user_id FROM posts WHERE id = ?', [postId]);
+
+    // Only notify if someone else commented
+    if (postRows.length > 0 && postRows[0].user_id !== userId) {
+      await pool.query(
+        'INSERT INTO notifications (user_id, actor_id, post_id, type) VALUES (?, ?, ?, ?)',
+        [postRows[0].user_id, userId, postId, 'comment']
+      );
+    }
+
     res.redirect(`/posts/${postId}`);
   } catch (err) {
     console.error(err);
@@ -248,10 +260,22 @@ router.post('/posts/:id/like', requireLogin, async (req, res) => {
       'INSERT INTO likes (post_id, user_id) VALUES (?, ?)',
       [postId, userId]
     );
+
+    // Get post owner
+    const [postRows] = await pool.query('SELECT user_id FROM posts WHERE id = ?', [postId]);
+
+    // Only notify if someone else liked it (not the post author liking their own post)
+    if (postRows.length > 0 && postRows[0].user_id !== userId) {
+      await pool.query(
+        'INSERT INTO notifications (user_id, actor_id, post_id, type) VALUES (?, ?, ?, ?)',
+        [postRows[0].user_id, userId, postId, 'like']
+      );
+    }
+
     res.redirect(`/posts/${postId}`);
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
-      return res.redirect(`/posts/${postId}`); // already liked, just ignore
+      return res.redirect(`/posts/${postId}`);
     }
     console.error(err);
     res.send('Something went wrong: ' + err.message);
@@ -335,6 +359,36 @@ router.post('/comments/:id/edit', requireLogin, async (req, res) => {
 
     await pool.query('UPDATE comments SET content = ? WHERE id = ?', [content, commentId]);
     res.redirect(`/posts/${rows[0].post_id}`);
+  } catch (err) {
+    console.error(err);
+    res.send('Something went wrong: ' + err.message);
+  }
+});
+router.get('/notifications', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+
+  try {
+    const [notifications] = await pool.query(
+      `SELECT notifications.*, 
+        actor.username AS actor_username,
+        posts.title AS post_title,
+        posts.movie_name
+       FROM notifications
+       JOIN users AS actor ON notifications.actor_id = actor.id
+       JOIN posts ON notifications.post_id = posts.id
+       WHERE notifications.user_id = ?
+       ORDER BY notifications.created_at DESC
+       LIMIT 50`,
+      [userId]
+    );
+
+    // Mark all as read
+    await pool.query(
+      'UPDATE notifications SET is_read = 1 WHERE user_id = ?',
+      [userId]
+    );
+
+    res.render('notifications', { notifications });
   } catch (err) {
     console.error(err);
     res.send('Something went wrong: ' + err.message);

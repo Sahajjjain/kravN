@@ -65,6 +65,22 @@ app.use(session({
     sameSite: 'lax'
   }
 }));
+app.use(async (req, res, next) => {
+  if (req.session && req.session.userId) {
+    try {
+      const [rows] = await pool.query(
+        'SELECT COUNT(*) AS count FROM notifications WHERE user_id = ? AND is_read = 0',
+        [req.session.userId]
+      );
+      res.locals.unreadCount = rows[0].count;
+    } catch (err) {
+      res.locals.unreadCount = 0;
+    }
+  } else {
+    res.locals.unreadCount = 0;
+  }
+  next();
+});
 
 const authRoutes = require('./routes/auth');
 app.use('/', authRoutes);

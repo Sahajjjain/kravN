@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications - KravN</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Krav<span>N</span></div>
+      <div class="nav-links">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/posts/new">+ New Discussion</a>
+        <a class="muted" href="/feed">← Back to feed</a>
+        <a href="/notifications" style="position: relative;">
+          ❤️
+        </a>
+        <a class="muted" href="/about">About</a>
+        <a class="muted" href="/logout">Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-narrow">
+    <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Notifications</h1>
+    <p class="auth-subtitle" style="margin-bottom: 1.5rem;">Who's been engaging with your posts.</p>
+
+    <% if (notifications.length === 0) { %>
+      <div class="empty-state">
+        <p>No notifications yet. Post something to get the conversation going.</p>
+      </div>
+    <% } %>
+
+    <% notifications.forEach(notification => { %>
+      <div style="
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        background: <%= notification.is_read ? 'transparent' : 'var(--surface)' %>;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+      ">
+        <div style="font-size: 1.2rem; margin-top: 2px;">
+          <%= notification.type === 'like' ? '♥' : '💬' %>
+        </div>
+        <div style="flex: 1;">
+          <p style="margin: 0 0 0.25rem; font-size: 0.95rem;">
+            <a href="/users/<%= notification.actor_username %>"><strong><%= notification.actor_username %></strong></a>
+            <%= notification.type === 'like' ? 'liked your post' : 'commented on your post' %>
+            <a href="/posts/<%= notification.post_id %>"><strong><%= notification.movie_name %>: <%= notification.post_title %></strong></a>
+          </p>
+          <p class="post-meta" style="margin: 0;">
+            <%= new Date(notification.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) %>
+          </p>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+</body>
+</html>

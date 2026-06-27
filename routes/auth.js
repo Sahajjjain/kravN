@@ -73,7 +73,7 @@ router.post('/login', async (req, res) => {
       const posters = await getBackgroundPosters();
       return res.render('login', { error: 'Incorrect password.', posters });
     }
-
+    
     req.session.userId = user.id;
     req.session.username = user.username;
 

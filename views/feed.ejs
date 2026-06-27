@@ -13,6 +13,27 @@
     <div class="nav-links">
         <a href="/dashboard">Dashboard</a>
       <a href="/posts/new">+ New Discussion</a>
+      <a href="/notifications" style="position: relative;">
+  ❤️
+  <% if (unreadCount > 0) { %>
+    <span style="
+      position: absolute;
+      top: -6px;
+      right: -10px;
+      background: var(--danger);
+      color: white;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+    "><%= unreadCount %></span>
+  <% } %>
+</a>
       <a class="muted" href="/about">About</a>
       <a class="muted" href="/logout">Logout</a>
     </div>
