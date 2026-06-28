@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= post.title %> - KravN</title>
   <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/theme.js"></script>
 </head>
 <body>
   <div class="topbar">
@@ -49,6 +50,30 @@
     <a href="/posts/<%= post.id %>/likes">♥ <%= likeCount %> <%= likeCount === 1 ? 'person' : 'people' %> liked this</a>
   </p>
 <% } %>
+<div class="share-row">
+  <span class="share-label">Share: </span>
+
+  <button class="btn sm secondary" onclick="copyLink()" id="copy-btn">
+    🔗 Copy Link
+  </button>
+
+ <a class="btn sm secondary"
+    href="https://wa.me/?text=<%= encodeURIComponent(post.movie_name + ': ' + post.title + ' — ' + 'https://kravn.onrender.com/posts/' + post.id) %>"
+    target="_blank" rel="noopener">
+    WhatsApp
+  </a>
+</div>
+
+<script>
+function copyLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    const btn = document.getElementById('copy-btn');
+    const original = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = original, 2000);
+  });
+}
+</script>
 
         <% if (post.user_id === currentUserId) { %>
   <form action="/posts/<%= post.id %>/delete" method="POST" onsubmit="return confirm('Delete this discussion permanently?');">

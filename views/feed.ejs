@@ -1,83 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Feed - KravN</title>
   <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/theme.js"></script>
 </head>
 <body>
   <div class="topbar">
     <div class="topbar-inner">
-    <div class="brand">Krav<span>N</span></div>
-    <div class="nav-links">
+      <div class="brand">Krav<span>N</span></div>
+      <div class="nav-links">
         <a href="/dashboard">Dashboard</a>
-      <a href="/posts/new">+ New Discussion</a>
-      <a href="/notifications" style="position: relative;">
-  💜
-  <% if (unreadCount > 0) { %>
-    <span style="
-      position: absolute;
-      top: -6px;
-      right: -10px;
-      background: var(--danger);
-      color: white;
-      border-radius: 50%;
-      width: 18px;
-      height: 18px;
-      font-size: 0.7rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Inter', sans-serif;
-      font-weight: 600;
-    "><%= unreadCount %></span>
-  <% } %>
-</a>
-      <a class="muted" href="/about">About</a>
-      <a class="muted" href="/logout">Logout</a>
+        <a href="/posts/new">+ New</a>
+        <a class="nav-bell" href="/notifications">
+          🔔
+          <% if (unreadCount > 0) { %>
+            <span class="badge-dot"><%= unreadCount %></span>
+          <% } %>
+        </a>
+        <a class="muted" href="/about">About</a>
+        <button class="theme-toggle view-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark">
+          <span id="theme-icon">☀</span>
+        </button>
+        <a class="muted" href="/logout">Logout</a>
+      </div>
     </div>
-  </div>
   </div>
 
   <form class="search-form" id="search-form" action="/search" method="GET">
-  <div class="movie-autocomplete" style="flex: 1; max-width: 480px;">
-    <input
-      type="text"
-      name="q"
-      id="search-input"
-      placeholder="Search movies or shows..."
-      autocomplete="off"
-    >
-    <div id="search-suggestions" class="suggestions-dropdown"></div>
-  </div>
-  <button type="submit">Search</button>
-</form>
-<script src="/js/movieAutocomplete.js"></script>
-<script>
-  attachMovieAutocomplete({
-    inputId: 'search-input',
-    dropdownId: 'search-suggestions',
-    onSelect: async function(title) {
-      try {
-        const response = await fetch(`/api/movie-check?title=${encodeURIComponent(title)}`);
-        const data = await response.json();
- 
-        if (data.exists) {
+    <div class="movie-autocomplete" style="flex: 1; max-width: 480px;">
+      <input
+        type="text"
+        name="q"
+        id="search-input"
+        placeholder="Search movies or shows..."
+        autocomplete="off"
+      >
+      <div id="search-suggestions" class="suggestions-dropdown"></div>
+    </div>
+    <button type="submit">Search</button>
+  </form>
+
+  <script src="/js/movieAutocomplete.js"></script>
+  <script>
+    attachMovieAutocomplete({
+      inputId: 'search-input',
+      dropdownId: 'search-suggestions',
+      onSelect: async function(title) {
+        try {
+          const response = await fetch(`/api/movie-check?title=${encodeURIComponent(title)}`);
+          const data = await response.json();
+          if (data.exists) {
+            window.location.href = `/search?q=${encodeURIComponent(title)}`;
+          } else {
+            window.location.href = `/posts/new?movie=${encodeURIComponent(title)}`;
+          }
+        } catch (err) {
           window.location.href = `/search?q=${encodeURIComponent(title)}`;
-        } else {
-          window.location.href = `/posts/new?movie=${encodeURIComponent(title)}`;
         }
-      } catch (err) {
-        console.error('Movie check failed:', err);
-        window.location.href = `/search?q=${encodeURIComponent(title)}`;
       }
-    }
-  });
-</script>
+    });
+  </script>
 
   <div class="page">
-    <p class="auth-subtitle" style="margin-bottom: 0;">Welcome, <%= username %></p>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3);">
+      <p class="auth-subtitle" style="margin: 0;">Welcome, <%= username %></p>
+      <div class="view-toggle">
+        <button class="view-btn active" id="btn-list" onclick="setView('list')" title="List view">☰</button>
+        <button class="view-btn" id="btn-grid" onclick="setView('grid')" title="Grid view">⊞</button>
+      </div>
+    </div>
 
     <% if (posts.length === 0) { %>
       <div class="empty-state">
@@ -85,31 +79,54 @@
       </div>
     <% } %>
 
-    <% posts.forEach((post, i) => { %>
-      <div class="post-card">
-        <% if (post.poster_url && post.poster_url !== 'N/A') { %>
-          <img class="post-poster" src="<%= post.poster_url %>" alt="<%= post.movie_name %>">
-        <% } else { %>
-          <div class="post-poster-placeholder">🎬</div>
-        <% } %>
-        <div class="post-body">
-          <div class="post-eyebrow">
-            <span><%= post.movie_name %></span>
-            <% if (post.imdb_rating && post.imdb_rating !== 'N/A') { %>
-              <span class="post-rating">· IMDb <%= post.imdb_rating %></span>
-            <% } %>
+    <div class="feed-grid" id="feed-container">
+      <% posts.forEach(post => { %>
+        <div class="post-card">
+          <% if (post.poster_url && post.poster_url !== 'N/A') { %>
+            <img class="post-poster" src="<%= post.poster_url %>" alt="<%= post.movie_name %>">
+          <% } else { %>
+            <div class="post-poster-placeholder">🎬</div>
+          <% } %>
+          <div class="post-body">
+            <div class="post-eyebrow">
+              <span><%= post.movie_name %></span>
+              <% if (post.imdb_rating && post.imdb_rating !== 'N/A') { %>
+                <span class="post-rating">· IMDb <%= post.imdb_rating %></span>
+              <% } %>
+            </div>
+            <h3><a href="/posts/<%= post.id %>"><%= post.title %></a></h3>
+            <p class="post-excerpt"><%= post.content %></p>
+            <p class="post-meta">
+              Posted by <a href="/users/<%= post.username %>"><%= post.username %></a>
+              · <%= new Date(post.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) %>
+            </p>
           </div>
-          <h3><a href="/posts/<%= post.id %>"><%= post.title %></a></h3>
-          <p class="post-excerpt"><%= post.content %></p>
-          <p class="post-meta">Posted by <%= post.username %></p>
         </div>
-      </div>
-      <% if (i < posts.length - 1) { %>
-        <div class="sprocket-divider">
-          <div class="holes"><span></span><span></span><span></span></div>
-        </div>
-      <% } %>
-    <% }); %>
+      <% }); %>
+    </div>
   </div>
+
+  <script>
+  function setView(view) {
+    const container = document.getElementById('feed-container');
+    const btnList   = document.getElementById('btn-list');
+    const btnGrid   = document.getElementById('btn-grid');
+    if (view === 'grid') {
+      container.classList.add('poster-grid-view');
+      btnGrid.classList.add('active');
+      btnList.classList.remove('active');
+    } else {
+      container.classList.remove('poster-grid-view');
+      btnList.classList.add('active');
+      btnGrid.classList.remove('active');
+    }
+    localStorage.setItem('kravn-view', view);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const savedView = localStorage.getItem('kravn-view');
+    if (savedView === 'grid') setView('grid');
+  });
+</script>
 </body>
 </html>

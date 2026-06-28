@@ -372,17 +372,20 @@ router.get('/notifications', requireLogin, async (req, res) => {
       `SELECT notifications.*, 
         actor.username AS actor_username,
         posts.title AS post_title,
-        posts.movie_name
+        posts.movie_name,
+        comments.content AS comment_content
        FROM notifications
-       JOIN users AS actor ON notifications.actor_id = actor.id
-       JOIN posts ON notifications.post_id = posts.id
+       LEFT JOIN users AS actor ON notifications.actor_id = actor.id
+       LEFT JOIN posts ON notifications.post_id = posts.id
+       LEFT JOIN comments ON notifications.type = 'comment' 
+         AND comments.post_id = notifications.post_id 
+         AND comments.user_id = notifications.actor_id
        WHERE notifications.user_id = ?
        ORDER BY notifications.created_at DESC
        LIMIT 50`,
       [userId]
     );
 
-    // Mark all as read
     await pool.query(
       'UPDATE notifications SET is_read = 1 WHERE user_id = ?',
       [userId]

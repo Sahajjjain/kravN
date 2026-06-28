@@ -5,18 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notifications - KravN</title>
   <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/theme.js"></script>
 </head>
 <body>
   <div class="topbar">
     <div class="topbar-inner">
       <div class="brand">Krav<span>N</span></div>
       <div class="nav-links">
+        <a href="/feed">Feed</a>
         <a href="/dashboard">Dashboard</a>
-        <a href="/posts/new">+ New Discussion</a>
-        <a class="muted" href="/feed">←</a>
-        <!-- <a href="/notifications" style="position: relative;">
-          ❤️
-        </a> -->
+        <a href="/posts/new">+ New</a>
+        <a href="/notifications" class="active">🔔</a>
         <a class="muted" href="/about">About</a>
         <a class="muted" href="/logout">Logout</a>
       </div>
@@ -24,8 +23,8 @@
   </div>
 
   <div class="page-narrow">
-    <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Notifications</h1>
-    <p class="auth-subtitle" style="margin-bottom: 1.5rem;">Who's been engaging with your posts.</p>
+    <h1 style="font-size: 1.5rem; margin-bottom: var(--space-1);">Notifications</h1>
+    <p class="auth-subtitle" style="margin-bottom: var(--space-6);">Who's been engaging with your posts.</p>
 
     <% if (notifications.length === 0) { %>
       <div class="empty-state">
@@ -34,26 +33,26 @@
     <% } %>
 
     <% notifications.forEach(notification => { %>
-      <div style="
-        padding: 1rem;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: flex-start;
-        gap: 0.75rem;
-        background: <%= notification.is_read ? 'transparent' : 'var(--surface)' %>;
-        border-radius: 6px;
-        margin-bottom: 0.5rem;
-      ">
-        <div style="font-size: 1.2rem; margin-top: 2px;">
+      <div class="notification-card <%= notification.is_read ? '' : 'unread' %>">
+        <div class="notification-icon">
           <%= notification.type === 'like' ? '♥' : '💬' %>
         </div>
-        <div style="flex: 1;">
-          <p style="margin: 0 0 0.25rem; font-size: 0.95rem;">
-            <a href="/users/<%= notification.actor_username %>"><strong><%= notification.actor_username %></strong></a>
-            <%= notification.type === 'like' ? 'liked your post' : 'commented on your post' %>
-            <a href="/posts/<%= notification.post_id %>"><strong><%= notification.movie_name %>: <%= notification.post_title %></strong></a>
+        <div class="notification-body">
+          <p class="notification-text">
+            <a href="/users/<%= notification.actor_username %>">
+              <strong><%= notification.actor_username %></strong>
+            </a>
+            <%= notification.type === 'like' ? 'liked' : 'commented on' %> your post
+            <a href="/posts/<%= notification.post_id %>">
+              <strong><%= notification.movie_name %>: <%= notification.post_title %></strong>
+            </a>
           </p>
-          <p class="post-meta" style="margin: 0;">
+          <% if (notification.type === 'comment' && notification.comment_content) { %>
+            <div class="notification-quote">
+              "<%= notification.comment_content %>"
+            </div>
+          <% } %>
+          <p class="notification-time">
             <%= new Date(notification.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) %>
           </p>
         </div>
