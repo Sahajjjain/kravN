@@ -22,7 +22,7 @@
   --text-muted:     #52504D;
   --text-disabled:  #302E2C;
 
-  --accent:         #7B6EF6;
+  --accent:         #574acb;
   --accent-hover:   #9488FF;
   --accent-dim:     #3D3580;
   --accent-bg:      rgba(123, 110, 246, 0.07);
@@ -1620,3 +1620,5 @@ button.sm,
     height: 150px;
   }
 }
+ 
+
