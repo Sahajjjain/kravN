@@ -8,14 +8,7 @@
   <script src="/js/theme.js"></script>
 </head>
 <body>
-  <div class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="/feed">Krav<span>N</span></a>
-      <div class="nav-links">
-        <a class="muted" href="/feed">← Back to feed</a>
-      </div>
-    </div>
-  </div>
+  <%- include('partials/navbar', { currentPage: 'createPost' }) %>
 
   <div class="page-narrow">
     <h1 style="font-size: 1.6rem; margin-top: var(--space-6);">Start a discussion or Post a Review</h1>

@@ -8,17 +8,7 @@
   <script src="/js/theme.js"></script>
 </head>
 <body>
-  <div class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="/feed">Krav<span>N</span></a>
-      <div class="nav-links">
-        <a href="/dashboard">Dashboard</a>
-        <a href="/posts/new">+ New Discussion</a>
-        <a class="muted" href="/about">About</a>
-        <a class="muted" href="/logout">Logout</a>
-      </div>
-    </div>
-  </div>
+  <%- include('partials/navbar', { currentPage: 'userProfile' }) %>
 
   <div class="page">
     <div class="profile-header" style="border-bottom: none; padding-bottom: 0; margin-bottom: var(--space-6);">

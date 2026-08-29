@@ -8,26 +8,7 @@
   <script src="/js/theme.js"></script>
 </head>
 <body>
-  <div class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="/feed">Krav<span>N</span></a>
-      <div class="nav-links">
-        <a href="/dashboard">Dashboard</a>
-        <a href="/posts/new">+ New</a>
-        <a class="nav-bell" href="/notifications">
-          🔔
-          <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %>
-            <span class="badge-dot"><%= unreadCount %></span>
-          <% } %>
-        </a>
-        <a class="muted" href="/about">About</a>
-        <button class="theme-toggle view-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark">
-          <span id="theme-icon">☀</span>
-        </button>
-        <a class="muted" href="/logout">Logout</a>
-      </div>
-    </div>
-  </div>
+    <%- include('partials/navbar', { currentPage: 'feed' }) %>
 
   <div class="page">
     <div class="hero-banner">

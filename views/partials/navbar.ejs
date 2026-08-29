@@ -1,0 +1,75 @@
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="/feed" class="brand">Krav<span>N</span></a>
+
+    <nav class="nav-links">
+      <a href="/feed" class="<%= currentPage === 'discover' ? 'active' : '' %>">Discover</a>
+      <a href="/dashboard" class="<%= currentPage === 'dashboard' ? 'active' : '' %>">Dashboard</a>
+      <a href="/posts/new" class="<%= currentPage === 'new' ? 'active' : '' %>">+ New</a>
+     
+      <a href="/notifications" class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+  
+    <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %><span class="badge-dot" style="top:0; right:8px;"><%= unreadCount %></span><% } %>
+  </a>
+   <a href="/about" class="<%= currentPage === 'about' ? 'active' : '' %>">About</a>
+<a href="/logout"  aria-label="Logout" title="Logout">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>
+  </svg>
+</a>
+    </nav>
+
+    <div style="display:flex; align-items:center; gap: var(--space-3);">
+      <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark">
+  <span id="theme-icon">☀</span>
+</button>
+
+      <!-- <a href="/logout" class="nav-bell" aria-label="Logout" title="Logout">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+    <path d="M16 17l5-5-5-5"/>
+    <path d="M21 12H9"/>
+  </svg>
+</a> -->
+
+<a href="/logout" class="nav-bell mobile-only" aria-label="Logout" title="Logout">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>
+  </svg>
+</a>
+
+      <% if (typeof user !== 'undefined' && user) { %>
+        <a href="/profile" title="<%= user.username %>">
+          <div class="avatar-placeholder"><%= user.username.charAt(0).toUpperCase() %></div>
+        </a>
+        <a href="/logout" class="btn secondary sm">Logout</a>
+      <% } %>
+    </div>
+  </div>
+</header>
+
+<nav class="bottomnav">
+  <a href="/feed" class="tab <%= currentPage === 'discover' ? 'active' : '' %>">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
+    Discover
+  </a>
+  <a href="/dashboard" class="tab <%= currentPage === 'dashboard' ? 'active' : '' %>">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+    Dashboard
+  </a>
+  <a href="/posts/new" class="tab <%= currentPage === 'new' ? 'active' : '' %>">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    New
+  </a>
+  <a href="/notifications" class="tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+    Alerts
+    <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %><span class="badge-dot" style="top:0; right:8px;"><%= unreadCount %></span><% } %>
+  </a>
+   <a href="/about" class="tab <%= currentPage === 'about' ? 'active' : '' %>">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 16 0v2"/></svg>
+    About Me
+  </a>
+</nav>
+ 

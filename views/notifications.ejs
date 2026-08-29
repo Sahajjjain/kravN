@@ -8,19 +8,7 @@
   <script src="/js/theme.js"></script>
 </head>
 <body>
-  <div class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="/feed">Krav<span>N</span></a>
-      <div class="nav-links">
-        <a href="/feed">Feed</a>
-        <a href="/dashboard">Dashboard</a>
-        <a href="/posts/new">+ New</a>
-        <a href="/notifications" class="active nav-bell">🔔</a>
-        <a class="muted" href="/about">About</a>
-        <a class="muted" href="/logout">Logout</a>
-      </div>
-    </div>
-  </div>
+  <%- include('partials/navbar', { currentPage: 'notifications' }) %>
 
   <div class="page-narrow">
     <h1 style="font-size: 1.5rem; margin-top: var(--space-6); margin-bottom: var(--space-1);">Notifications</h1>
