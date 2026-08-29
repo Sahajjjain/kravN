@@ -10,33 +10,45 @@
 <body>
   <div class="topbar">
     <div class="topbar-inner">
-    <div class="brand">Krav<span>N</span></div>
-    <div class="nav-links">
+      <a class="brand" href="/feed">Krav<span>N</span></a>
+      <div class="nav-links">
         <a href="/dashboard">Dashboard</a>
-      <a class="muted" href="/feed">← Back to feed</a>
+        <a class="muted" href="/feed">← Back to feed</a>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="detail-backdrop"
+    <% if (post.poster_url && post.poster_url !== 'N/A') { %>
+      style="--bg-url: url('<%= post.poster_url %>');"
+    <% } %>
+  >
+    <% if (post.poster_url && post.poster_url !== 'N/A') { %>
+      <style>.detail-backdrop::before { background-image: url('<%= post.poster_url %>'); }</style>
+    <% } %>
+    <div class="detail-backdrop-inner">
+      <div class="detail-header">
+        <% if (post.poster_url && post.poster_url !== 'N/A') { %>
+          <img class="detail-poster" src="<%= post.poster_url %>" alt="<%= post.movie_name %>">
+        <% } else { %>
+          <div class="post-poster-placeholder" style="width:160px; height:240px; font-size:2.4rem; border-radius: var(--radius-lg);">🎬</div>
+        <% } %>
+        <div class="detail-title-block">
+          <div class="post-eyebrow">
+            <span><%= post.movie_name %></span>
+            <% if (post.imdb_rating && post.imdb_rating !== 'N/A') { %>
+              <span class="post-rating">· IMDb <%= post.imdb_rating %></span>
+            <% } %>
+          </div>
+          <h1><%= post.title %></h1>
+          <p class="post-meta">Posted by <a href="/users/<%= post.username %>"><%= post.username %></a> · <%= new Date(post.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) %></p>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="page">
-    <div class="detail-header">
-      <% if (post.poster_url && post.poster_url !== 'N/A') { %>
-        <img class="detail-poster" src="<%= post.poster_url %>" alt="<%= post.movie_name %>">
-      <% } else { %>
-        <div class="post-poster-placeholder" style="width:110px; height:165px; font-size:2rem;">🎬</div>
-      <% } %>
-      <div class="detail-title-block">
-        <div class="post-eyebrow">
-          <span><%= post.movie_name %></span>
-          <% if (post.imdb_rating && post.imdb_rating !== 'N/A') { %>
-            <span class="post-rating">· IMDb <%= post.imdb_rating %></span>
-          <% } %>
-        </div>
-        <h1><%= post.title %></h1>
-        <p class="post-meta">Posted by <a href="/users/<%= post.username %>"><%= post.username %></a> · <%= new Date(post.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) %></p>
-      </div>
-    </div>
-
     <p class="detail-content"><%= post.content %></p>
 
     <div class="like-row">
@@ -46,40 +58,42 @@
     </div>
 
     <% if (likeCount > 0) { %>
-  <p class="post-meta" style="margin-bottom: 1.5rem;">
-    <a href="/posts/<%= post.id %>/likes">♥ <%= likeCount %> <%= likeCount === 1 ? 'person' : 'people' %> liked this</a>
-  </p>
-<% } %>
-<div class="share-row">
-  <span class="share-label">Share: </span>
+      <p class="post-meta" style="margin-bottom: 1.5rem;">
+        <a href="/posts/<%= post.id %>/likes">♥ <%= likeCount %> <%= likeCount === 1 ? 'person' : 'people' %> liked this</a>
+      </p>
+    <% } %>
 
-  <button class="btn sm secondary" onclick="copyLink()" id="copy-btn">
-    🔗 Copy Link
-  </button>
+    <div class="share-row">
+      <span class="share-label">Share: </span>
 
- <a class="btn sm secondary"
-    href="https://wa.me/?text=<%= encodeURIComponent(post.movie_name + ': ' + post.title + ' — ' + 'https://kravn.onrender.com/posts/' + post.id) %>"
-    target="_blank" rel="noopener">
-    WhatsApp
-  </a>
-</div>
+      <button class="btn sm secondary" onclick="copyLink()" id="copy-btn">
+        🔗 Copy Link
+      </button>
 
-<script>
-function copyLink() {
-  navigator.clipboard.writeText(window.location.href).then(() => {
-    const btn = document.getElementById('copy-btn');
-    const original = btn.textContent;
-    btn.textContent = '✓ Copied!';
-    setTimeout(() => btn.textContent = original, 2000);
-  });
-}
-</script>
+      <a class="btn sm secondary"
+         href="https://wa.me/?text=<%= encodeURIComponent(post.movie_name + ': ' + post.title + ' — ' + 'https://kravn.onrender.com/posts/' + post.id) %>"
+         target="_blank" rel="noopener">
+        WhatsApp
+      </a>
+    </div>
 
-        <% if (post.user_id === currentUserId) { %>
-  <form action="/posts/<%= post.id %>/delete" method="POST" onsubmit="return confirm('Delete this discussion permanently?');">
-    <button type="submit" class="secondary" style="color: var(--danger); border-color: var(--danger);">Delete</button>
-  </form>
-<% } %>
+    <script>
+    function copyLink() {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        const btn = document.getElementById('copy-btn');
+        const original = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => btn.textContent = original, 2000);
+      });
+    }
+    </script>
+
+    <% if (post.user_id === currentUserId) { %>
+      <form action="/posts/<%= post.id %>/delete" method="POST" onsubmit="return confirm('Delete this discussion permanently?');">
+        <button type="submit" class="secondary" style="color: var(--danger); border-color: var(--danger);">Delete</button>
+      </form>
+    <% } %>
+
     <div class="sprocket-divider">
       <div class="holes"><span></span><span></span><span></span></div>
     </div>
@@ -96,23 +110,23 @@ function copyLink() {
     <% } %>
 
     <% comments.forEach(comment => { %>
-  <div class="comment">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <div class="comment-author">
-        <a href="/users/<%= comment.username %>"><%= comment.username %></a>
-      </div>
-      <% if (comment.user_id === currentUserId) { %>
-        <div style="display: flex; gap: 0.5rem;">
-          <a href="/comments/<%= comment.id %>/edit" style="font-size: 0.8rem; color: var(--text-muted);">Edit</a>
-          <form action="/comments/<%= comment.id %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Delete this comment?');">
-            <button type="submit" style="background: none; border: none; color: var(--danger); font-size: 0.8rem; cursor: pointer; padding: 0;">Delete</button>
-          </form>
+      <div class="comment">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="comment-author">
+            <a href="/users/<%= comment.username %>"><%= comment.username %></a>
+          </div>
+          <% if (comment.user_id === currentUserId) { %>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="/comments/<%= comment.id %>/edit" style="font-size: 0.8rem; color: var(--text-muted);">Edit</a>
+              <form action="/comments/<%= comment.id %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Delete this comment?');">
+                <button type="submit" style="background: none; border: none; color: var(--danger); font-size: 0.8rem; cursor: pointer; padding: 0;">Delete</button>
+              </form>
+            </div>
+          <% } %>
         </div>
-      <% } %>
-    </div>
-    <p class="comment-text"><%= comment.content %></p>
-  </div>
-<% }); %>
+        <p class="comment-text"><%= comment.content %></p>
+      </div>
+    <% }); %>
   </div>
 </body>
 </html>
