@@ -1,53 +1,176 @@
+```html
 <!DOCTYPE html>
+
 <html>
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Dashboard - KravN</title>
+
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/theme.js"></script>
 </head>
+
 <body>
+
   <%- include('partials/navbar', { currentPage: 'dashboard' }) %>
 
   <div class="page">
-    <h1 style="font-size: 1.5rem; margin-top: var(--space-6);">Your Discussions</h1>
-    <p class="auth-subtitle">Everything you've posted, <%= username %>.</p>
 
-    <% if (posts.length === 0) { %>
-      <div class="empty-state">
-        <p>You haven't posted anything yet.</p>
-        <p><a href="/posts/new">Start your first discussion →</a></p>
+    <!-- Dashboard Header -->
+    <div class="profile-header"
+         style="border-bottom: none; padding-bottom: 0; margin-bottom: var(--space-6);">
+
+      <div class="avatar-placeholder lg">
+        <%= username[0].toUpperCase() %>
       </div>
+
+      <div>
+
+        <h1 style="font-size: 1.6rem; margin-bottom: 0.25rem;">
+
+          <%= username %>
+
+          <span style="
+            font-size: 0.9rem;
+            color: var(--accent);
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+          ">
+            · you
+          </span>
+
+        </h1>
+
+        <p class="post-meta">
+          Your KravN discussions
+        </p>
+
+        <p class="post-meta">
+          <%= posts.length %> discussion<%= posts.length !== 1 ? 's' : '' %>
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- Divider -->
+    <div class="sprocket-divider" style="margin-top: 0;">
+      <div class="holes">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+
+
+    <!-- Empty State -->
+    <% if (posts.length === 0) { %>
+
+      <div class="empty-state">
+
+        <p>You haven't posted anything yet.</p>
+
+        <p>
+          <a href="/posts/new">
+            Start your first discussion →
+          </a>
+        </p>
+
+      </div>
+
     <% } %>
 
-    <% posts.forEach((post, i) => { %>
-      <div class="post-card" onclick="window.location.href='/posts/<%= post.id %>'">
-        <% if (post.poster_url && post.poster_url !== 'N/A') { %>
-          <img class="post-poster" src="<%= post.poster_url %>" alt="<%= post.movie_name %>">
-        <% } else { %>
-          <div class="post-poster-placeholder">🎬</div>
-        <% } %>
-        <div class="post-body">
-          <div class="post-eyebrow">
-            <span><%= post.movie_name %></span>
+
+    <!-- Discussions -->
+    <div class="feed-grid">
+
+      <% posts.forEach(post => { %>
+
+        <div
+          class="post-card"
+          onclick="window.location.href='/posts/<%= post.id %>'"
+        >
+
+          <% if (post.poster_url && post.poster_url !== 'N/A') { %>
+
+            <img
+              class="post-poster"
+              src="<%= post.poster_url %>"
+              alt="<%= post.movie_name %>"
+            >
+
+          <% } else { %>
+
+            <div class="post-poster-placeholder">
+              🎬
+            </div>
+
+          <% } %>
+
+
+          <div class="post-body">
+
+            <div class="post-eyebrow">
+              <span>
+                <%= post.movie_name %>
+              </span>
+            </div>
+
+
+            <h3>
+              <a href="/posts/<%= post.id %>">
+                <%= post.title %>
+              </a>
+            </h3>
+
+
+            <p class="post-excerpt">
+              <%= post.content %>
+            </p>
+
+
+            <p class="post-meta">
+
+              <span class="like-count">
+                <%= post.like_count %>
+              </span>
+              likes
+
+              &nbsp;·&nbsp;
+
+              <%= post.comment_count %>
+              comments
+
+              &nbsp;·&nbsp;
+
+              <%= new Date(post.created_at).toLocaleString('en-IN', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone: 'Asia/Kolkata'
+              }) %>
+
+            </p>
+
+
+            <span class="post-card-cta">
+              View discussion →
+            </span>
+
           </div>
-          <h3><a href="/posts/<%= post.id %>"><%= post.title %></a></h3>
-          <p class="post-excerpt"><%= post.content %></p>
-          <p class="post-meta">
-            <span class="like-count"><%= post.like_count %></span> likes
-            &nbsp;·&nbsp;
-            <%= post.comment_count %> comments
-          </p>
-          <span class="post-card-cta">View discussion →</span>
+
         </div>
-      </div>
-      <% if (i < posts.length - 1) { %>
-        <div class="sprocket-divider">
-          <div class="holes"><span></span><span></span><span></span></div>
-        </div>
-      <% } %>
-    <% }); %>
+
+      <% }); %>
+
+    </div>
+
   </div>
+
 </body>
+
 </html>
+```
