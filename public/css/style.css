@@ -909,7 +909,7 @@ button.sm, .btn.sm { padding: 5px var(--space-3); font-size: 0.8rem; border-radi
   background: var(--surface-3);
   border: 1px solid var(--border-mid);
   border-radius: var(--radius-lg);
-  max-height: 290px;
+  max-height: 350px;
   overflow-y: auto;
   z-index: 30;
   box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 4px 16px rgba(0,0,0,0.4);

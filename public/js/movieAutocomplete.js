@@ -35,7 +35,7 @@ function attachMovieAutocomplete({ inputId, dropdownId, onSelect }) {
       return;
     }
 
-    dropdown.innerHTML = movies.slice(0, 6).map(movie => `
+    dropdown.innerHTML = movies.slice(0, 12).map(movie => `
       <div class="suggestion-item" data-title="${movie.title.replace(/"/g, '&quot;')}">
         ${movie.poster && movie.poster !== 'N/A'
           ? `<img src="${movie.poster}" alt="">`
