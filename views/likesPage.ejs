@@ -8,14 +8,8 @@
   <script src="/js/theme.js"></script>
 </head>
 <body>
-  <div class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="/feed">Krav<span>N</span></a>
-      <div class="nav-links">
-        <a class="muted" href="/posts/<%= post.id %>">← Back to post</a>
-      </div>
-    </div>
-  </div>
+  <%- include('partials/navbar', { currentPage: 'likesPage' }) %>
+ 
 
   <div class="page-narrow">
     <h1 style="font-size: 1.4rem; margin-top: var(--space-6); margin-bottom: 0.25rem;">People who liked this</h1>
