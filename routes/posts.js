@@ -160,6 +160,16 @@ router.get('/posts/:id', requireLogin, async (req, res) => {
     console.error(err);
     res.send('Something went wrong: ' + err.message);
   }
+  const userHasLiked = likers.some(liker => liker.id === req.session.userId);
+
+res.render('postDetail', {
+  post: postRows[0],
+  comments,
+  likeCount: likers.length,
+  likers,
+  userHasLiked,
+  currentUserId: req.session.userId
+});
 });
 
 router.get('/users/:username', requireLogin, async (req, res) => {
