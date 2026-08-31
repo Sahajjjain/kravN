@@ -1,26 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - KravN</title>
   <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/theme.js"></script>
 </head>
 <body>
-  <div class="center-page">
-    <div class="auth-card">
-      <h1>Welcome back!</h1>
-      <p class="auth-subtitle">Log in to continue the discussion.</p>
-      <% if (error) { %>
-        <p style="color: var(--danger); font-size: 0.9rem; margin: -0.25rem 0 0.75rem;"><%= error %></p>
+  <div class="auth-page">
+  <div class="auth-visual">
+    <div class="auth-poster-strip">
+      <% if (typeof posters !== 'undefined' && posters.length) { %>
+        <% posters.slice(0, 10).forEach(url => { %>
+          <img src="<%= url %>" alt="" onerror="this.remove()">
+        <% }); %>
       <% } %>
+    </div>
+    <div class="auth-visual-overlay"></div>
+    <div class="auth-visual-content">
+      <div class="auth-logo">Krav<span>N</span></div>
+      <p class="auth-tagline">Where every frame starts a fight.</p>
+    </div>
+  </div>
+
+  <div class="auth-form-side">
+    <div class="auth-card">
+      <span class="auth-eyebrow">Member Login</span>
+      <h1>Welcome back.</h1>
+      <p class="auth-subtitle">Log in to continue the discussion.</p>
+
+      <% if (error) { %>
+        <p class="auth-error"><%= error %></p>
+      <% } %>
+
       <form action="/login" method="POST">
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Password" required>
+        <label class="auth-label">Email</label>
+        <input type="email" name="email" placeholder="you@example.com" required>
+
+        <label class="auth-label">Password</label>
+        <input type="password" name="password" placeholder="••••••••" required>
+
         <button type="submit">Login</button>
       </form>
+
       <p class="auth-switch">New here? <a href="/register">Create an account</a></p>
     </div>
   </div>
+</div>
 </body>
 </html>

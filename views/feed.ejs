@@ -12,31 +12,33 @@
 
   <div class="page">
     <div class="hero-banner">
-      <% if (posts.length > 0) { %>
-        <div class="hero-poster-strip">
-          <% posts.slice(0, 8).forEach(p => { %>
-            <% if (p.poster_url && p.poster_url !== 'N/A') { %>
-              <img src="<%= p.poster_url %>" alt="">
-            <% } %>
-          <% }); %>
-        </div>
-      <% } %>
-      <div class="hero-banner-content">
-        <div>
-          <h1 class="hero-greeting">Welcome,<br><%= username %> <span class="wave">👋</span></h1>
-          <p class="hero-subline">Find your next favorite story.</p>
-        </div>
-        <div class="hero-actions-row">
-          <div class="hero-stat-card">
-            <div class="hero-stat">
-              <div class="hero-stat-number"><%= posts.length %></div>
-              <div class="hero-stat-label">Discussions</div>
-            </div>
-          </div>
-          <a class="btn" href="/posts/new">Have a Theory?</a>
+  <% if (posts.length > 0) { %>
+    <div class="hero-poster-strip">
+      <% posts.slice(0, 8).forEach(p => { %>
+        <% if (p.poster_url && p.poster_url !== 'N/A') { %>
+          <img src="<%= p.poster_url %>" alt="" onerror="this.remove()">
+        <% } %>
+      <% }); %>
+    </div>
+  <% } %>
+  <div class="hero-banner-overlay"></div>
+  <div class="hero-banner-content">
+    <div>
+      <span class="hero-eyebrow">Your Feed</span>
+      <h1 class="hero-greeting">Welcome,<br><%= username %> <span class="wave">👋</span></h1>
+      <p class="hero-subline">Find your next favorite story.</p>
+    </div>
+    <div class="hero-actions-row">
+      <div class="hero-stat-card">
+        <div class="hero-stat">
+          <div class="hero-stat-number"><%= posts.length %></div>
+          <div class="hero-stat-label">Discussions</div>
         </div>
       </div>
+      <a class="btn" href="/posts/new">Have a Theory?</a>
     </div>
+  </div>
+</div>
 
     <form class="search-form" id="search-form" action="/search" method="GET">
       <div class="movie-autocomplete" style="flex: 1; max-width: 560px;">

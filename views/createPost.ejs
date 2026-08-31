@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,33 +11,89 @@
   <%- include('partials/navbar', { currentPage: 'createPost' }) %>
 
   <div class="page-narrow">
-    <h1 style="font-size: 1.6rem; margin-top: var(--space-6);">Start a discussion or Post a Review</h1>
-    <p class="auth-subtitle">Got a theory or want to review? Lay it out below.</p>
+    <div class="create-post-card" id="create-post-card">
+      <div class="create-post-bg" id="create-post-bg"></div>
+      <div class="create-post-bg-overlay"></div>
 
-    <form action="/posts" method="POST">
-      <div class="movie-autocomplete">
-        <input
-          type="text"
-          name="movie_name"
-          id="movie-input"
-          placeholder="Movie or show name"
-          value="<%= prefilledMovie %>"
-          autocomplete="off"
-          required
-        >
-        <div id="movie-suggestions" class="suggestions-dropdown"></div>
+      <div class="create-post-inner">
+        <span class="auth-eyebrow">New Post</span>
+        <h1 class="create-post-title">Start a discussion or post a review</h1>
+        <p class="auth-subtitle">Got a theory or want to review? Lay it out below.</p>
+
+        <form action="/posts" method="POST" class="create-post-form" id="post-form">
+          <label class="auth-label">Movie or show</label>
+          <div class="movie-autocomplete">
+            <input
+              type="text"
+              name="movie_name"
+              id="movie-input"
+              placeholder="Search for a title..."
+              value="<%= prefilledMovie %>"
+              autocomplete="off"
+              required
+            >
+            <div id="movie-suggestions" class="suggestions-dropdown"></div>
+          </div>
+
+          <label class="auth-label">Discussion title</label>
+          <input type="text" name="title" id="title-input" placeholder="What's your theory or take?" required>
+
+          <label class="auth-label">
+            Your take
+            <span class="char-hint" id="char-hint">start typing...</span>
+          </label>
+          <textarea name="content" id="content-input" placeholder="Lay it all out here..." required></textarea>
+
+          <button type="submit" id="submit-btn">Post discussion / review</button>
+        </form>
       </div>
-      <input type="text" name="title" placeholder="Discussion title" required>
-      <textarea name="content" placeholder="Your theory..." required></textarea>
-      <button type="submit">Post discussion / review</button>
-    </form>
+    </div>
   </div>
 
   <script src="/js/movieAutocomplete.js"></script>
   <script>
     attachMovieAutocomplete({
       inputId: 'movie-input',
-      dropdownId: 'movie-suggestions'
+      dropdownId: 'movie-suggestions',
+      onSelect: async function(title, posterUrl) {
+        const bg = document.getElementById('create-post-bg');
+        let url = posterUrl;
+
+        // Fallback: if your autocomplete only passes a title, fetch the poster
+        if (!url) {
+          try {
+            const res = await fetch(`/api/movie-check?title=${encodeURIComponent(title)}`);
+            const data = await res.json();
+            url = data.poster_url;
+          } catch (e) {}
+        }
+
+        if (url && url !== 'N/A') {
+          bg.style.backgroundImage = `url('${url}')`;
+          bg.classList.add('visible');
+        }
+      }
+    });
+
+    const hints = [
+      { max: 0, text: 'start typing...' },
+      { max: 50, text: 'good start 👀' },
+      { max: 150, text: 'now we\'re talking 🔥' },
+      { max: 400, text: 'okay theorist, go off 🎬' },
+      { max: Infinity, text: 'absolute essay energy 📜' }
+    ];
+
+    document.getElementById('content-input').addEventListener('input', (e) => {
+      const len = e.target.value.length;
+      const hint = hints.find(h => len <= h.max);
+      document.getElementById('char-hint').textContent = `${len} chars · ${hint.text}`;
+    });
+
+    const form = document.getElementById('post-form');
+    const submitBtn = document.getElementById('submit-btn');
+    form.addEventListener('submit', () => {
+      submitBtn.textContent = 'Posting...';
+      submitBtn.disabled = true;
     });
   </script>
 </body>

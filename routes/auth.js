@@ -3,7 +3,7 @@ const router = express.Router();
 
 const bcrypt = require('bcrypt');
 const pool = require('../config/db');
-const { searchMovies } = require('../config/movieApi');
+const { searchMovies, getMovieInfo } = require('../config/movieApi');
 
 // A small pool of acclaimed/recognizable titles to seed background poster art.
 const POSTER_SEED_TERMS = ['inception', 'interstellar', 'dark knight', 'parasite', 'oldboy', 'whiplash', 'her', 'arrival'];
@@ -93,4 +93,47 @@ router.get('/logout', (req, res) => {
   });
 });
 
+// ---------- ABOUT ----------
+
+const FAVORITE_MOVIES = [
+  'Interstellar', 'Avengers: Endgame', 'Spider-Man: No Way Home',
+  'Spider-Man: Into the Spider-Verse', 'Your Name',
+  'Fight Club', 'The Shawshank Redemption', 'Dead Poets Society',
+  'Inception', 'The Dark Knight', 'Avengers: Infinity War',
+  'Spider-Man 2', 'Spider-Man: Across the Spider-Verse',
+  'Good Will Hunting', 'Forrest Gump', 'The Prestige',
+  'The Truman Show', 'Eternal Sunshine of the Spotless Mind',
+  'The Matrix', 'Oppenheimer', 'The Green Mile', 'Whiplash',
+  'Dune: Part Two', 'Dune', 'Everything Everywhere All at Once',
+  'Weathering with You', 'A Silent Voice', 'Suzume',
+  'The Lord of the Rings: The Return of the King', 'Gladiator',
+  'The Godfather', '12 Angry Men', 'The Pursuit of Happyness',
+  'The Social Network', 'Parasite', 'The Wolf of Wall Street',
+  'The Departed'
+];
+
+let favoritePostersCache = null;
+
+async function getFavoritePosters() {
+  if (favoritePostersCache) return favoritePostersCache;
+
+  try {
+    const results = await Promise.all(FAVORITE_MOVIES.map(title => getMovieInfo(title)));
+    favoritePostersCache = results
+      .filter(m => m && m.poster && m.poster !== 'N/A')
+      .map(m => m.poster);
+    return favoritePostersCache;
+  } catch (err) {
+    console.error('Favorite posters fetch failed:', err);
+    return [];
+  }
+}
+
+router.get('/about', async (req, res) => {
+  const posters = await getFavoritePosters();
+
+  res.render('about', { posters });
+});
+
 module.exports = router;
+
