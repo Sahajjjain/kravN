@@ -1,124 +1,2877 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= post.title %> - KravN</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <script src="/js/theme.js"></script>
-</head>
-<body>
-  <%- include('partials/navbar', { currentPage: 'postDetail' }) %>
+<html lang="en">
 
-  <div
-    class="detail-backdrop"
-    <% if (post.poster_url && post.poster_url !== 'N/A') { %>
-      style="--bg-url: url('<%= post.poster_url %>');"
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0">
+
+  <title>
+    <%= post.title %> - KravN
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="/css/style.css">
+
+  <script src="/js/theme.js"></script>
+
+
+  <style>
+
+    /* =========================================================
+       SHARE SECTION
+       ========================================================= */
+
+    .kravn-share-section {
+      margin: 2rem 0 3rem;
+    }
+
+    .kravn-share-heading {
+      margin-bottom: 1rem;
+    }
+
+    .kravn-share-heading h3 {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+
+    .kravn-share-heading p {
+      margin: 0.4rem 0 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+
+    /* =========================================================
+       SHARE BUTTONS
+       ========================================================= */
+
+    .kravn-share-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+    }
+
+    .kravn-share-actions .btn {
+      cursor: pointer;
+    }
+
+    .kravn-share-actions button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+
+    /* =========================================================
+       SHARE STATUS
+       ========================================================= */
+
+    .kravn-share-status {
+      display: none;
+      margin: 0.75rem 0 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      background: rgba(233, 69, 96, 0.08);
+      border: 1px solid rgba(233, 69, 96, 0.2);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+
+    /* =========================================================
+       POST CARD PREVIEW
+       ========================================================= */
+
+    .kravn-card-wrapper {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      margin-top: 1.5rem;
+    }
+
+    .kravn-post-card {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 9 / 16;
+      overflow: hidden;
+      border-radius: 24px;
+      background: #050507;
+      border: 1px solid rgba(233, 69, 96, 0.45);
+      box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.45);
+      isolation: isolate;
+    }
+
+    .kravn-post-card-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -3;
+    }
+
+    .kravn-post-card-fallback {
+      position: absolute;
+      inset: 0;
+      z-index: -3;
+
+      background:
+        radial-gradient(
+          circle at 75% 25%,
+          rgba(233, 69, 96, 0.28),
+          transparent 35%
+        ),
+        linear-gradient(
+          145deg,
+          #1b151b,
+          #09080c 60%,
+          #020203
+        );
+    }
+
+    .kravn-post-card-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+
+      background:
+        linear-gradient(
+          to bottom,
+          rgba(2, 2, 5, 0.84) 0%,
+          rgba(2, 2, 5, 0.28) 25%,
+          rgba(2, 2, 5, 0.12) 42%,
+          rgba(2, 2, 5, 0.38) 58%,
+          rgba(2, 2, 5, 0.88) 78%,
+          rgba(0, 0, 0, 0.98) 100%
+        );
+    }
+
+    .kravn-post-card-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+
+      background:
+        radial-gradient(
+          circle at center,
+          transparent 25%,
+          rgba(0, 0, 0, 0.42) 100%
+        );
+    }
+
+    .kravn-post-card-content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+
+      padding: 30px;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+
+    /* =========================================================
+       CARD HEADER
+       ========================================================= */
+
+    .kravn-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .kravn-logo {
+      font-size: 27px;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: -1.2px;
+      color: #fff;
+
+      text-shadow:
+        0 4px 18px rgba(0, 0, 0, 0.7);
+    }
+
+    .kravn-logo-dot {
+      color: #e94560;
+    }
+
+    .kravn-tagline {
+      margin-top: 7px;
+
+      color:
+        rgba(255, 255, 255, 0.45);
+
+      font-size: 8px;
+      letter-spacing: 1.7px;
+      text-transform: uppercase;
+    }
+
+    .kravn-card-badge {
+      padding: 8px 12px;
+
+      border-radius: 999px;
+
+      border: 1px solid
+        rgba(233, 69, 96, 0.7);
+
+      background:
+        rgba(5, 5, 9, 0.48);
+
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+
+      color: #ff6a82;
+
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 1px;
+
+      white-space: nowrap;
+    }
+
+
+    /* =========================================================
+       CARD CONTENT
+       ========================================================= */
+
+    .kravn-card-bottom {
+      width: 100%;
+    }
+
+    .kravn-card-movie {
+      margin-bottom: 9px;
+
+      color: #ff617d;
+
+      font-size: 13px;
+      font-weight: 700;
+
+      letter-spacing: 1.8px;
+      line-height: 1.3;
+
+      text-transform: uppercase;
+
+      text-shadow:
+        0 2px 10px rgba(0, 0, 0, 0.65);
+    }
+
+    .kravn-card-title {
+      margin: 0 0 15px;
+
+      color: #fff;
+
+      font-size: clamp(
+        1.8rem,
+        5vw,
+        2.7rem
+      );
+
+      line-height: 1.03;
+      letter-spacing: -1.4px;
+
+      font-weight: 800;
+
+      text-shadow:
+        0 5px 24px rgba(0, 0, 0, 0.8);
+
+      overflow-wrap: anywhere;
+    }
+
+    .kravn-card-author {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      margin-bottom: 16px;
+
+      color:
+        rgba(255, 255, 255, 0.65);
+
+      font-size: 13px;
+    }
+
+    .kravn-card-author-dot {
+      width: 6px;
+      height: 6px;
+
+      border-radius: 50%;
+
+      background: #e94560;
+
+      box-shadow:
+        0 0 10px rgba(233, 69, 96, 0.65);
+    }
+
+
+    /* =========================================================
+       CARD CTA
+       ========================================================= */
+
+    .kravn-card-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 10px;
+
+      padding: 12px;
+
+      border-radius: 14px;
+
+      border: 1px solid
+        rgba(255, 255, 255, 0.09);
+
+      background:
+        rgba(7, 7, 11, 0.72);
+
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .kravn-card-cta-left {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+
+      min-width: 0;
+    }
+
+    .kravn-card-cta-icon {
+      width: 31px;
+      height: 31px;
+
+      flex-shrink: 0;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 9px;
+
+      background:
+        rgba(233, 69, 96, 0.15);
+
+      font-size: 15px;
+    }
+
+    .kravn-card-cta-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      min-width: 0;
+    }
+
+    .kravn-card-cta-main {
+      color: #fff;
+
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .kravn-card-cta-sub {
+      color:
+        rgba(255, 255, 255, 0.42);
+
+      font-size: 8px;
+    }
+
+    .kravn-card-arrow {
+      width: 34px;
+      height: 34px;
+
+      flex-shrink: 0;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 10px;
+
+      background: #e94560;
+
+      color: #fff;
+
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .kravn-card-url {
+      margin-top: 8px;
+
+      color:
+        rgba(255, 255, 255, 0.38);
+
+      font-size: 8px;
+
+      word-break: break-all;
+    }
+
+
+    /* =========================================================
+       MOBILE
+       ========================================================= */
+
+    @media (max-width: 600px) {
+
+      .kravn-post-card {
+        max-width: 340px;
+        border-radius: 20px;
+      }
+
+      .kravn-post-card-content {
+        padding: 23px;
+      }
+
+      .kravn-card-header {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .kravn-card-title {
+        font-size: 2rem;
+      }
+
+      .kravn-share-actions {
+        flex-direction: column;
+      }
+
+      .kravn-share-actions .btn {
+        width: 100%;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+  <!-- =========================================================
+       NAVBAR
+       ========================================================= -->
+
+  <%- include('partials/navbar', {
+    currentPage: 'postDetail'
+  }) %>
+
+
+  <!-- =========================================================
+       MOVIE HEADER
+       ========================================================= -->
+
+  <div class="detail-backdrop">
+
+
+    <% if (
+      post.poster_url &&
+      post.poster_url !== 'N/A'
+    ) { %>
+
+      <style>
+
+        .detail-backdrop::before {
+          background-image:
+            url('<%= post.poster_url %>');
+        }
+
+      </style>
+
     <% } %>
-  >
-    <% if (post.poster_url && post.poster_url !== 'N/A') { %>
-      <style>.detail-backdrop::before { background-image: url('<%= post.poster_url %>'); }</style>
-    <% } %>
+
+
     <div class="detail-backdrop-inner">
+
       <div class="detail-header">
-        <% if (post.poster_url && post.poster_url !== 'N/A') { %>
-          <img class="detail-poster" src="<%= post.poster_url %>" alt="<%= post.movie_name %>">
+
+
+        <% if (
+          post.poster_url &&
+          post.poster_url !== 'N/A'
+        ) { %>
+
+          <img
+            class="detail-poster"
+            src="<%= post.poster_url %>"
+            alt="<%= post.movie_name %>">
+
         <% } else { %>
-          <div class="post-poster-placeholder" style="width:160px; height:240px; font-size:2.4rem; border-radius: var(--radius-lg);">🎬</div>
-        <% } %>
-        <div class="detail-title-block">
-          <div class="post-eyebrow">
-            <span><%= post.movie_name %></span>
-            <% if (post.imdb_rating && post.imdb_rating !== 'N/A') { %>
-              <span class="post-rating">· IMDb <%= post.imdb_rating %></span>
-            <% } %>
+
+          <div
+            class="post-poster-placeholder"
+            style="
+              width:160px;
+              height:240px;
+              font-size:2.4rem;
+              border-radius:var(--radius-lg);
+            ">
+
+            🎬
+
           </div>
-          <h1><%= post.title %></h1>
-          <p class="post-meta">Posted by <a href="/users/<%= post.username %>"><%= post.username %></a> · <%= new Date(post.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) %></p>
+
+        <% } %>
+
+
+        <div class="detail-title-block">
+
+
+          <div class="post-eyebrow">
+
+            <span>
+              <%= post.movie_name %>
+            </span>
+
+
+            <% if (
+              post.imdb_rating &&
+              post.imdb_rating !== 'N/A'
+            ) { %>
+
+              <span class="post-rating">
+
+                · IMDb
+                <%= post.imdb_rating %>
+
+              </span>
+
+            <% } %>
+
+          </div>
+
+
+          <h1>
+            <%= post.title %>
+          </h1>
+
+
+          <p class="post-meta">
+
+            Posted by
+
+            <a
+              href="/users/<%= post.username %>">
+
+              <%= post.username %>
+
+            </a>
+
+            ·
+
+            <%= new Date(
+              post.created_at
+            ).toLocaleString(
+              'en-IN',
+              {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone: 'Asia/Kolkata'
+              }
+            ) %>
+
+          </p>
+
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
+  <!-- =========================================================
+       MAIN CONTENT
+       ========================================================= -->
 
   <div class="page">
-    <p class="detail-content"><%= post.content %></p>
+
+
+    <!-- POST -->
+
+    <p class="detail-content">
+
+      <%= post.content %>
+
+    </p>
+
+
+    <!-- =======================================================
+         LIKE
+         ======================================================= -->
 
     <div class="like-row">
-      <form action="/posts/<%= post.id %>/like" method="POST">
-        <button class="like-btn" type="submit">♥ Like (<%= likeCount %>)</button>
+
+      <form
+        action="/posts/<%= post.id %>/like"
+        method="POST">
+
+        <button
+          class="like-btn"
+          type="submit">
+
+          ♥ Like (<%= likeCount %>)
+
+        </button>
+
       </form>
+
     </div>
+
 
     <% if (likeCount > 0) { %>
-      <p class="post-meta" style="margin-bottom: 1.5rem;">
-        <a href="/posts/<%= post.id %>/likes">♥ <%= likeCount %> <%= likeCount === 1 ? 'person' : 'people' %> liked this</a>
+
+      <p
+        class="post-meta"
+        style="margin-bottom:1.5rem;">
+
+        <a
+          href="/posts/<%= post.id %>/likes">
+
+          ♥ <%= likeCount %>
+
+          <%= likeCount === 1
+            ? 'person'
+            : 'people' %>
+
+          liked this
+
+        </a>
+
       </p>
+
     <% } %>
 
-    <div class="share-row">
-      <span class="share-label">Share: </span>
 
-      <button class="btn sm secondary" onclick="copyLink()" id="copy-btn">
-        🔗 Copy Link
-      </button>
+    <!-- =======================================================
+         SHARE SECTION
+         ======================================================= -->
 
-      <a class="btn sm secondary"
-         href="https://wa.me/?text=<%= encodeURIComponent(post.movie_name + ': ' + post.title + ' — ' + 'https://kravn.onrender.com/posts/' + post.id) %>"
-         target="_blank" rel="noopener">
-        WhatsApp
-      </a>
-    </div>
+    <section class="kravn-share-section">
 
-    <script>
-    function copyLink() {
-      navigator.clipboard.writeText(window.location.href).then(() => {
-        const btn = document.getElementById('copy-btn');
-        const original = btn.textContent;
-        btn.textContent = '✓ Copied!';
-        setTimeout(() => btn.textContent = original, 2000);
-      });
-    }
-    </script>
 
-    <% if (post.user_id === currentUserId) { %>
-      <form action="/posts/<%= post.id %>/delete" method="POST" onsubmit="return confirm('Delete this discussion permanently?');">
-        <button type="submit" class="secondary" style="color: var(--danger); border-color: var(--danger);">Delete</button>
+      <div class="kravn-share-heading">
+
+        <h3>
+          Share this discussion
+        </h3>
+
+        <p>
+          Share the KravN card or send the discussion directly.
+        </p>
+
+      </div>
+
+
+      <!-- =====================================================
+           THREE SHARE OPTIONS
+           ===================================================== -->
+
+      <div class="kravn-share-actions">
+
+
+        <!-- DOWNLOAD POST CARD -->
+
+        <button
+          type="button"
+          class="btn sm secondary"
+          id="download-card-btn"
+          onclick="downloadPostCard()">
+
+           Download Post Card -
+
+        </button>
+
+
+        <!-- WHATSAPP -->
+
+        <button
+          type="button"
+          class="btn sm secondary"
+          id="whatsapp-share-btn"
+          onclick="sharePostToWhatsApp()">
+
+           WhatsApp
+
+        </button>
+
+
+        <!-- SHARE URL -->
+
+        <button
+          type="button"
+          class="btn sm secondary"
+          id="share-url-btn"
+          onclick="sharePostURL()">
+
+          🔗 Share Post
+
+        </button>
+
+
+      </div>
+
+
+      <div
+        id="kravn-share-status"
+        class="kravn-share-status">
+      </div>
+
+
+      <!-- =====================================================
+           POST CARD PREVIEW
+           ===================================================== -->
+
+      <div class="kravn-card-wrapper">
+
+
+        <div
+          id="kravn-post-card"
+          class="kravn-post-card">
+
+
+          <!-- BACKGROUND -->
+
+          <% if (
+            post.poster_url &&
+            post.poster_url !== 'N/A'
+          ) { %>
+
+            <img
+              class="kravn-post-card-bg"
+              src="<%= post.poster_url %>"
+              alt="">
+
+          <% } else { %>
+
+            <div
+              class="kravn-post-card-fallback">
+            </div>
+
+          <% } %>
+
+
+          <!-- OVERLAY -->
+
+          <div
+            class="kravn-post-card-overlay">
+          </div>
+
+
+          <div
+            class="kravn-post-card-vignette">
+          </div>
+
+
+          <!-- CARD CONTENT -->
+
+          <div
+            class="kravn-post-card-content">
+
+
+            <!-- HEADER -->
+
+            <div class="kravn-card-header">
+
+
+              <div>
+
+                <div class="kravn-logo">
+
+                  KravN
+                  <span class="kravn-logo-dot">
+                    •
+                  </span>
+
+                </div>
+
+
+                <div class="kravn-tagline">
+
+                  Discuss. Discover. Connect.
+
+                </div>
+
+              </div>
+
+
+              <div class="kravn-card-badge">
+
+                KRAVN DISCUSSION
+
+              </div>
+
+
+            </div>
+
+
+            <!-- BOTTOM -->
+
+            <div class="kravn-card-bottom">
+
+
+              <div class="kravn-card-movie">
+
+                <%= post.movie_name %>
+
+              </div>
+
+
+              <h2
+                class="kravn-card-title">
+
+                <%= post.title %>
+
+              </h2>
+
+
+              <div
+                class="kravn-card-author">
+
+                <span
+                  class="kravn-card-author-dot">
+                </span>
+
+                @<%= post.username %>
+
+              </div>
+
+
+              <div
+                class="kravn-card-cta">
+
+
+                <div
+                  class="kravn-card-cta-left">
+
+
+                  <div
+                    class="kravn-card-cta-icon">
+
+                    💬
+
+                  </div>
+
+
+                  <div
+                    class="kravn-card-cta-text">
+
+
+                    <span
+                      class="kravn-card-cta-main">
+
+                      Discuss on KravN
+
+                    </span>
+
+
+                    <span
+                      class="kravn-card-cta-sub">
+
+                      Join the conversation
+
+                    </span>
+
+
+                  </div>
+
+                </div>
+
+
+                <div
+                  class="kravn-card-arrow">
+
+                  ↗
+
+                </div>
+
+
+              </div>
+
+
+              <div
+                class="kravn-card-url">
+
+                kravn.onrender.com/posts/<%= post.id %>
+
+              </div>
+
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =======================================================
+         DELETE POST
+         ======================================================= -->
+
+    <% if (
+      post.user_id === currentUserId
+    ) { %>
+
+
+      <form
+        action="/posts/<%= post.id %>/delete"
+        method="POST"
+
+        onsubmit="
+          return confirm(
+            'Delete this discussion permanently?'
+          );
+        ">
+
+
+        <button
+          type="submit"
+          class="secondary"
+
+          style="
+            color:var(--danger);
+            border-color:var(--danger);
+          ">
+
+          Delete
+
+        </button>
+
+
       </form>
+
+
     <% } %>
+
+
+    <!-- =======================================================
+         DIVIDER
+         ======================================================= -->
 
     <div class="sprocket-divider">
-      <div class="holes"><span></span><span></span><span></span></div>
+
+      <div class="holes">
+
+        <span></span>
+        <span></span>
+        <span></span>
+
+      </div>
+
     </div>
 
-    <h2 style="font-size: 1.2rem;">Comments</h2>
 
-    <form class="comment-form" action="/posts/<%= post.id %>/comments" method="POST">
-      <textarea name="content" placeholder="Add a comment..." required></textarea>
-      <button type="submit">Comment</button>
+    <!-- =======================================================
+         COMMENTS
+         ======================================================= -->
+
+    <h2 style="font-size:1.2rem;">
+
+      Comments
+
+    </h2>
+
+
+    <form
+      class="comment-form"
+      action="/posts/<%= post.id %>/comments"
+      method="POST">
+
+
+      <textarea
+        name="content"
+        placeholder="Add a comment..."
+        required></textarea>
+
+
+      <button
+        type="submit">
+
+        Comment
+
+      </button>
+
+
     </form>
 
-    <% if (comments.length === 0) { %>
-      <p class="post-meta">No comments yet.</p>
+
+    <% if (
+      comments.length === 0
+    ) { %>
+
+
+      <p class="post-meta">
+
+        No comments yet.
+
+      </p>
+
+
     <% } %>
 
+
     <% comments.forEach(comment => { %>
+
+
       <div class="comment">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div class="comment-author">
-            <a href="/users/<%= comment.username %>"><%= comment.username %></a>
+
+
+        <div
+          style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+          ">
+
+
+          <div
+            class="comment-author">
+
+            <a
+              href="/users/<%= comment.username %>">
+
+              <%= comment.username %>
+
+            </a>
+
           </div>
-          <% if (comment.user_id === currentUserId) { %>
-            <div style="display: flex; gap: 0.5rem;">
-              <a href="/comments/<%= comment.id %>/edit" style="font-size: 0.8rem; color: var(--text-muted);">Edit</a>
-              <form action="/comments/<%= comment.id %>/delete" method="POST" style="display: inline;" onsubmit="return confirm('Delete this comment?');">
-                <button type="submit" style="background: none; border: none; color: var(--danger); font-size: 0.8rem; cursor: pointer; padding: 0;">Delete</button>
+
+
+          <% if (
+            comment.user_id === currentUserId
+          ) { %>
+
+
+            <div
+              style="
+                display:flex;
+                gap:0.5rem;
+              ">
+
+
+              <a
+                href="/comments/<%= comment.id %>/edit"
+                style="
+                  font-size:0.8rem;
+                  color:var(--text-muted);
+                ">
+
+                Edit
+
+              </a>
+
+
+              <form
+                action="/comments/<%= comment.id %>/delete"
+                method="POST"
+
+                style="display:inline;"
+
+                onsubmit="
+                  return confirm(
+                    'Delete this comment?'
+                  );
+                ">
+
+
+                <button
+                  type="submit"
+
+                  style="
+                    background:none;
+                    border:none;
+                    color:var(--danger);
+                    font-size:0.8rem;
+                    cursor:pointer;
+                    padding:0;
+                  ">
+
+                  Delete
+
+                </button>
+
+
               </form>
+
+
             </div>
+
+
           <% } %>
+
+
         </div>
-        <p class="comment-text"><%= comment.content %></p>
+
+
+        <p class="comment-text">
+
+          <%= comment.content %>
+
+        </p>
+
+
       </div>
+
+
     <% }); %>
+
+
   </div>
+
+
+  <!-- =========================================================
+       SHARING JAVASCRIPT
+       ========================================================= -->
+
+  <script>
+
+
+    /* =========================================================
+       POST DATA
+       ========================================================= */
+
+    const KRAVN_POST = {
+
+      id:
+        <%- JSON.stringify(post.id) %>,
+
+      movieName:
+        <%- JSON.stringify(
+          post.movie_name || ''
+        ) %>,
+
+      title:
+        <%- JSON.stringify(
+          post.title || ''
+        ) %>,
+
+      username:
+        <%- JSON.stringify(
+          post.username || ''
+        ) %>,
+
+      posterUrl:
+        <%- JSON.stringify(
+          post.poster_url &&
+          post.poster_url !== 'N/A'
+            ? post.poster_url
+            : null
+        ) %>
+
+    };
+
+
+    const KRAVN_POST_URL =
+      'https://kravn.onrender.com/posts/' +
+      KRAVN_POST.id;
+
+
+    /* =========================================================
+       CANVAS
+       ========================================================= */
+
+    const CARD_WIDTH =
+      1080;
+
+    const CARD_HEIGHT =
+      1920;
+
+
+    /* =========================================================
+       TEXT CLEANER
+       ========================================================= */
+
+    function cleanCardText(
+      value
+    ) {
+
+      return String(
+        value || ''
+      )
+
+        .replace(
+          /<[^>]*>/g,
+          ''
+        )
+
+        .replace(
+          /[\r\n\t]+/g,
+          ' '
+        )
+
+        .replace(
+          /\s+/g,
+          ' '
+        )
+
+        .trim();
+
+    }
+
+
+    /* =========================================================
+       IMAGE LOADER
+       ========================================================= */
+
+    function loadCardImage(
+      url
+    ) {
+
+      return new Promise(
+        (resolve, reject) => {
+
+          if (!url) {
+
+            reject(
+              new Error(
+                'No poster'
+              )
+            );
+
+            return;
+
+          }
+
+
+          const image =
+            new Image();
+
+
+          image.crossOrigin =
+            'anonymous';
+
+
+          image.onload =
+            () => resolve(image);
+
+
+          image.onerror =
+            () => reject(
+              new Error(
+                'Poster failed'
+              )
+            );
+
+
+          image.src =
+            url;
+
+        }
+      );
+
+    }
+
+
+    /* =========================================================
+       ROUNDED RECTANGLE
+       ========================================================= */
+
+    function roundedRect(
+      ctx,
+      x,
+      y,
+      width,
+      height,
+      radius
+    ) {
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        x + radius,
+        y
+      );
+
+      ctx.arcTo(
+        x + width,
+        y,
+        x + width,
+        y + height,
+        radius
+      );
+
+      ctx.arcTo(
+        x + width,
+        y + height,
+        x,
+        y + height,
+        radius
+      );
+
+      ctx.arcTo(
+        x,
+        y + height,
+        x,
+        y,
+        radius
+      );
+
+      ctx.arcTo(
+        x,
+        y,
+        x + width,
+        y,
+        radius
+      );
+
+      ctx.closePath();
+
+    }
+
+
+    /* =========================================================
+       FALLBACK BACKGROUND
+       ========================================================= */
+
+    function drawFallback(
+      ctx
+    ) {
+
+      const gradient =
+        ctx.createLinearGradient(
+          0,
+          0,
+          CARD_WIDTH,
+          CARD_HEIGHT
+        );
+
+
+      gradient.addColorStop(
+        0,
+        '#1b151b'
+      );
+
+      gradient.addColorStop(
+        0.55,
+        '#09080c'
+      );
+
+      gradient.addColorStop(
+        1,
+        '#020203'
+      );
+
+
+      ctx.fillStyle =
+        gradient;
+
+
+      ctx.fillRect(
+        0,
+        0,
+        CARD_WIDTH,
+        CARD_HEIGHT
+      );
+
+
+      const glow =
+        ctx.createRadialGradient(
+          800,
+          500,
+          0,
+          800,
+          500,
+          700
+        );
+
+
+      glow.addColorStop(
+        0,
+        'rgba(233,69,96,0.25)'
+      );
+
+      glow.addColorStop(
+        1,
+        'rgba(233,69,96,0)'
+      );
+
+
+      ctx.fillStyle =
+        glow;
+
+
+      ctx.fillRect(
+        0,
+        0,
+        CARD_WIDTH,
+        CARD_HEIGHT
+      );
+
+    }
+
+
+    /* =========================================================
+       DRAW POSTER
+       ========================================================= */
+
+    function drawPoster(
+      ctx,
+      image
+    ) {
+
+      const imageRatio =
+        image.width /
+        image.height;
+
+
+      const canvasRatio =
+        CARD_WIDTH /
+        CARD_HEIGHT;
+
+
+      let width;
+      let height;
+      let x;
+      let y;
+
+
+      if (
+        imageRatio >
+        canvasRatio
+      ) {
+
+        height =
+          CARD_HEIGHT;
+
+        width =
+          height *
+          imageRatio;
+
+        x =
+          (CARD_WIDTH - width) /
+          2;
+
+        y =
+          0;
+
+      } else {
+
+        width =
+          CARD_WIDTH;
+
+        height =
+          width /
+          imageRatio;
+
+        x =
+          0;
+
+        y =
+          (CARD_HEIGHT - height) /
+          2;
+
+      }
+
+
+      ctx.drawImage(
+        image,
+        x,
+        y,
+        width,
+        height
+      );
+
+    }
+
+
+    /* =========================================================
+       OVERLAY
+       ========================================================= */
+
+    function drawCardOverlay(
+      ctx
+    ) {
+
+      const gradient =
+        ctx.createLinearGradient(
+          0,
+          0,
+          0,
+          CARD_HEIGHT
+        );
+
+
+      gradient.addColorStop(
+        0,
+        'rgba(2,2,5,0.84)'
+      );
+
+      gradient.addColorStop(
+        0.22,
+        'rgba(2,2,5,0.27)'
+      );
+
+      gradient.addColorStop(
+        0.45,
+        'rgba(2,2,5,0.12)'
+      );
+
+      gradient.addColorStop(
+        0.62,
+        'rgba(2,2,5,0.42)'
+      );
+
+      gradient.addColorStop(
+        0.80,
+        'rgba(2,2,5,0.88)'
+      );
+
+      gradient.addColorStop(
+        1,
+        'rgba(0,0,0,0.98)'
+      );
+
+
+      ctx.fillStyle =
+        gradient;
+
+
+      ctx.fillRect(
+        0,
+        0,
+        CARD_WIDTH,
+        CARD_HEIGHT
+      );
+
+
+      const vignette =
+        ctx.createRadialGradient(
+          CARD_WIDTH / 2,
+          CARD_HEIGHT / 2,
+          400,
+          CARD_WIDTH / 2,
+          CARD_HEIGHT / 2,
+          1200
+        );
+
+
+      vignette.addColorStop(
+        0,
+        'rgba(0,0,0,0)'
+      );
+
+      vignette.addColorStop(
+        1,
+        'rgba(0,0,0,0.42)'
+      );
+
+
+      ctx.fillStyle =
+        vignette;
+
+
+      ctx.fillRect(
+        0,
+        0,
+        CARD_WIDTH,
+        CARD_HEIGHT
+      );
+
+    }
+
+
+    /* =========================================================
+       WRAP TEXT
+       ========================================================= */
+
+    function wrapCardText(
+      ctx,
+      text,
+      maxWidth,
+      maxLines
+    ) {
+
+      const words =
+        text.split(' ');
+
+      const lines = [];
+
+      let current =
+        '';
+
+
+      for (
+        let i = 0;
+        i < words.length;
+        i++
+      ) {
+
+        const test =
+          current
+            ? current +
+              ' ' +
+              words[i]
+            : words[i];
+
+
+        if (
+          ctx.measureText(test).width >
+            maxWidth &&
+          current
+        ) {
+
+          lines.push(
+            current
+          );
+
+          current =
+            words[i];
+
+
+          if (
+            lines.length ===
+            maxLines
+          ) {
+
+            let last =
+              lines[
+                lines.length - 1
+              ];
+
+
+            while (
+              ctx.measureText(
+                last + '…'
+              ).width >
+                maxWidth &&
+              last.length > 0
+            ) {
+
+              last =
+                last
+                  .slice(0, -1)
+                  .trim();
+
+            }
+
+
+            lines[
+              lines.length - 1
+            ] =
+              last + '…';
+
+
+            return lines;
+
+          }
+
+        } else {
+
+          current =
+            test;
+
+        }
+
+      }
+
+
+      if (current) {
+
+        lines.push(
+          current
+        );
+
+      }
+
+
+      return lines;
+
+    }
+
+
+    /* =========================================================
+       CREATE 1080 × 1920 POSTCARD
+       ========================================================= */
+
+    async function createPostCard() {
+
+      const canvas =
+        document.createElement(
+          'canvas'
+        );
+
+
+      canvas.width =
+        CARD_WIDTH;
+
+      canvas.height =
+        CARD_HEIGHT;
+
+
+      const ctx =
+        canvas.getContext(
+          '2d'
+        );
+
+
+      /* Background */
+
+      try {
+
+        const image =
+          await loadCardImage(
+            KRAVN_POST.posterUrl
+          );
+
+
+        drawPoster(
+          ctx,
+          image
+        );
+
+      } catch (error) {
+
+        console.warn(
+          'Using fallback background',
+          error
+        );
+
+
+        drawFallback(
+          ctx
+        );
+
+      }
+
+
+      /* Overlay */
+
+      drawCardOverlay(
+        ctx
+      );
+
+
+      /* =======================================================
+         LOGO
+         ======================================================= */
+
+      ctx.save();
+
+
+      ctx.textAlign =
+        'left';
+
+      ctx.textBaseline =
+        'top';
+
+
+      ctx.font =
+        '800 48px Arial, sans-serif';
+
+
+      ctx.fillStyle =
+        '#ffffff';
+
+
+      ctx.shadowColor =
+        'rgba(0,0,0,0.7)';
+
+      ctx.shadowBlur =
+        16;
+
+
+      ctx.fillText(
+        'KravN',
+        64,
+        70
+      );
+
+
+      const logoWidth =
+        ctx.measureText(
+          'KravN'
+        ).width;
+
+
+      ctx.shadowBlur =
+        0;
+
+
+      ctx.fillStyle =
+        '#e94560';
+
+
+      ctx.beginPath();
+
+
+      ctx.arc(
+        64 +
+          logoWidth +
+          20,
+        91,
+        7,
+        0,
+        Math.PI * 2
+      );
+
+
+      ctx.fill();
+
+
+      ctx.font =
+        '500 15px Arial, sans-serif';
+
+
+      ctx.fillStyle =
+        'rgba(255,255,255,0.45)';
+
+
+      ctx.fillText(
+        'DISCUSS. DISCOVER. CONNECT.',
+        64,
+        132
+      );
+
+
+      ctx.restore();
+
+
+      /* =======================================================
+         BADGE
+         ======================================================= */
+
+      const badgeText =
+        'KRAVN DISCUSSION';
+
+
+      ctx.save();
+
+
+      ctx.font =
+        '700 23px Arial, sans-serif';
+
+
+      const badgeWidth =
+        ctx.measureText(
+          badgeText
+        ).width +
+        50;
+
+
+      roundedRect(
+        ctx,
+        64,
+        180,
+        badgeWidth,
+        54,
+        27
+      );
+
+
+      ctx.fillStyle =
+        'rgba(233,69,96,0.14)';
+
+      ctx.fill();
+
+
+      ctx.strokeStyle =
+        'rgba(233,69,96,0.85)';
+
+      ctx.lineWidth =
+        2;
+
+      ctx.stroke();
+
+
+      ctx.fillStyle =
+        '#ff6a82';
+
+      ctx.textAlign =
+        'left';
+
+      ctx.textBaseline =
+        'middle';
+
+
+      ctx.fillText(
+        badgeText,
+        89,
+        207
+      );
+
+
+      ctx.restore();
+
+
+      /* =======================================================
+         TEXT CONTENT
+         ======================================================= */
+
+      const left =
+        64;
+
+
+      const contentWidth =
+        CARD_WIDTH -
+        128;
+
+
+      let y =
+        1370;
+
+
+      /* Movie */
+
+      ctx.save();
+
+
+      ctx.font =
+        '700 34px Arial, sans-serif';
+
+
+      ctx.fillStyle =
+        '#ff617d';
+
+
+      ctx.textAlign =
+        'left';
+
+      ctx.textBaseline =
+        'top';
+
+
+      ctx.fillText(
+        cleanCardText(
+          KRAVN_POST.movieName
+        ).toUpperCase(),
+        left,
+        y,
+        contentWidth
+      );
+
+
+      ctx.restore();
+
+
+      y +=
+        60;
+
+
+      /* Title */
+
+      ctx.save();
+
+
+      ctx.font =
+        '800 68px Arial, sans-serif';
+
+
+      ctx.fillStyle =
+        '#ffffff';
+
+
+      ctx.shadowColor =
+        'rgba(0,0,0,0.75)';
+
+      ctx.shadowBlur =
+        15;
+
+
+      const titleLines =
+        wrapCardText(
+          ctx,
+          cleanCardText(
+            KRAVN_POST.title
+          ),
+          contentWidth,
+          3
+        );
+
+
+      const lineHeight =
+        78;
+
+
+      titleLines.forEach(
+        (line, index) => {
+
+          ctx.fillText(
+            line,
+            left,
+            y +
+              index *
+              lineHeight
+          );
+
+        }
+      );
+
+
+      ctx.restore();
+
+
+      y +=
+        titleLines.length *
+        lineHeight +
+        38;
+
+
+      /* Username */
+
+      ctx.save();
+
+
+      ctx.font =
+        '500 31px Arial, sans-serif';
+
+
+      ctx.fillStyle =
+        'rgba(255,255,255,0.67)';
+
+
+      ctx.fillText(
+        '@' +
+          cleanCardText(
+            KRAVN_POST.username
+          ),
+        left,
+        y
+      );
+
+
+      ctx.restore();
+
+
+      y +=
+        70;
+
+
+      /* Divider */
+
+      ctx.save();
+
+
+      ctx.strokeStyle =
+        'rgba(255,255,255,0.14)';
+
+      ctx.lineWidth =
+        2;
+
+
+      ctx.beginPath();
+
+
+      ctx.moveTo(
+        left,
+        y
+      );
+
+
+      ctx.lineTo(
+        CARD_WIDTH - left,
+        y
+      );
+
+
+      ctx.stroke();
+
+
+      ctx.restore();
+
+
+      y +=
+        35;
+
+
+      /* =======================================================
+         CTA
+         ======================================================= */
+
+      const ctaHeight =
+        112;
+
+
+      ctx.save();
+
+
+      roundedRect(
+        ctx,
+        left,
+        y,
+        contentWidth,
+        ctaHeight,
+        22
+      );
+
+
+      ctx.fillStyle =
+        'rgba(7,7,11,0.80)';
+
+      ctx.fill();
+
+
+      ctx.strokeStyle =
+        'rgba(255,255,255,0.10)';
+
+      ctx.lineWidth =
+        2;
+
+      ctx.stroke();
+
+
+      /* Icon */
+
+      roundedRect(
+        ctx,
+        left + 20,
+        y + 18,
+        76,
+        76,
+        18
+      );
+
+
+      ctx.fillStyle =
+        'rgba(233,69,96,0.15)';
+
+      ctx.fill();
+
+
+      ctx.font =
+        '38px Arial';
+
+
+      ctx.fillStyle =
+        '#ffffff';
+
+
+      ctx.textAlign =
+        'center';
+
+      ctx.textBaseline =
+        'middle';
+
+
+      ctx.fillText(
+        '💬',
+        left + 58,
+        y + 56
+      );
+
+
+      /* CTA text */
+
+      ctx.textAlign =
+        'left';
+
+
+      ctx.font =
+        '700 31px Arial, sans-serif';
+
+
+      ctx.fillStyle =
+        '#ffffff';
+
+
+      ctx.fillText(
+        'Discuss on KravN',
+        left + 118,
+        y + 45
+      );
+
+
+      ctx.font =
+        '500 19px Arial, sans-serif';
+
+
+      ctx.fillStyle =
+        'rgba(255,255,255,0.42)';
+
+
+      ctx.fillText(
+        'Join the conversation',
+        left + 118,
+        y + 75
+      );
+
+
+      /* Arrow */
+
+      const arrowWidth =
+        85;
+
+
+      roundedRect(
+        ctx,
+        CARD_WIDTH -
+          left -
+          arrowWidth -
+          18,
+        y + 18,
+        arrowWidth,
+        76,
+        20
+      );
+
+
+      ctx.fillStyle =
+        '#e94560';
+
+
+      ctx.fill();
+
+
+      ctx.font =
+        '700 36px Arial, sans-serif';
+
+
+      ctx.fillStyle =
+        '#ffffff';
+
+
+      ctx.textAlign =
+        'center';
+
+
+      ctx.fillText(
+        '↗',
+        CARD_WIDTH -
+          left -
+          arrowWidth / 2 -
+          18,
+        y + 57
+      );
+
+
+      ctx.restore();
+
+
+      y +=
+        ctaHeight +
+        28;
+
+
+      /* URL */
+
+      ctx.save();
+
+
+      ctx.font =
+        '500 25px Arial, sans-serif';
+
+
+      ctx.fillStyle =
+        'rgba(255,255,255,0.40)';
+
+
+      ctx.textAlign =
+        'left';
+
+      ctx.textBaseline =
+        'top';
+
+
+      ctx.fillText(
+        'kravn.onrender.com/posts/' +
+          KRAVN_POST.id,
+        left,
+        y,
+        contentWidth
+      );
+
+
+      ctx.restore();
+
+
+      /* Border */
+
+      ctx.save();
+
+
+      roundedRect(
+        ctx,
+        25,
+        25,
+        CARD_WIDTH - 50,
+        CARD_HEIGHT - 50,
+        34
+      );
+
+
+      ctx.strokeStyle =
+        'rgba(233,69,96,0.48)';
+
+      ctx.lineWidth =
+        2;
+
+      ctx.stroke();
+
+
+      ctx.restore();
+
+
+      return canvas;
+
+    }
+
+
+    /* =========================================================
+       CANVAS → PNG BLOB
+       ========================================================= */
+
+    function canvasToBlob(
+      canvas
+    ) {
+
+      return new Promise(
+        resolve => {
+
+          canvas.toBlob(
+            blob => resolve(blob),
+            'image/png'
+          );
+
+        }
+      );
+
+    }
+
+
+    /* =========================================================
+       STATUS MESSAGE
+       ========================================================= */
+
+    function showShareStatus(
+      message
+    ) {
+
+      const status =
+        document.getElementById(
+          'kravn-share-status'
+        );
+
+
+      status.textContent =
+        message;
+
+
+      status.style.display =
+        'block';
+
+
+      clearTimeout(
+        window.kravnStatusTimer
+      );
+
+
+      window.kravnStatusTimer =
+        setTimeout(
+          () => {
+
+            status.style.display =
+              'none';
+
+          },
+          3500
+        );
+
+    }
+
+
+    /* =========================================================
+       DOWNLOAD POSTCARD
+       ========================================================= */
+
+    async function downloadPostCard() {
+
+      const button =
+        document.getElementById(
+          'download-card-btn'
+        );
+
+
+      const originalText =
+        button.textContent;
+
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        'Creating card…';
+
+
+      try {
+
+        const canvas =
+          await createPostCard();
+
+
+        const blob =
+          await canvasToBlob(
+            canvas
+          );
+
+
+        if (!blob) {
+
+          throw new Error(
+            'Could not create PNG'
+          );
+
+        }
+
+
+        const url =
+          URL.createObjectURL(
+            blob
+          );
+
+
+        const link =
+          document.createElement(
+            'a'
+          );
+
+
+        link.href =
+          url;
+
+
+        link.download =
+          'kravn-post-' +
+          KRAVN_POST.id +
+          '.png';
+
+
+        document.body.appendChild(
+          link
+        );
+
+
+        link.click();
+
+
+        link.remove();
+
+
+        URL.revokeObjectURL(
+          url
+        );
+
+
+        button.textContent =
+          '✓ Downloaded';
+
+
+        showShareStatus(
+          'Your 1080×1920 KravN postcard is ready.'
+        );
+
+
+        setTimeout(
+          () => {
+
+            button.textContent =
+              originalText;
+
+          },
+          2200
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          'Postcard download failed:',
+          error
+        );
+
+
+        showShareStatus(
+          'Could not create the postcard.'
+        );
+
+
+        button.textContent =
+          originalText;
+
+      } finally {
+
+        button.disabled =
+          false;
+
+      }
+
+    }
+
+
+    /* =========================================================
+       WHATSAPP SHARE
+       ========================================================= */
+
+    async function sharePostToWhatsApp() {
+
+      const button =
+        document.getElementById(
+          'whatsapp-share-btn'
+        );
+
+
+      const originalText =
+        button.textContent;
+
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        'Creating card…';
+
+
+      try {
+
+        const canvas =
+          await createPostCard();
+
+
+        const blob =
+          await canvasToBlob(
+            canvas
+          );
+
+
+        if (!blob) {
+
+          throw new Error(
+            'Could not create postcard'
+          );
+
+        }
+
+
+        const file =
+          new File(
+            [blob],
+            'kravn-post.png',
+            {
+              type: 'image/png'
+            }
+          );
+
+
+        const shareText =
+          KRAVN_POST.movieName +
+          ': ' +
+          KRAVN_POST.title +
+          '\n\n' +
+          'Discuss on KravN:\n' +
+          KRAVN_POST_URL;
+
+
+        /*
+         * Mobile browsers that support
+         * file sharing will open the
+         * native share sheet.
+         *
+         * User can then select WhatsApp.
+         */
+
+        if (
+          navigator.share &&
+          navigator.canShare &&
+          navigator.canShare({
+            files: [file]
+          })
+        ) {
+
+          await navigator.share({
+
+            title:
+              KRAVN_POST.title,
+
+            text:
+              shareText,
+
+            files:
+              [file]
+
+          });
+
+
+          showShareStatus(
+            'Postcard ready to share.'
+          );
+
+
+          return;
+
+        }
+
+
+        /*
+         * Fallback for browsers that
+         * cannot share image files.
+         */
+
+        const whatsappUrl =
+          'https://wa.me/?text=' +
+          encodeURIComponent(
+            shareText
+          );
+
+
+        window.open(
+          whatsappUrl,
+          '_blank',
+          'noopener'
+        );
+
+
+      } catch (error) {
+
+
+        /*
+         * User closed the share sheet.
+         */
+
+        if (
+          error.name ===
+          'AbortError'
+        ) {
+
+          return;
+
+        }
+
+
+        console.error(
+          'WhatsApp share failed:',
+          error
+        );
+
+
+        /*
+         * Final fallback:
+         * WhatsApp text share.
+         */
+
+        const whatsappUrl =
+          'https://wa.me/?text=' +
+          encodeURIComponent(
+            KRAVN_POST.movieName +
+            ': ' +
+            KRAVN_POST.title +
+            ' — ' +
+            KRAVN_POST_URL
+          );
+
+
+        window.open(
+          whatsappUrl,
+          '_blank',
+          'noopener'
+        );
+
+
+      } finally {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          originalText;
+
+      }
+
+    }
+
+
+    /* =========================================================
+       SHARE POST URL
+       ========================================================= */
+ async function sharePostURL() {
+
+  const button =
+    document.getElementById('share-url-btn');
+
+  const originalText =
+    button.textContent;
+
+  // Exact content that should be shared/copied
+  const shareText =
+    KRAVN_POST.movieName +
+    ': ' +
+    KRAVN_POST.title +
+    '\n\n' +
+    KRAVN_POST_URL;
+
+
+  try {
+
+    /*
+     * Native share
+     */
+
+    if (navigator.share) {
+
+      await navigator.share({
+
+        title:
+          KRAVN_POST.title,
+
+        text:
+          shareText
+
+      });
+
+      return;
+    }
+
+
+    /*
+     * Clipboard fallback
+     */
+
+    await navigator.clipboard.writeText(
+      shareText
+    );
+
+
+    button.textContent =
+      '✓ Copied';
+
+
+    showShareStatus(
+      'Movie name, title and KravN link copied.'
+    );
+
+
+    setTimeout(
+      () => {
+
+        button.textContent =
+          originalText;
+
+      },
+      2200
+    );
+
+
+  } catch (error) {
+
+    /*
+     * User closed the share sheet.
+     */
+
+    if (
+      error.name ===
+      'AbortError'
+    ) {
+
+      return;
+
+    }
+
+
+    console.error(
+      'Share failed:',
+      error
+    );
+
+
+    /*
+     * Last-resort clipboard fallback.
+     */
+
+    try {
+
+      const textarea =
+        document.createElement(
+          'textarea'
+        );
+
+
+      textarea.value =
+        shareText;
+
+
+      textarea.style.position =
+        'fixed';
+
+      textarea.style.opacity =
+        '0';
+
+
+      document.body.appendChild(
+        textarea
+      );
+
+
+      textarea.select();
+
+
+      document.execCommand(
+        'copy'
+      );
+
+
+      textarea.remove();
+
+
+      button.textContent =
+        '✓ Copied';
+
+
+      showShareStatus(
+        'Movie name, title and KravN link copied.'
+      );
+
+
+      setTimeout(
+        () => {
+
+          button.textContent =
+            originalText;
+
+        },
+        2200
+      );
+
+
+    } catch (fallbackError) {
+
+      console.error(
+        'Clipboard fallback failed:',
+        fallbackError
+      );
+
+
+      showShareStatus(
+        'Could not share the post.'
+      );
+
+    }
+
+  }
+
+}
+
+  </script>
+    
+         
+
+
 </body>
+
 </html>
