@@ -6,50 +6,439 @@
   <title>Feed - KravN</title>
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/theme.js"></script>
+
+  <style>
+    :root {
+      --kravn-primary: #8b5cf6;
+      --kravn-primary-rgb: 139, 92, 246;
+      --kravn-primary-dark: #6d28d9;
+      --kravn-primary-light: #c4b5fd;
+    }
+
+    /* =========================================================
+       HERO BANNER — softened, atmospheric edges
+       ========================================================= */
+    .hero-banner {
+      position: relative;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    .hero-poster-strip {
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 12%, rgba(0,0,0,0.9) 78%, transparent 100%),
+                           linear-gradient(to right, transparent 0%, rgba(0,0,0,0.9) 8%, rgba(0,0,0,0.9) 92%, transparent 100%);
+      -webkit-mask-composite: source-in;
+      mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 12%, rgba(0,0,0,0.9) 78%, transparent 100%),
+                  linear-gradient(to right, transparent 0%, rgba(0,0,0,0.9) 8%, rgba(0,0,0,0.9) 92%, transparent 100%);
+      mask-composite: intersect;
+    }
+
+    .hero-banner-overlay {
+      background:
+        radial-gradient(ellipse 90% 70% at 50% 45%, rgba(0,0,0,0.15) 0%, transparent 60%),
+        linear-gradient(180deg, var(--bg, #0a0a0a) 0%, rgba(10,10,10,0.55) 18%, rgba(10,10,10,0.55) 65%, var(--bg, #0a0a0a) 100%) !important;
+    }
+
+    .hero-banner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      box-shadow: inset 0 0 90px 40px var(--bg, #0a0a0a);
+    }
+
+    /* Stat card + CTA button — clean, no shine/sheen, just a quiet glow on hover */
+    .hero-stat-number {
+      background: linear-gradient(135deg, var(--accent, #d4ff3f), #eaffb0);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 20px rgba(212,255,63,0.18);
+    }
+
+    .hero-actions-row .btn {
+      box-shadow: 0 4px 16px rgba(212,255,63,0.12);
+      transition: transform var(--dur-base,0.2s) ease, box-shadow var(--dur-base,0.2s) ease;
+    }
+    .hero-actions-row .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(212,255,63,0.2);
+    }
+
+    /* =========================================================
+       KRAVN CARDS BUTTON — minimalist, premium, shining
+       Placed subtly between the search bar and the discussions
+       list. Remove this whole block (and the matching HTML
+       section tagged KRAVN-CARDS-BUTTON below) once the feature
+       no longer needs the push.
+       ========================================================= */
+    .kravn-cards-row {
+      display: flex;
+      justify-content: center;
+      margin: var(--space-5, 1.5rem) 0 var(--space-6, 2rem);
+    }
+
+    .kravn-cards-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.75rem 1.8rem;
+      border-radius: 8px;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.4);
+      background:
+        linear-gradient(#0a0a0c, #0a0a0c) padding-box,
+        linear-gradient(120deg, rgba(var(--kravn-primary-rgb), 0.9), rgba(196,181,253,0.7), rgba(var(--kravn-primary-rgb), 0.9)) border-box;
+      color: var(--kravn-primary-light);
+      font-family: var(--font-mono, monospace);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      overflow: hidden;
+      isolation: isolate;
+      box-shadow: 0 10px 26px rgba(var(--kravn-primary-rgb), 0.16);
+      transition: box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .kravn-cards-btn::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -60%;
+      width: 45%; height: 100%;
+      background: linear-gradient(115deg, transparent, rgba(196,181,253,0.55), rgba(255,255,255,0.35), transparent);
+      transform: skewX(-20deg);
+      animation: kravn-btn-shine 4.5s ease-in-out infinite;
+    }
+
+    .kravn-cards-btn:hover {
+      color: #fff;
+      border-color: rgba(var(--kravn-primary-rgb), 0.7);
+      box-shadow: 0 14px 34px rgba(var(--kravn-primary-rgb), 0.28);
+    }
+    .kravn-cards-btn:active { transform: translateY(1px); }
+
+    @keyframes kravn-btn-shine {
+      0%   { left: -60%; }
+      35%  { left: 130%; }
+      100% { left: 130%; }
+    }
+
+    .kravn-cards-btn-icon {
+      display: inline-flex;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--kravn-primary-light);
+      box-shadow: 0 0 8px var(--kravn-primary);
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 480px) {
+      .kravn-cards-btn { padding: 0.6rem 1.3rem; font-size: 0.7rem; letter-spacing: 0.13em; }
+    }
+
+    /* =========================================================
+       KRAVN CARDS — full-screen swipe overlay
+       ========================================================= */
+    .kravn-overlay {
+      position: fixed; inset: 0; z-index: 999;
+      background: #050505;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+    .kravn-overlay.active { display: flex; animation: kravn-fade-in 0.3s ease; }
+    @keyframes kravn-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+    .kravn-overlay-top {
+      width: 100%; max-width: 420px;
+      padding: env(safe-area-inset-top, 14px) 16px 0;
+      box-sizing: border-box;
+      z-index: 5;
+    }
+    .kravn-pips { display: flex; gap: 4px; margin-bottom: 14px; }
+    .kravn-pip {
+      flex: 1; height: 2.5px; border-radius: 2px;
+      background: rgba(255,255,255,0.14);
+      overflow: hidden; position: relative;
+    }
+    .kravn-pip.done { background: var(--kravn-primary); }
+    .kravn-pip.active::after {
+      content: ''; position: absolute; inset: 0;
+      background: var(--kravn-primary);
+      animation: kravn-pip-fill 0.3s ease forwards;
+    }
+    @keyframes kravn-pip-fill { from { width: 0; } to { width: 100%; } }
+
+    .kravn-overlay-header { display: flex; align-items: center; justify-content: space-between; }
+    .kravn-brand {
+      font-family: var(--font-mono, monospace);
+      font-size: 0.95rem; font-weight: 700; color: #fff; letter-spacing: -0.3px;
+    }
+    .kravn-brand span { color: var(--kravn-primary-light); }
+
+    .kravn-header-actions { display: flex; gap: 0.55rem; align-items: center; }
+
+    /* Premium toggle switch: Latest <-> Shuffle */
+    .kravn-mode-toggle {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 128px;
+      height: 32px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.3);
+      cursor: pointer;
+      overflow: hidden;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .kravn-mode-thumb {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: calc(50% - 2px);
+      height: calc(100% - 4px);
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-dark));
+      box-shadow: 0 2px 10px rgba(var(--kravn-primary-rgb), 0.5);
+      transition: transform 0.28s cubic-bezier(0.22,1,0.36,1);
+    }
+    .kravn-mode-toggle.shuffle .kravn-mode-thumb { transform: translateX(100%); }
+    .kravn-mode-option {
+      position: relative; z-index: 1;
+      flex: 1; text-align: center;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      transition: color 0.25s ease;
+    }
+    .kravn-mode-toggle:not(.shuffle) .kravn-mode-option[data-mode="latest"],
+    .kravn-mode-toggle.shuffle .kravn-mode-option[data-mode="shuffle"] {
+      color: #fff; font-weight: 700;
+    }
+
+    .kravn-icon-btn {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.3);
+      background: rgba(var(--kravn-primary-rgb), 0.06);
+      color: #ddd;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.18s ease;
+      flex-shrink: 0;
+    }
+    .kravn-icon-btn:hover {
+      border-color: var(--kravn-primary);
+      color: var(--kravn-primary-light);
+      background: rgba(var(--kravn-primary-rgb), 0.12);
+    }
+
+    @media (max-width: 420px) {
+      .kravn-icon-btn { width: 30px; height: 30px; font-size: 0.85rem; }
+      .kravn-mode-toggle { width: 108px; height: 30px; }
+      .kravn-header-actions { gap: 0.4rem; }
+      .kravn-brand { font-size: 0.85rem; }
+    }
+
+    .kravn-stage {
+      position: relative;
+      flex: 1; width: 100%; max-width: 420px;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: pan-y;
+      padding: 10px 16px 20px;
+      box-sizing: border-box;
+    }
+    .kravn-empty {
+      color: var(--text-muted, #888);
+      font-family: var(--font-mono, monospace);
+      font-size: 0.85rem; text-align: center;
+    }
+
+    /* Card shell — matte frame around an HD, purple-bordered poster,
+       mirroring the single-post Kravn Card design. */
+    .kravn-card {
+      position: absolute;
+      width: min(88vw, 340px);
+      aspect-ratio: 9 / 16;
+      border-radius: 22px;
+      background: #050507;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.15);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+      cursor: grab;
+      will-change: transform;
+      user-select: none;
+      padding: 8px;
+      box-sizing: border-box;
+      transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.35s ease;
+    }
+    .kravn-card.dragging { transition: none; cursor: grabbing; }
+
+    .kravn-card-frame {
+      position: relative;
+      width: 100%; height: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 3px solid rgba(var(--kravn-primary-rgb), 0.55);
+      box-shadow: 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.12) inset;
+    }
+
+    .kravn-card-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 22%; pointer-events: none; }
+    .kravn-card-fallback {
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 70% 20%, rgba(var(--kravn-primary-rgb), 0.25), transparent 50%), linear-gradient(150deg, #1a1425, #060606 60%);
+      display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
+    }
+    .kravn-card-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(3,2,8,0.6) 0%, rgba(3,2,8,0.04) 24%, rgba(3,2,8,0.08) 42%, rgba(3,2,8,0.5) 68%, rgba(0,0,0,0.95) 100%);
+      pointer-events: none;
+    }
+    .kravn-card-content {
+      position: absolute; inset: 0;
+      padding: 16px; box-sizing: border-box;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .kravn-card-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      pointer-events: auto;
+    }
+    .kravn-card-logo {
+      font-size: 15px; font-weight: 800; letter-spacing: -0.5px; color: #fff;
+      text-shadow: 0 3px 10px rgba(0,0,0,0.7);
+    }
+    .kravn-card-logo span { color: var(--kravn-primary-light); }
+    .kravn-card-badge {
+      font-family: var(--font-mono, monospace);
+      font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--kravn-primary-light);
+      background: rgba(5,5,9,0.5);
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.5);
+      padding: 3px 8px; border-radius: 20px;
+    }
+    .kravn-card-movie {
+      font-family: var(--font-mono, monospace);
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+      color: var(--kravn-primary-light); margin-bottom: 5px;
+    }
+    .kravn-card-title {
+      color: #fff;
+      font-size: clamp(1rem, 4.2vw, 1.3rem);
+      font-weight: 800; line-height: 1.2; letter-spacing: -0.3px;
+      margin: 0 0 8px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .kravn-card-footer { display: flex; align-items: center; justify-content: space-between; pointer-events: auto; }
+    .kravn-card-author { font-size: 0.72rem; color: rgba(255,255,255,0.7); }
+
+    .kravn-card-tools { display: flex; gap: 6px; }
+    .kravn-card-tool-btn {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(var(--kravn-primary-rgb), 0.1);
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.35);
+      backdrop-filter: blur(6px);
+      color: var(--kravn-primary-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .kravn-card-tool-btn:hover {
+      border-color: var(--kravn-primary);
+      background: rgba(var(--kravn-primary-rgb), 0.22);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* Double-tap like: bordered purple heart, no fill, no emoji */
+    .kravn-heart-burst {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.4);
+      opacity: 0; pointer-events: none; z-index: 3;
+      filter: drop-shadow(0 0 16px rgba(var(--kravn-primary-rgb), 0.5));
+    }
+    .kravn-heart-burst svg { width: 84px; height: 84px; display: block; }
+    .kravn-heart-burst.pop { animation: kravn-heart-pop 0.7s cubic-bezier(0.22,1,0.36,1) forwards; }
+    @keyframes kravn-heart-pop {
+      0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+      35%  { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+      55%  { transform: translate(-50%, -50%) scale(0.95); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
+    .kravn-liked-pill {
+      position: absolute; top: 14px; right: 14px;
+      font-size: 0.62rem; font-family: var(--font-mono, monospace);
+      color: var(--kravn-primary-light);
+      background: rgba(5,5,9,0.6);
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.5);
+      padding: 3px 8px; border-radius: 20px;
+      opacity: 0; transition: opacity 0.25s ease; pointer-events: none; z-index: 2;
+    }
+    .kravn-liked-pill.show { opacity: 1; }
+
+    .kravn-hint {
+      margin-top: 12px;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.66rem; color: var(--text-muted, #777);
+      letter-spacing: 0.03em; text-align: center;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .kravn-toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #151515;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.35);
+      color: #eee;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.75rem; padding: 0.6rem 1rem; border-radius: 6px;
+      opacity: 0; z-index: 1001; transition: all 0.25s ease; pointer-events: none;
+      max-width: 88vw; text-align: center;
+    }
+    .kravn-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
 </head>
 <body>
-    <%- include('partials/navbar', { currentPage: 'feed' }) %>
+  <%- include('partials/navbar', { currentPage: 'feed' }) %>
 
   <div class="page">
     <div class="hero-banner">
-  <% if (posts.length > 0) { %>
-    <div class="hero-poster-strip">
-      <% posts.slice(0, 8).forEach(p => { %>
-        <% if (p.poster_url && p.poster_url !== 'N/A') { %>
-          <img src="<%= p.poster_url %>" alt="" onerror="this.remove()">
-        <% } %>
-      <% }); %>
-    </div>
-  <% } %>
-  <div class="hero-banner-overlay"></div>
-  <div class="hero-banner-content">
-    <div>
-      <span class="hero-eyebrow">Your Feed</span>
-      <h1 class="hero-greeting">Welcome,<br><%= username %> <span class="wave">👋</span></h1>
-      <p class="hero-subline">Find your next favorite story.</p>
-    </div>
-    <div class="hero-actions-row">
-      <div class="hero-stat-card">
-        <div class="hero-stat">
-          <div class="hero-stat-number"><%= posts.length %></div>
-          <div class="hero-stat-label">Discussions</div>
+      <% if (posts.length > 0) { %>
+        <div class="hero-poster-strip">
+          <% posts.slice(0, 8).forEach(p => { %>
+            <% if (p.poster_url && p.poster_url !== 'N/A') { %>
+              <img src="<%= p.poster_url %>" alt="" onerror="this.remove()">
+            <% } %>
+          <% }); %>
+        </div>
+      <% } %>
+      <div class="hero-banner-overlay"></div>
+      <div class="hero-banner-content">
+        <div>
+          <span class="hero-eyebrow">Your Feed</span>
+          <h1 class="hero-greeting">Welcome,<br><%= username %> <span class="wave">👋</span></h1>
+          <p class="hero-subline">Find your next favorite story.</p>
+        </div>
+        <div class="hero-actions-row">
+          <div class="hero-stat-card">
+            <div class="hero-stat">
+              <div class="hero-stat-number"><%= posts.length %></div>
+              <div class="hero-stat-label">Discussions</div>
+            </div>
+          </div>
+          <a class="btn" href="/posts/new">Have a Theory?</a>
         </div>
       </div>
-      <a class="btn" href="/posts/new">Have a Theory?</a>
     </div>
-  </div>
-</div>
 
     <form class="search-form" id="search-form" action="/search" method="GET">
       <div class="movie-autocomplete" style="flex: 1; max-width: 560px;">
-        <input
-          type="text"
-          name="q"
-          id="search-input"
-          placeholder="Search movies or shows..."
-          autocomplete="off"
-        >
-        
+        <input type="text" name="q" id="search-input" placeholder="Search movies or shows..." autocomplete="off">
         <div id="search-suggestions" class="suggestions-dropdown"></div>
       </div>
       <button type="submit">Search</button>
@@ -75,7 +464,6 @@
         }
       });
 
-      // Keyboard shortcut: Cmd/Ctrl + K focuses search — pure UX, no functional change
       document.addEventListener('keydown', (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
           e.preventDefault();
@@ -84,8 +472,19 @@
       });
     </script>
 
+    <!-- ===== KRAVN-CARDS-BUTTON: remove this block once the feature no longer needs the push ===== -->
+    <% if (posts.length > 0) { %>
+      <div class="kravn-cards-row">
+        <button type="button" class="kravn-cards-btn" id="kravn-open-btn">
+          <span class="kravn-cards-btn-icon"></span>
+          Kravn Cards
+        </button>
+      </div>
+    <% } %>
+    <!-- ===== END KRAVN-CARDS-BUTTON ===== -->
+
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3);">
-      <h2 style="font-size: 1.05rem;"> Latest discussions : </h2>
+      <h2 style="font-size: 1.05rem;"> KravN discussions : </h2>
       <div class="view-toggle">
         <button class="view-btn active" id="btn-list" onclick="setView('list')" title="List view">☰</button>
         <button class="view-btn" id="btn-grid" onclick="setView('grid')" title="Grid view">⊞</button>
@@ -93,9 +492,7 @@
     </div>
 
     <% if (posts.length === 0) { %>
-      <div class="empty-state">
-        <p>No discussions yet. Be the first to start one.</p>
-      </div>
+      <div class="empty-state"><p>No discussions yet. Be the first to start one.</p></div>
     <% } %>
 
     <div class="feed-grid" id="feed-container">
@@ -126,6 +523,35 @@
     </div>
   </div>
 
+  <!-- ================= KRAVN CARDS OVERLAY ================= -->
+  <div class="kravn-overlay" id="kravn-overlay">
+    <div class="kravn-overlay-top">
+      <div class="kravn-pips" id="kravn-pips"></div>
+      <div class="kravn-overlay-header">
+        <div class="kravn-brand">Kravn<span>.</span> Cards</div>
+        <div class="kravn-header-actions">
+          <div class="kravn-mode-toggle" id="kravn-mode-toggle" role="button" tabindex="0" title="Latest / Shuffle">
+            <span class="kravn-mode-thumb"></span>
+            <span class="kravn-mode-option" data-mode="latest">Latest</span>
+            <span class="kravn-mode-option" data-mode="shuffle">Shuffle</span>
+          </div>
+          <button type="button" class="kravn-icon-btn" id="kravn-close-btn" title="Close">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="kravn-stage" id="kravn-stage">
+      <% if (posts.length === 0) { %>
+        <p class="kravn-empty">No cards yet. Start a discussion to see it here.</p>
+      <% } %>
+    </div>
+
+  
+  </div>
+
+  <div class="kravn-toast" id="kravn-toast"></div>
+  <canvas id="kravn-render-canvas" style="display:none;"></canvas>
+
   <script>
   function setView(view) {
     const container = document.getElementById('feed-container');
@@ -142,11 +568,471 @@
     }
     localStorage.setItem('kravn-view', view);
   }
-
   document.addEventListener('DOMContentLoaded', () => {
     const savedView = localStorage.getItem('kravn-view');
     if (savedView === 'grid') setView('grid');
   });
-</script>
+  </script>
+
+  <script>
+  (function initKravnCards() {
+    const RAW_POSTS = <%- JSON.stringify(posts.map(p => ({
+      id: p.id,
+      movieName: p.movie_name || '',
+      title: p.title || '',
+      username: p.username || '',
+      imdbRating: (p.imdb_rating && p.imdb_rating !== 'N/A') ? p.imdb_rating : null,
+      posterUrl: (p.poster_url && p.poster_url !== 'N/A') ? p.poster_url : null,
+      createdAt: p.created_at
+    }))) %>;
+
+    if (!RAW_POSTS.length) return;
+
+    const openBtn    = document.getElementById('kravn-open-btn');
+    const overlay    = document.getElementById('kravn-overlay');
+    const stage      = document.getElementById('kravn-stage');
+    const pipsEl     = document.getElementById('kravn-pips');
+    const closeBtn   = document.getElementById('kravn-close-btn');
+    const modeToggle = document.getElementById('kravn-mode-toggle');
+    const toastEl    = document.getElementById('kravn-toast');
+    const canvas     = document.getElementById('kravn-render-canvas');
+
+    let deck = RAW_POSTS.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    let current = 0;
+    let history = []; // stack of previously visited indices, for swipe-right / back
+    let mode = 'latest';
+    const likedSet = new Set();
+    let animatingOut = false;
+
+    const VISIBLE_STACK = Math.min(3, deck.length);
+
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastEl._t);
+      toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 2000);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderPips() {
+      pipsEl.innerHTML = '';
+      deck.forEach((_, i) => {
+        const pip = document.createElement('div');
+        pip.className = 'kravn-pip';
+        if (i < current) pip.classList.add('done');
+        if (i === current) pip.classList.add('active');
+        pipsEl.appendChild(pip);
+      });
+    }
+
+    async function likePost(post, pillEl) {
+      if (likedSet.has(post.id)) return;
+      likedSet.add(post.id);
+      if (pillEl) pillEl.classList.add('show');
+      try { await fetch(`/posts/${post.id}/like`, { method: 'POST' }); } catch (err) {}
+    }
+
+    // ---- Branded card-image rendering for sharing / downloading ----
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    function roundedRectPath(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    function wrapText(ctx, text, maxWidth, maxLines) {
+      const words = text.split(' ');
+      const lines = [];
+      let line = '';
+      for (const w of words) {
+        const test = line ? line + ' ' + w : w;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = w;
+          if (lines.length === maxLines - 1) break;
+        } else {
+          line = test;
+        }
+      }
+      if (line) lines.push(line);
+      if (lines.length > maxLines) lines.length = maxLines;
+      return lines;
+    }
+
+    async function renderCardToBlob(post) {
+      const W = 900, H = 1500;
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#050507';
+      ctx.fillRect(0, 0, W, H);
+
+      if (post.posterUrl) {
+        const img = await loadImage(post.posterUrl); // may throw if CORS-blocked
+        const ir = img.width / img.height, cr = W / H;
+        let dw, dh, dx, dy;
+        if (ir > cr) { dh = H; dw = H * ir; dx = (W - dw) / 2; dy = 0; }
+        else { dw = W; dh = W / ir; dx = 0; dy = (H - dh) / 2; }
+        ctx.drawImage(img, dx, dy, dw, dh);
+        ctx.getImageData(0, 0, 1, 1); // triggers SecurityError early if tainted
+      } else {
+        const grad = ctx.createRadialGradient(W*0.7,H*0.15,0,W*0.7,H*0.15,W*0.8);
+        grad.addColorStop(0, 'rgba(139,92,246,0.2)');
+        grad.addColorStop(1, 'rgba(5,5,7,1)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0,0,W,H);
+      }
+
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, 'rgba(0,0,0,0.55)');
+      grad.addColorStop(0.26, 'rgba(0,0,0,0.02)');
+      grad.addColorStop(0.42, 'rgba(0,0,0,0.05)');
+      grad.addColorStop(0.68, 'rgba(0,0,0,0.6)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.97)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Purple frame border, matching the on-card design
+      ctx.save();
+      ctx.strokeStyle = 'rgba(139,92,246,0.55)';
+      ctx.lineWidth = 8;
+      roundedRectPath(ctx, 8, 8, W - 16, H - 16, 28);
+      ctx.stroke();
+      ctx.restore();
+
+      // Kravn wordmark, top-left
+      ctx.font = '700 34px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('Kravn', 40, 70);
+      const wordmarkWidth = ctx.measureText('Kravn').width;
+      ctx.fillStyle = '#c4b5fd';
+      ctx.fillText('.', 40 + wordmarkWidth, 70);
+
+      // rating badge, top-right
+      if (post.imdbRating) {
+        const label = 'IMDb ' + post.imdbRating;
+        ctx.font = '700 20px "IBM Plex Mono", monospace';
+        const tw = ctx.measureText(label).width;
+        const bx = W - 40 - (tw + 40), by = 38, bw = tw + 40, bh = 44;
+        roundedRectPath(ctx, bx, by, bw, bh, 22);
+        ctx.fillStyle = 'rgba(139,92,246,0.12)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(139,92,246,0.5)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#c4b5fd';
+        ctx.fillText(label, bx + 20, by + 29);
+      }
+
+      // movie name
+      ctx.font = '700 24px "IBM Plex Mono", monospace';
+      ctx.fillStyle = '#c4b5fd';
+      ctx.fillText((post.movieName || '').toUpperCase(), 40, H - 230);
+
+      // title
+      ctx.font = '800 54px Inter, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      const lines = wrapText(ctx, post.title || '', W - 80, 3);
+      let ty = H - 175;
+      lines.forEach((ln, i) => {
+        ctx.fillText(ln, 40, ty + i * 60);
+      });
+
+      // author + kravn URL watermark
+      ctx.font = '400 26px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fillText('@' + (post.username || ''), 40, H - 50);
+
+      ctx.textAlign = 'right';
+      ctx.font = '600 22px "JetBrains Mono", monospace';
+      ctx.fillStyle = 'rgba(196,181,253,0.9)';
+      ctx.fillText('kravn', W - 40, H - 50);
+      ctx.textAlign = 'left';
+
+      return new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.95));
+    }
+
+    async function downloadCard(post) {
+      try {
+        await (document.fonts && document.fonts.ready);
+        const blob = await renderCardToBlob(post);
+        if (!blob) throw new Error('render failed');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `kravn-${post.id}.png`;
+        a.click();
+        toast('Postcard downloaded');
+      } catch (err) {
+        toast('Could not create the postcard');
+      }
+    }
+
+    async function shareCard(post) {
+      const url = `${window.location.origin}/posts/${post.id}`;
+      const shareText = `${post.title} — on Kravn`;
+
+      try {
+        await (document.fonts && document.fonts.ready);
+        const blob = await renderCardToBlob(post);
+        if (!blob) throw new Error('render failed');
+        const file = new File([blob], `kravn-${post.id}.png`, { type: 'image/png' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: post.title, text: shareText, url });
+          return;
+        }
+        // no native file-share support — offer a download + copy link
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `kravn-${post.id}.png`;
+        a.click();
+        if (navigator.clipboard) await navigator.clipboard.writeText(url);
+        toast('Card image saved · link copied');
+      } catch (err) {
+        // canvas likely tainted by a non-CORS poster image, or share was cancelled — fall back to link share
+        if (navigator.share) {
+          navigator.share({ title: post.title, text: shareText, url }).catch(() => {});
+        } else if (navigator.clipboard) {
+          navigator.clipboard.writeText(url).then(() => toast('Link copied')).catch(() => toast(url));
+        } else {
+          toast(url);
+        }
+      }
+    }
+
+    function cardMarkup(post) {
+      const posterBlock = post.posterUrl
+        ? `<img class="kravn-card-bg" src="${post.posterUrl}" alt="" onerror="this.style.display='none'">`
+        : `<div class="kravn-card-fallback">🎬</div>`;
+      return `
+        <div class="kravn-card-frame">
+          ${posterBlock}
+          <div class="kravn-card-overlay"></div>
+          <div class="kravn-heart-burst">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+              <path d="M12 21s-6.5-4.35-9.5-8.5C.5 9 2 5 5.5 5c2 0 3.5 1.2 4.5 2.7C11 6.2 12.5 5 14.5 5 18 5 19.5 9 17.5 12.5 14.5 16.65 12 21 12 21z"/>
+            </svg>
+          </div>
+          <div class="kravn-liked-pill">♥ liked</div>
+          <div class="kravn-card-content">
+            <div class="kravn-card-header">
+              <span class="kravn-card-logo">Kravn<span>.</span></span>
+              <span class="kravn-card-badge">${post.imdbRating ? 'IMDb ' + post.imdbRating : 'Kravn'}</span>
+            </div>
+            <div>
+              <div class="kravn-card-movie">${escapeHtml(post.movieName)}</div>
+              <div class="kravn-card-title">${escapeHtml(post.title)}</div>
+              <div class="kravn-card-footer">
+                <span class="kravn-card-author">@${escapeHtml(post.username)}</span>
+                <div class="kravn-card-tools">
+                  <div class="kravn-card-tool-btn kravn-card-download" title="Download postcard">⬇</div>
+                  <div class="kravn-card-tool-btn kravn-card-share" title="Share">↗</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function render() {
+      stage.querySelectorAll('.kravn-card').forEach(el => el.remove());
+      for (let i = VISIBLE_STACK - 1; i >= 0; i--) {
+        const idx = (current + i) % deck.length;
+        const post = deck[idx];
+        const card = document.createElement('div');
+        card.className = 'kravn-card';
+        card.innerHTML = cardMarkup(post);
+        card.dataset.postId = post.id;
+
+        const scale = 1 - i * 0.05;
+        const yOffset = i * 14;
+        card.style.transform = `translateY(${yOffset}px) scale(${scale})`;
+        card.style.zIndex = String(VISIBLE_STACK - i);
+        card.style.opacity = i === VISIBLE_STACK - 1 && VISIBLE_STACK > 1 ? '0.55' : '1';
+
+        if (likedSet.has(post.id)) card.querySelector('.kravn-liked-pill').classList.add('show');
+        if (i === 0) attachInteractions(card, post);
+        stage.appendChild(card);
+      }
+      renderPips();
+    }
+
+    function advance(direction) {
+      history.push(current);
+      if (history.length > 50) history.shift();
+      current = (current + direction + deck.length) % deck.length;
+      render();
+    }
+
+    function goBack() {
+      if (!history.length || animatingOut) return;
+      current = history.pop();
+      render();
+      const card = stage.querySelector('.kravn-card');
+      if (card) {
+        card.style.transition = 'none';
+        card.style.transform = 'translateX(-520px) rotate(-20deg)';
+        card.style.opacity = '0';
+        requestAnimationFrame(() => {
+          card.style.transition = 'transform 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.35s ease';
+          card.style.transform = 'translateY(0px) scale(1)';
+          card.style.opacity = '1';
+        });
+      }
+    }
+
+    function attachInteractions(card, post) {
+      const shareEl    = card.querySelector('.kravn-card-share');
+      const downloadEl = card.querySelector('.kravn-card-download');
+      const burstEl    = card.querySelector('.kravn-heart-burst');
+      const pillEl     = card.querySelector('.kravn-liked-pill');
+
+      shareEl.addEventListener('click', (e) => { e.stopPropagation(); shareCard(post); });
+      downloadEl.addEventListener('click', (e) => { e.stopPropagation(); downloadCard(post); });
+
+      let dragging = false, startX = 0, startY = 0, deltaX = 0, deltaY = 0, moved = false;
+      let clickTimer = null, clickCount = 0;
+
+      card.addEventListener('pointerdown', (e) => {
+        if (animatingOut || e.target === shareEl || e.target === downloadEl) return;
+        dragging = true; moved = false;
+        startX = e.clientX; startY = e.clientY;
+        deltaX = 0; deltaY = 0;
+        card.classList.add('dragging');
+        card.setPointerCapture(e.pointerId);
+      });
+
+      card.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        deltaX = e.clientX - startX;
+        deltaY = e.clientY - startY;
+        if (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6) moved = true;
+        card.style.transform = `translate(${deltaX}px, ${deltaY * 0.4}px) rotate(${deltaX * 0.05}deg)`;
+        card.style.opacity = String(Math.max(1 - Math.abs(deltaX) / 500, 0.5));
+      });
+
+      // Swipe LEFT = next card. Swipe RIGHT = go back to the previous card.
+      function flyOffForward() {
+        animatingOut = true;
+        card.style.transition = 'transform 0.35s ease, opacity 0.35s ease';
+        card.style.transform = `translate(-520px, ${deltaY}px) rotate(-28deg)`;
+        card.style.opacity = '0';
+        setTimeout(() => { animatingOut = false; advance(1); }, 220);
+      }
+      function flyOffBack() {
+        animatingOut = true;
+        card.style.transition = 'transform 0.35s ease, opacity 0.35s ease';
+        card.style.transform = `translate(520px, ${deltaY}px) rotate(28deg)`;
+        card.style.opacity = '0';
+        setTimeout(() => {
+          animatingOut = false;
+          current = history.pop();
+          render();
+        }, 220);
+      }
+      function snapBack() {
+        card.style.transition = 'transform 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease';
+        card.style.transform = 'translateY(0px) scale(1)';
+        card.style.opacity = '1';
+      }
+
+      card.addEventListener('pointerup', () => {
+        if (!dragging) return;
+        dragging = false;
+        card.classList.remove('dragging');
+        const threshold = 90;
+        if (Math.abs(deltaX) > threshold && !animatingOut) {
+          if (deltaX > 0) {
+            if (history.length) flyOffBack(); else snapBack();
+          } else {
+            flyOffForward();
+          }
+          return;
+        }
+        snapBack();
+
+        if (!moved) {
+          clickCount++;
+          if (clickCount === 1) {
+            clickTimer = setTimeout(() => { clickCount = 0; window.location.href = `/posts/${post.id}`; }, 260);
+          } else if (clickCount === 2) {
+            clearTimeout(clickTimer);
+            clickCount = 0;
+            burstEl.classList.remove('pop');
+            void burstEl.offsetWidth;
+            burstEl.classList.add('pop');
+            likePost(post, pillEl);
+          }
+        }
+      });
+
+      card.addEventListener('pointercancel', () => { dragging = false; card.classList.remove('dragging'); snapBack(); });
+    }
+
+    function openOverlay() {
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      current = 0;
+      history = [];
+      render();
+    }
+    function closeOverlay() {
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    openBtn.addEventListener('click', openOverlay);
+    openBtn.addEventListener('keypress', (e) => { if (e.key === 'Enter' || e.key === ' ') openOverlay(); });
+    closeBtn.addEventListener('click', closeOverlay);
+
+    function setMode(next) {
+      if (next === mode) return;
+      if (next === 'shuffle') {
+        for (let i = deck.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+        toast('Shuffled');
+      } else {
+        deck = deck.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        toast('Sorted: Latest');
+      }
+      mode = next;
+      modeToggle.classList.toggle('shuffle', mode === 'shuffle');
+      current = 0; history = [];
+      render();
+    }
+
+    modeToggle.addEventListener('click', () => setMode(mode === 'latest' ? 'shuffle' : 'latest'));
+    modeToggle.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') setMode(mode === 'latest' ? 'shuffle' : 'latest');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!overlay.classList.contains('active')) return;
+      if (e.key === 'Escape') closeOverlay();
+      if (e.key === 'ArrowLeft') advance(1);
+      if (e.key === 'ArrowRight') goBack();
+    });
+  })();
+  </script>
 </body>
 </html>
