@@ -104,10 +104,50 @@
        SHARE — SUBTLE, CARD-FOCUSED
        ========================================================= */
 
-    .kravn-share-section {
+        .kravn-share-section {
       margin: 1.5rem 0 2rem;
       display: flex;
       justify-content: center;
+    }
+
+    .kravn-share-heading {
+      text-align: center;
+      margin: 0 0 1.1rem;
+    }
+
+    .kravn-share-heading .kravn-share-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--kravn-primary-light);
+    }
+
+    .kravn-share-heading .kravn-share-eyebrow::before,
+    .kravn-share-heading .kravn-share-eyebrow::after {
+      content: '';
+      width: 22px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(var(--kravn-primary-rgb), 0.7));
+    }
+
+    .kravn-share-heading .kravn-share-eyebrow::after {
+      background: linear-gradient(90deg, rgba(var(--kravn-primary-rgb), 0.7), transparent);
+    }
+
+    .kravn-share-heading h3 {
+      margin: 0.35rem 0 0;
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      background: linear-gradient(135deg, #fff 30%, var(--kravn-primary-light) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 30px rgba(var(--kravn-primary-rgb), 0.25);
     }
 
     .kravn-card-column {
@@ -624,6 +664,13 @@
 
 
     <!-- SHARE — subtle, sitting right under the card -->
+
+        <!-- SHARE — subtle, sitting right under the card -->
+
+    <div class="kravn-share-heading">
+      <span class="kravn-share-eyebrow">✦ Collectible</span>
+      <h3>Your Kravn Card</h3>
+    </div>
 
     <section class="kravn-share-section">
       <div class="kravn-card-column">
