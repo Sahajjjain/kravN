@@ -9,22 +9,6 @@ router.get('/posts/new', requireLogin, (req, res) => {
   res.render('createPost', { prefilledMovie });
 });
 
-// Handle new post submission
-// router.post('/posts', requireLogin, async (req, res) => {
-//   const { movie_name, title, content } = req.body;
-//   const userId = req.session.userId;
-
-//   try {
-//     await pool.query(
-//       'INSERT INTO posts (user_id, movie_name, title, content) VALUES (?, ?, ?, ?)',
-//       [userId, movie_name, title, content]
-//     );
-//     res.redirect('/feed');
-//   } catch (err) {
-//     console.error(err);
-//     res.send('Something went wrong: ' + err.message);
-//   }
-// });
 router.post('/posts', requireLogin, async (req, res) => {
   const { movie_name, title, content } = req.body;
   const userId = req.session.userId;
@@ -149,27 +133,20 @@ router.get('/posts/:id', requireLogin, async (req, res) => {
       [postId]
     );
 
+    const userHasLiked = likers.some(liker => liker.id === req.session.userId);
+
     res.render('postDetail', {
       post: postRows[0],
       comments,
       likeCount: likers.length,
       likers,
+      userHasLiked,
       currentUserId: req.session.userId
     });
   } catch (err) {
     console.error(err);
     res.send('Something went wrong: ' + err.message);
   }
-  const userHasLiked = likers.some(liker => liker.id === req.session.userId);
-
-res.render('postDetail', {
-  post: postRows[0],
-  comments,
-  likeCount: likers.length,
-  likers,
-  userHasLiked,
-  currentUserId: req.session.userId
-});
 });
 
 router.get('/users/:username', requireLogin, async (req, res) => {

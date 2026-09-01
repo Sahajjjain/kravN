@@ -915,6 +915,16 @@
       drawCardFades(ctx);
       ctx.restore();
 
+      // Purple border, matching the on-page card's CSS border
+           // Purple border, matching the on-page card's CSS border (thicker + rounder for the export)
+      ctx.save();
+      ctx.strokeStyle = purpleRgba(0.55);
+      ctx.lineWidth = S(3);
+      ctx.lineJoin = 'round';
+      roundedRect(ctx, S(1.5), S(1.5), CARD_WIDTH - S(3), CARD_HEIGHT - S(3), S(26));
+      ctx.stroke();
+      ctx.restore();
+
       const left = S(56);
       const contentWidth = CARD_WIDTH - S(112);
 
@@ -922,7 +932,7 @@
       ctx.save();
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.font = `800 ${S(38)}px Arial, sans-serif`;
+      ctx.font = `800 ${S(54)}px Arial, sans-serif`;
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = 'rgba(0,0,0,0.7)';
       ctx.shadowBlur = S(8);
@@ -942,10 +952,10 @@
 
       const badgeText = 'KRAVN DISCUSSION';
       ctx.save();
-      ctx.font = `700 ${S(13)}px Arial, sans-serif`;
+      ctx.font = `700 ${S(17)}px Arial, sans-serif`;
       const badgeTextWidth = ctx.measureText(badgeText).width;
-      const badgePaddingX = S(20);
-      const badgeHeight = S(44);
+      const badgePaddingX = S(22);
+      const badgeHeight = S(50);
       const badgeWidth = badgeTextWidth + badgePaddingX * 2;
       const badgeX = CARD_WIDTH - left - badgeWidth;
       const badgeY = S(38);
@@ -966,15 +976,15 @@
       // ---- Footer text block, reserved so a 3-line title can never overlap ----
       const panelBottomPadding = S(56);
       const movieBlockHeight = S(58);   // was S(50) — extra room fixes the movie-name/title overlap
-      const movieTitleGap = S(8);       // NEW — explicit breathing room before the title starts
-      const titleLineHeight = S(64);
+      const movieTitleGap = S(28);       // NEW — explicit breathing room before the title starts
+      const titleLineHeight = S(76);
       const maxTitleLines = 3;
       const usernameGap = S(28);
       const usernameBlockHeight = S(42);
       const urlGap = S(8);
       const urlBlockHeight = S(30);
 
-      ctx.font = `800 ${S(56)}px Arial, sans-serif`;
+      ctx.font = `800 ${S(66)}px Arial, sans-serif`;
       const titleLines = wrapCardText(ctx, cleanCardText(KRAVN_POST.title), contentWidth, maxTitleLines);
 
       const totalBlockHeight =
@@ -999,7 +1009,7 @@
       y += movieBlockHeight + movieTitleGap;
 
       ctx.save();
-      ctx.font = `800 ${S(56)}px Arial, sans-serif`;
+      ctx.font = `800 ${S(66)}px Arial, sans-serif`;
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = 'rgba(0,0,0,0.8)';
       ctx.shadowBlur = S(9);
