@@ -439,14 +439,7 @@ html[data-theme="light"] {
       box-shadow: 0 4px 16px rgba(212,255,63,0.12);
       transition: transform var(--dur-base,0.2s) ease, box-shadow var(--dur-base,0.2s) ease, border-color 0.2s ease;
     }
-    .hero-actions-row .btn::before {
-      content: '';
-      position: absolute; top: 0; left: -60%;
-      width: 40%; height: 100%;
-      background: linear-gradient(115deg, transparent, rgba(255,255,255,0.45), transparent);
-      transform: skewX(-20deg);
-      animation: kravn-btn-shine 6s ease-in-out infinite;
-    }
+   
     .hero-actions-row .btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(212,255,63,0.25);
@@ -470,37 +463,148 @@ html[data-theme="light"] {
       letter-spacing: 0.01em;
     }
 
-    /* Latest / Oldest / Random — premium segmented control for the list */
-    .sort-toggle {
+    /* Toolbar row: heading + (sort dropdown / view-toggle) */
+    .kravn-feed-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: var(--space-5);
+      gap: 0.75rem;
+    }
+    .kravn-toolbar-controls {
+      display: flex;
+      align-items: stretch;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+
+    /* Latest / Oldest / Random — premium Kravn-branded custom dropdown:
+       gradient border + shine sweep on the trigger, floating glass menu
+       with a gradient highlight on the active option. */
+    .kravn-sort-dropdown {
+      position: relative;
       display: inline-flex;
-      border: 1px solid rgba(var(--kravn-primary-rgb), 0.28);
-      border-radius: 8px;
-      overflow: hidden;
-      background: rgba(255,255,255,0.02);
+      height: 46px;
     }
-    .sort-toggle-btn {
-      padding: 0.4rem 0.75rem;
+    .kravn-sort-trigger {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      height: 100%;
+      padding: 0 1.1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.4);
+      background:
+        linear-gradient(#0a0a0c, #0a0a0c) padding-box,
+        linear-gradient(120deg, rgba(var(--kravn-primary-rgb), 0.9), var(--kravn-primary-light), rgba(var(--kravn-primary-rgb), 0.9)) border-box;
+      color: var(--kravn-primary-light);
       font-family: var(--font-mono, monospace);
-      font-size: 0.66rem;
-      letter-spacing: 0.05em;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--text-muted, #888);
-      background: transparent;
-      border: none;
-      border-right: 1px solid rgba(var(--kravn-primary-rgb), 0.15);
       cursor: pointer;
-      transition: all 0.18s ease;
+      overflow: hidden;
+      isolation: isolate;
+      box-shadow: 0 8px 22px rgba(var(--kravn-primary-rgb), 0.14);
+      transition: box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      box-sizing: border-box;
+      white-space: nowrap;
     }
-    .sort-toggle-btn:last-child { border-right: none; }
-    .sort-toggle-btn:hover { color: var(--kravn-primary-light); background: rgba(var(--kravn-primary-rgb), 0.06); }
-    .sort-toggle-btn.active {
+   
+    .kravn-sort-icon { font-size: 0.85rem; line-height: 1; flex-shrink: 0; }
+    .kravn-sort-label { flex: 1; text-align: left; }
+    .kravn-sort-caret {
+      font-size: 0.6rem;
+      color: var(--kravn-primary-light);
+      transition: transform 0.22s cubic-bezier(0.22,1,0.36,1);
+      flex-shrink: 0;
+    }
+    .kravn-sort-trigger.open .kravn-sort-caret { transform: rotate(180deg); }
+
+    .kravn-sort-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      min-width: 168px;
+      background: #0a0a0c;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.35);
+      border-radius: 12px;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.55), 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.08);
+      padding: 6px;
+      z-index: 20;
+      opacity: 0;
+      transform: translateY(-6px) scale(0.98);
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.22,1,0.36,1);
+    }
+    .kravn-sort-menu.open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+    .kravn-sort-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      margin: 0;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted, #888);
+      font-family: var(--font-mono, monospace);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .kravn-sort-option + .kravn-sort-option { margin-top: 2px; }
+    .kravn-sort-option:hover {
+      color: var(--kravn-primary-light);
+      background: rgba(var(--kravn-primary-rgb), 0.1);
+    }
+    .kravn-sort-option.active {
       color: #fff;
       background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-dark));
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+    }
+    .kravn-sort-option .kravn-sort-check {
+      opacity: 0;
+      font-size: 0.7rem;
+      transition: opacity 0.15s ease;
+    }
+    .kravn-sort-option.active .kravn-sort-check { opacity: 1; }
+
+    /* Keep the view-toggle (list/grid) matching the dropdown's height
+       so the two controls line up cleanly at any width. */
+    .kravn-toolbar-controls .view-toggle {
+      display: inline-flex !important;
+      align-items: stretch !important;
+      height: 46px !important;
+      margin: 0 !important;
+      box-sizing: border-box;
+    }
+    .kravn-toolbar-controls .view-btn {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      height: 100% !important;
+      box-sizing: border-box;
     }
 
     @media (max-width: 480px) {
-      .sort-toggle-btn { padding: 0.35rem 0.55rem; font-size: 0.6rem; }
+      .kravn-feed-toolbar { gap: 0.6rem; }
+      .kravn-toolbar-controls { width: 100%; gap: 0.5rem; }
+      .kravn-sort-dropdown { flex: 1 1 auto; height: 42px; }
+      .kravn-sort-trigger { width: 100%; height: 42px; padding: 0 0.85rem; font-size: 0.66rem; }
+      .kravn-sort-menu { left: 0; right: 0; min-width: 0; }
+      .kravn-toolbar-controls .view-toggle { flex: 0 0 auto; height: 42px !important; }
     }
   </style>
 </head>
@@ -584,13 +688,26 @@ html[data-theme="light"] {
     <% } %>
     <!-- ===== END KRAVN-CARDS-BUTTON ===== -->
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3);">
+    <div class="kravn-feed-toolbar">
       <h2 class="kravn-discussions-heading">Krav<span class="kravn-wordmark-n">N</span> discussions :</h2>
-      <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-        <div class="sort-toggle" id="sort-toggle">
-          <button type="button" class="sort-toggle-btn active" data-sort="latest">Latest</button>
-          <button type="button" class="sort-toggle-btn" data-sort="oldest">Oldest</button>
-          <button type="button" class="sort-toggle-btn" data-sort="random">Random</button>
+      <div class="kravn-toolbar-controls">
+        <div class="kravn-sort-dropdown" id="kravn-sort-dropdown">
+          <button type="button" class="kravn-sort-trigger" id="kravn-sort-trigger" aria-haspopup="listbox" aria-expanded="false">
+            <span class="kravn-sort-icon">⇅</span>
+            <span class="kravn-sort-label" id="kravn-sort-label">Latest</span>
+            <span class="kravn-sort-caret">▾</span>
+          </button>
+          <div class="kravn-sort-menu" id="kravn-sort-menu" role="listbox">
+            <button type="button" class="kravn-sort-option active" data-sort="latest" role="option" aria-selected="true">
+              <span>Latest</span><span class="kravn-sort-check">✓</span>
+            </button>
+            <button type="button" class="kravn-sort-option" data-sort="oldest" role="option" aria-selected="false">
+              <span>Oldest</span><span class="kravn-sort-check">✓</span>
+            </button>
+            <button type="button" class="kravn-sort-option" data-sort="random" role="option" aria-selected="false">
+              <span>Random</span><span class="kravn-sort-check">✓</span>
+            </button>
+          </div>
         </div>
         <div class="view-toggle">
           <button class="view-btn active" id="btn-list" onclick="setView('list')" title="List view">☰</button>
@@ -684,28 +801,62 @@ html[data-theme="light"] {
 
   // Latest / Oldest / Random — reorders the same DOM nodes, so it works
   // identically whether the feed is in list or grid view.
-  (function initSortToggle() {
+  (function initSortDropdown() {
     const container = document.getElementById('feed-container');
-    const buttons = document.querySelectorAll('#sort-toggle .sort-toggle-btn');
-    if (!container || !buttons.length) return;
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        buttons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const mode = btn.dataset.sort;
-        const cards = Array.from(container.children);
-        if (mode === 'latest') {
-          cards.sort((a, b) => new Date(b.dataset.created) - new Date(a.dataset.created));
-        } else if (mode === 'oldest') {
-          cards.sort((a, b) => new Date(a.dataset.created) - new Date(b.dataset.created));
-        } else {
-          for (let i = cards.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [cards[i], cards[j]] = [cards[j], cards[i]];
-          }
+    const dropdown  = document.getElementById('kravn-sort-dropdown');
+    const trigger   = document.getElementById('kravn-sort-trigger');
+    const menu      = document.getElementById('kravn-sort-menu');
+    const label     = document.getElementById('kravn-sort-label');
+    const options   = menu ? menu.querySelectorAll('.kravn-sort-option') : [];
+    if (!container || !trigger || !menu) return;
+
+    function openMenu() {
+      menu.classList.add('open');
+      trigger.classList.add('open');
+      trigger.setAttribute('aria-expanded', 'true');
+    }
+    function closeMenu() {
+      menu.classList.remove('open');
+      trigger.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+    function toggleMenu() {
+      if (menu.classList.contains('open')) closeMenu(); else openMenu();
+    }
+
+    function applySort(mode) {
+      const cards = Array.from(container.children);
+      if (mode === 'latest') {
+        cards.sort((a, b) => new Date(b.dataset.created) - new Date(a.dataset.created));
+      } else if (mode === 'oldest') {
+        cards.sort((a, b) => new Date(a.dataset.created) - new Date(b.dataset.created));
+      } else {
+        for (let i = cards.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [cards[i], cards[j]] = [cards[j], cards[i]];
         }
-        cards.forEach(c => container.appendChild(c));
+      }
+      cards.forEach(c => container.appendChild(c));
+    }
+
+    trigger.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(); });
+
+    options.forEach(opt => {
+      opt.addEventListener('click', () => {
+        options.forEach(o => { o.classList.remove('active'); o.setAttribute('aria-selected', 'false'); });
+        opt.classList.add('active');
+        opt.setAttribute('aria-selected', 'true');
+        label.textContent = opt.dataset.sort.charAt(0).toUpperCase() + opt.dataset.sort.slice(1);
+        applySort(opt.dataset.sort);
+        closeMenu();
       });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target)) closeMenu();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMenu();
     });
   })();
   </script>
