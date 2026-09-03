@@ -24,6 +24,10 @@ async function getBackgroundPosters() {
 
 // ---------- REGISTER ----------
 
+// ---------- REGISTER ----------
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 router.get('/register', async (req, res) => {
   const posters = await getBackgroundPosters();
   res.render('register', { error: null, posters });
@@ -33,6 +37,36 @@ router.post('/register', async (req, res) => {
   const { username, email, password } = req.body;
 
   try {
+    if (!username || !email || !password) {
+      const posters = await getBackgroundPosters();
+      return res.render('register', { error: 'All fields are required.', posters });
+    }
+
+    if (!EMAIL_REGEX.test(email)) {
+      const posters = await getBackgroundPosters();
+      return res.render('register', { error: 'Please enter a valid email address.', posters });
+    }
+
+    const [existingUsername] = await pool.query(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (existingUsername.length > 0) {
+      const posters = await getBackgroundPosters();
+      return res.render('register', { error: 'Username is already taken.', posters });
+    }
+
+    const [existingEmail] = await pool.query(
+      'SELECT id FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (existingEmail.length > 0) {
+      const posters = await getBackgroundPosters();
+      return res.render('register', { error: 'An account with that email already exists.', posters });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await pool.query(
@@ -47,7 +81,6 @@ router.post('/register', async (req, res) => {
     res.render('register', { error: 'Something went wrong. Try a different username or email.', posters });
   }
 });
-
 // ---------- LOGIN ----------
 
 router.get('/login', async (req, res) => {
