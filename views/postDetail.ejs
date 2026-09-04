@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
 
@@ -17,7 +17,8 @@
   <style>
 
     /* =========================================================
-       KRAVN THEME (PURPLE)
+       KRAVN THEME — theme-aware: purple in dark mode, gold in
+       light mode, matching the feed page exactly.
        ========================================================= */
 
     :root {
@@ -26,8 +27,20 @@
       --kravn-primary-dark: #6d28d9;
       --kravn-primary-darker: #4c1d95;
       --kravn-primary-light: #c4b5fd;
-      --kravn-primary-glow: rgba(139, 92, 246, 0.35);
+      --kravn-heart-red: #ef4444;
     }
+
+    html[data-theme="light"] {
+      --kravn-primary: #d4a017;
+      --kravn-primary-rgb: 212, 160, 23;
+      --kravn-primary-dark: #a9790a;
+      --kravn-primary-darker: #7a5807;
+      --kravn-primary-light: #f0cf6f;
+      --kravn-heart-red: #e0703a;
+    }
+
+    /* kept for the canvas export, which can't read CSS vars directly */
+    .kravn-primary-glow { box-shadow: 0 8px 22px rgba(var(--kravn-primary-rgb), 0.35); }
 
 
     /* =========================================================
@@ -37,6 +50,21 @@
     .detail-backdrop::before {
       background-size: 112% auto;
       background-position: center 22%;
+    }
+
+
+    /* =========================================================
+       POST TEXT — premium typography
+       ========================================================= */
+
+    .detail-content {
+      font-size: 0.95rem;
+      line-height: 1.7;
+      letter-spacing: 0.1px;
+      color: rgba(255, 255, 255, 0.88);
+      position: relative;
+      padding-left: 1.1rem;
+      border-left: 2px solid rgba(var(--kravn-primary-rgb), 0.35);
     }
 
 
@@ -56,17 +84,24 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.45rem;
-      padding: 0.55rem 1.15rem;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
       border-radius: 999px;
       font-size: 0.88rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       border: 1px solid rgba(var(--kravn-primary-rgb), 0.35);
       background: rgba(var(--kravn-primary-rgb), 0.06);
       color: var(--kravn-primary-light);
       text-decoration: none;
       transition: border-color 0.18s ease, background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+    }
+
+    .kravn-pill-btn .kravn-heart-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .kravn-pill-btn:hover {
@@ -76,11 +111,19 @@
       transform: translateY(-1px);
     }
 
+    .kravn-pill-btn:hover .kravn-heart-icon {
+      transform: scale(1.12);
+    }
+
     .kravn-pill-btn.is-liked {
       background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-dark));
       border-color: transparent;
       color: #fff;
-      box-shadow: 0 8px 22px var(--kravn-primary-glow);
+      box-shadow: 0 8px 22px rgba(var(--kravn-primary-rgb), 0.35);
+    }
+
+    .kravn-pill-btn.is-liked .kravn-heart-icon {
+      transform: scale(1.08);
     }
 
     .kravn-pill-btn.danger {
@@ -104,7 +147,7 @@
        SHARE — SUBTLE, CARD-FOCUSED
        ========================================================= */
 
-        .kravn-share-section {
+    .kravn-share-section {
       margin: 1.5rem 0 2rem;
       display: flex;
       justify-content: center;
@@ -154,48 +197,70 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.75rem;
     }
 
+    /* Share / download icon buttons — same treatment as the Kravn Cards
+       tool buttons on the feed page. */
     .kravn-share-row {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 8px;
     }
 
-    .kravn-icon-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+    .kravn-card-tool-btn {
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      border: 1px solid rgba(var(--kravn-primary-rgb), 0.22);
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(var(--kravn-primary-rgb), 0.1);
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.35);
+      backdrop-filter: blur(6px);
       color: var(--kravn-primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
       cursor: pointer;
-      font-size: 1rem;
-      transition: border-color 0.18s ease, background 0.18s ease, transform 0.12s ease;
+      transition: all 0.18s ease;
     }
 
-    .kravn-icon-btn:hover {
-      border-color: rgba(var(--kravn-primary-rgb), 0.55);
-      background: rgba(var(--kravn-primary-rgb), 0.1);
+    .kravn-card-tool-btn:hover {
+      border-color: var(--kravn-primary);
+      background: rgba(var(--kravn-primary-rgb), 0.22);
+      color: #fff;
       transform: translateY(-1px);
     }
 
-    .kravn-icon-btn:disabled {
+    .kravn-card-tool-btn:disabled {
       opacity: 0.55;
       cursor: wait;
       transform: none;
     }
 
-    .kravn-share-status {
-      display: none;
-      margin: 0;
-      font-size: 0.78rem;
-      color: var(--text-muted);
+    /* Toast — same shape/behavior as the feed page's Kravn Cards toast */
+    .kravn-toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #151515;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.35);
+      color: #eee;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.75rem;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      opacity: 0;
+      z-index: 1001;
+      transition: all 0.25s ease;
+      pointer-events: none;
+      max-width: 88vw;
       text-align: center;
+    }
+
+    .kravn-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
 
@@ -407,7 +472,7 @@
 
 
     /* =========================================================
-       COMMENTS — clear, unmissable
+       COMMENTS — clear, unmissable, premium finish
        ========================================================= */
 
     .kravn-comments-section {
@@ -419,16 +484,26 @@
       align-items: baseline;
       justify-content: space-between;
       margin-bottom: 0.25rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid rgba(var(--kravn-primary-rgb), 0.16);
     }
 
     .kravn-comments-header h2 {
       font-size: 1.2rem;
       margin: 0;
+      letter-spacing: -0.2px;
     }
 
     .kravn-comments-count {
-      font-size: 0.85rem;
-      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--kravn-primary-light);
+      background: rgba(var(--kravn-primary-rgb), 0.08);
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.25);
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
     }
 
     .comment-form {
@@ -463,7 +538,13 @@
       color: #fff;
       cursor: pointer;
       background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-dark));
-      box-shadow: 0 6px 18px var(--kravn-primary-glow);
+      box-shadow: 0 6px 18px rgba(var(--kravn-primary-rgb), 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .comment-form button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(var(--kravn-primary-rgb), 0.45);
     }
 
     .kravn-comment-list {
@@ -479,12 +560,13 @@
       border-radius: 16px;
       border: 1px solid rgba(var(--kravn-primary-rgb), 0.14);
       background: rgba(255, 255, 255, 0.02);
-      transition: border-color 0.15s ease, background 0.15s ease;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
     }
 
     .comment:hover {
-      border-color: rgba(var(--kravn-primary-rgb), 0.3);
-      background: rgba(var(--kravn-primary-rgb), 0.04);
+      border-color: rgba(var(--kravn-primary-rgb), 0.32);
+      background: rgba(var(--kravn-primary-rgb), 0.045);
+      transform: translateY(-1px);
     }
 
     .kravn-comment-avatar {
@@ -499,6 +581,7 @@
       font-size: 0.9rem;
       color: #fff;
       background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-darker));
+      box-shadow: 0 0 0 3px rgba(var(--kravn-primary-rgb), 0.1);
     }
 
     .kravn-comment-body {
@@ -562,8 +645,8 @@
     }
 
     .comment-text {
-      margin: 0.35rem 0 0;
-      line-height: 1.55;
+      margin: 0.4rem 0 0;
+      line-height: 1.6;
       color: rgba(255, 255, 255, 0.85);
       word-break: break-word;
     }
@@ -642,7 +725,10 @@
 
       <form action="/posts/<%= post.id %>/like" method="POST">
         <button class="kravn-pill-btn<%= typeof userHasLiked !== 'undefined' && userHasLiked ? ' is-liked' : '' %>" type="submit">
-          ♥ Like (<%= likeCount %>)
+          <svg class="kravn-heart-icon" viewBox="0 0 24 24" fill="<%= typeof userHasLiked !== 'undefined' && userHasLiked ? 'currentColor' : 'none' %>" stroke="currentColor" stroke-width="2">
+            <path d="M12 21s-6.5-4.35-9.5-8.5C.5 9 2 5 5.5 5c2 0 3.5 1.2 4.5 2.7C11 6.2 12.5 5 14.5 5 18 5 19.5 9 17.5 12.5 14.5 16.65 12 21 12 21z"/>
+          </svg>
+          Like (<%= likeCount %>)
         </button>
       </form>
 
@@ -664,8 +750,6 @@
 
 
     <!-- SHARE — subtle, sitting right under the card -->
-
-        <!-- SHARE — subtle, sitting right under the card -->
 
     <div class="kravn-share-heading">
       <span class="kravn-share-eyebrow">✦ Collectible</span>
@@ -693,7 +777,7 @@
 
               <div class="kravn-card-header">
                 <div>
-                  <div class="kravn-logo">Kravn<span class="kravn-logo-dot">.</span></div>
+                  <div class="kravn-logo">Krav<span class="kravn-logo-dot">N.</span></div>
                   <div class="kravn-tagline">Discuss. Discover. Connect.</div>
                 </div>
                 <div class="kravn-card-badge">Kravn Discussion</div>
@@ -713,13 +797,11 @@
           </div>
         </div>
 
+        <!-- Share row — same icon-button treatment as the Kravn Cards on the feed page -->
         <div class="kravn-share-row">
-          <button type="button" class="kravn-icon-btn" id="download-card-btn" onclick="downloadPostCard()" title="Download postcard">⬇</button>
-          <button type="button" class="kravn-icon-btn" id="whatsapp-share-btn" onclick="sharePostToWhatsApp()" title="Share on WhatsApp">💬</button>
-          <button type="button" class="kravn-icon-btn" id="share-url-btn" onclick="sharePostURL()" title="Copy link">🔗</button>
+          <div class="kravn-card-tool-btn" id="download-card-btn" title="Download postcard">⬇</div>
+          <div class="kravn-card-tool-btn" id="share-card-btn" title="Share">↗</div>
         </div>
-
-        <p id="kravn-share-status" class="kravn-share-status"></p>
 
       </div>
     </section>
@@ -781,6 +863,8 @@
 
   </div>
 
+  <div class="kravn-toast" id="kravn-toast"></div>
+
 
   <!-- SHARING JAVASCRIPT -->
 
@@ -801,11 +885,22 @@
     const CARD_HEIGHT = Math.round(1920 * SCALE);
     const S = n => n * SCALE;
 
-    const PURPLE = '#8b5cf6';
-    const PURPLE_DARK = '#6d28d9';
-    const PURPLE_LIGHT = '#c4b5fd';
+    function themeColor(name, fallback) {
+      const v = getComputedStyle(document.documentElement).getPropertyValue(name);
+      return v && v.trim() ? v.trim() : fallback;
+    }
 
-    function purpleRgba(alpha) { return 'rgba(139, 92, 246, ' + alpha + ')'; }
+    function currentThemeColors() {
+      return {
+        light: themeColor('--kravn-primary-light', '#c4b5fd'),
+        rgb: themeColor('--kravn-primary-rgb', '139, 92, 246')
+      };
+    }
+
+    function purpleRgba(alpha) {
+      const { rgb } = currentThemeColors();
+      return 'rgba(' + rgb + ', ' + alpha + ')';
+    }
 
     function cleanCardText(value) {
       return String(value || '').replace(/<[^>]*>/g, '').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -941,6 +1036,8 @@
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
+      const { light: PURPLE_LIGHT } = currentThemeColors();
+
       // Matte frame — background color shows as a thin border, poster is
       // drawn clipped inside a rounded inset rect (mirrors the CSS preview).
       ctx.fillStyle = '#050507';
@@ -962,8 +1059,7 @@
       drawCardFades(ctx);
       ctx.restore();
 
-      // Purple border, matching the on-page card's CSS border
-           // Purple border, matching the on-page card's CSS border (thicker + rounder for the export)
+      // Themed border, matching the on-page card's CSS border (thicker + rounder for the export)
       ctx.save();
       ctx.strokeStyle = purpleRgba(0.55);
       ctx.lineWidth = S(3);
@@ -983,10 +1079,10 @@
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = 'rgba(0,0,0,0.7)';
       ctx.shadowBlur = S(8);
-      ctx.fillText('Kravn', left, S(48));
-      const logoWidth = ctx.measureText('Kravn').width;
+      ctx.fillText('Krav', left, S(48));
+      const logoWidth = ctx.measureText('Krav').width;
       ctx.fillStyle = PURPLE_LIGHT;
-      ctx.fillText('.', left + logoWidth, S(48));
+      ctx.fillText('N.', left + logoWidth, S(48));
       ctx.restore();
 
       ctx.save();
@@ -1088,19 +1184,22 @@
       return new Promise(resolve => { canvas.toBlob(blob => resolve(blob), 'image/png'); });
     }
 
-    function showShareStatus(message) {
-      const status = document.getElementById('kravn-share-status');
-      status.textContent = message;
-      status.style.display = 'block';
-      clearTimeout(window.kravnStatusTimer);
-      window.kravnStatusTimer = setTimeout(() => { status.style.display = 'none'; }, 3500);
+    const kravnToastEl = document.getElementById('kravn-toast');
+    function toast(msg) {
+      if (!kravnToastEl) return;
+      kravnToastEl.textContent = msg;
+      kravnToastEl.classList.add('show');
+      clearTimeout(kravnToastEl._t);
+      kravnToastEl._t = setTimeout(() => kravnToastEl.classList.remove('show'), 2400);
     }
 
     async function downloadPostCard() {
       const button = document.getElementById('download-card-btn');
-      button.disabled = true;
+      button.style.pointerEvents = 'none';
+      button.style.opacity = '0.55';
 
       try {
+        await (document.fonts && document.fonts.ready);
         const canvas = await createPostCard();
         const blob = await canvasToBlob(canvas);
         if (!blob) throw new Error('Could not create PNG');
@@ -1114,75 +1213,64 @@
         link.remove();
         URL.revokeObjectURL(url);
 
-        showShareStatus('Postcard downloaded.');
+        toast('Postcard downloaded');
       } catch (error) {
         console.error('Postcard download failed:', error);
-        showShareStatus('Could not create the postcard.');
+        toast('Could not create the postcard');
       } finally {
-        button.disabled = false;
+        button.style.pointerEvents = '';
+        button.style.opacity = '';
       }
     }
 
-    async function sharePostToWhatsApp() {
-      const button = document.getElementById('whatsapp-share-btn');
-      button.disabled = true;
+    // Same share behavior as the Kravn Cards on the feed page: try the
+    // native share sheet with the rendered card image attached, otherwise
+    // fall back to downloading the image and copying the link.
+    async function sharePostCard() {
+      const button = document.getElementById('share-card-btn');
+      button.style.pointerEvents = 'none';
+      button.style.opacity = '0.55';
+
+      const shareText = KRAVN_POST.title + ' — on Kravn';
 
       try {
+        await (document.fonts && document.fonts.ready);
         const canvas = await createPostCard();
         const blob = await canvasToBlob(canvas);
-        if (!blob) throw new Error('Could not create postcard');
+        if (!blob) throw new Error('render failed');
+        const file = new File([blob], 'kravn-' + KRAVN_POST.id + '.png', { type: 'image/png' });
 
-        const file = new File([blob], 'kravn-post.png', { type: 'image/png' });
-        const shareText = KRAVN_POST.movieName + ': ' + KRAVN_POST.title + '\n\nDiscuss on KravN:\n' + KRAVN_POST_URL;
-
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ title: KRAVN_POST.title, text: shareText, files: [file] });
-          showShareStatus('Postcard ready to share.');
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: KRAVN_POST.title, text: shareText, url: KRAVN_POST_URL });
           return;
         }
 
-        window.open('https://wa.me/?text=' + encodeURIComponent(shareText), '_blank', 'noopener');
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'kravn-' + KRAVN_POST.id + '.png';
+        link.click();
+        URL.revokeObjectURL(url);
+        if (navigator.clipboard) await navigator.clipboard.writeText(KRAVN_POST_URL);
+        toast('Card image saved · link copied');
       } catch (error) {
-        if (error.name === 'AbortError') return;
-        console.error('WhatsApp share failed:', error);
-        window.open('https://wa.me/?text=' + encodeURIComponent(KRAVN_POST.movieName + ': ' + KRAVN_POST.title + ' — ' + KRAVN_POST_URL), '_blank', 'noopener');
-      } finally {
-        button.disabled = false;
-      }
-    }
-
-    async function sharePostURL() {
-      const button = document.getElementById('share-url-btn');
-      const shareText = KRAVN_POST.movieName + ': ' + KRAVN_POST.title + '\n\n' + KRAVN_POST_URL;
-
-      try {
-        if (navigator.share) {
-          await navigator.share({ title: KRAVN_POST.title, text: shareText });
-          return;
-        }
-
-        await navigator.clipboard.writeText(shareText);
-        showShareStatus('Link copied.');
-      } catch (error) {
-        if (error.name === 'AbortError') return;
+        if (error && error.name === 'AbortError') return;
         console.error('Share failed:', error);
-
-        try {
-          const textarea = document.createElement('textarea');
-          textarea.value = shareText;
-          textarea.style.position = 'fixed';
-          textarea.style.opacity = '0';
-          document.body.appendChild(textarea);
-          textarea.select();
-          document.execCommand('copy');
-          textarea.remove();
-          showShareStatus('Link copied.');
-        } catch (fallbackError) {
-          console.error('Clipboard fallback failed:', fallbackError);
-          showShareStatus('Could not share the post.');
+        if (navigator.share) {
+          navigator.share({ title: KRAVN_POST.title, text: shareText, url: KRAVN_POST_URL }).catch(() => {});
+        } else if (navigator.clipboard) {
+          navigator.clipboard.writeText(KRAVN_POST_URL).then(() => toast('Link copied')).catch(() => toast(KRAVN_POST_URL));
+        } else {
+          toast(KRAVN_POST_URL);
         }
+      } finally {
+        button.style.pointerEvents = '';
+        button.style.opacity = '';
       }
     }
+
+    document.getElementById('download-card-btn').addEventListener('click', downloadPostCard);
+    document.getElementById('share-card-btn').addEventListener('click', sharePostCard);
 
   </script>
 

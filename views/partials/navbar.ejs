@@ -1,3 +1,179 @@
+<style>
+  /* ============================================================
+     KRAVN NAVBAR — premium polish
+     Uses the same --kravn-primary / --kravn-primary-rgb variables
+     defined globally (purple in dark mode, gold in light mode).
+     No theme colors are overridden here — only structure, spacing,
+     hover states and accent treatments.
+     ============================================================ */
+
+  .topbar {
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(var(--kravn-primary-rgb), 0.12);
+  }
+
+  .topbar-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5, 1.5rem);
+  }
+
+  /* ---- Brand ---- */
+  .topbar .brand {
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    transition: opacity 0.2s ease;
+  }
+  .topbar .brand:hover { opacity: 0.85; }
+  .topbar .brand span { color: var(--kravn-primary-light); }
+
+  /* ---- Nav links (desktop) ---- */
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4, 1.25rem);
+  }
+
+  .nav-links a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.1rem 0.5rem;
+    color: rgba(255, 255, 255, 0.72);
+    transition: color 0.2s ease;
+  }
+
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--kravn-primary), var(--kravn-primary-light));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .nav-links a:hover { color: #fff; }
+  .nav-links a:hover::after,
+  .nav-links a.active::after { transform: scaleX(1); }
+  .nav-links a.active { color: var(--kravn-primary-light); font-weight: 600; }
+
+  /* icon-only links (notifications bell / logout) inside nav-links */
+  .nav-links a.tab,
+  .nav-links a[aria-label="Logout"] {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.18s ease;
+  }
+  .nav-links a.tab::after,
+  .nav-links a[aria-label="Logout"]::after { display: none; content: none; }
+  .nav-links a.tab:hover,
+  .nav-links a[aria-label="Logout"]:hover {
+    color: var(--kravn-primary-light);
+    background: rgba(var(--kravn-primary-rgb), 0.1);
+  }
+
+  /* ---- Theme toggle button ---- */
+  .theme-toggle {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(var(--kravn-primary-rgb), 0.22);
+    background: rgba(var(--kravn-primary-rgb), 0.05);
+    color: var(--kravn-primary-light);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+  }
+  .theme-toggle:hover {
+    border-color: rgba(var(--kravn-primary-rgb), 0.5);
+    background: rgba(var(--kravn-primary-rgb), 0.1);
+  }
+  .theme-toggle:active { transform: scale(0.93); }
+
+  /* ---- Avatar ---- */
+  .avatar-placeholder {
+    border: 1.5px solid rgba(var(--kravn-primary-rgb), 0.4);
+    box-shadow: 0 0 0 3px rgba(var(--kravn-primary-rgb), 0.08);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    font-weight: 700;
+  }
+  .avatar-placeholder:hover {
+    border-color: rgba(var(--kravn-primary-rgb), 0.65);
+    box-shadow: 0 0 0 4px rgba(var(--kravn-primary-rgb), 0.16);
+  }
+
+  /* ---- Logout button (desktop pill) ---- */
+  .topbar .btn.secondary.sm {
+    border: 1px solid rgba(var(--kravn-primary-rgb), 0.3);
+    background: rgba(var(--kravn-primary-rgb), 0.05);
+    color: var(--kravn-primary-light);
+    transition: all 0.18s ease;
+  }
+  .topbar .btn.secondary.sm:hover {
+    border-color: rgba(var(--kravn-primary-rgb), 0.6);
+    background: rgba(var(--kravn-primary-rgb), 0.12);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  /* ---- Notification badge ---- */
+  .badge-dot {
+    background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-dark));
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4);
+    font-weight: 700;
+  }
+
+  /* ---- Mobile bottom nav ---- */
+  .bottomnav {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(var(--kravn-primary-rgb), 0.14);
+  }
+
+  .bottomnav .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: rgba(255, 255, 255, 0.55);
+    transition: color 0.2s ease, transform 0.15s ease;
+  }
+
+  .bottomnav .tab svg {
+    transition: filter 0.2s ease, transform 0.2s ease;
+  }
+
+  .bottomnav .tab.active {
+    color: var(--kravn-primary-light);
+  }
+  .bottomnav .tab.active svg {
+    filter: drop-shadow(0 0 6px rgba(var(--kravn-primary-rgb), 0.5));
+    transform: translateY(-1px);
+  }
+
+  .bottomnav .tab:active { transform: scale(0.94); }
+
+  .mobile-only { display: none; }
+
+  @media (max-width: 860px) {
+    .nav-links { display: none; }
+    .mobile-only { display: inline-flex; }
+  }
+</style>
+
 <header class="topbar">
   <div class="topbar-inner">
     <a href="/feed" class="brand">Krav<span>N</span></a>
@@ -6,38 +182,29 @@
       <a href="/feed" class="<%= currentPage === 'discover' ? 'active' : '' %>">Discover</a>
       <a href="/dashboard" class="<%= currentPage === 'dashboard' ? 'active' : '' %>">Dashboard</a>
       <a href="/posts/new" class="<%= currentPage === 'new' ? 'active' : '' %>">+ New</a>
-     
-      <a href="/notifications" class="tab">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
-  
-    <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %><span class="badge-dot" style="top:0; right:8px;"><%= unreadCount %></span><% } %>
-  </a>
-   <a href="/about" class="<%= currentPage === 'about' ? 'active' : '' %>">About</a>
-<a href="/logout"  aria-label="Logout" title="Logout">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>
-  </svg>
-</a>
+
+      <a href="/notifications" class="tab" title="Notifications">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+        <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %><span class="badge-dot" style="top:0; right:8px;"><%= unreadCount %></span><% } %>
+      </a>
+      <a href="/about" class="<%= currentPage === 'about' ? 'active' : '' %>">About</a>
+      <a href="/logout" aria-label="Logout" title="Logout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>
+        </svg>
+      </a>
     </nav>
 
     <div style="display:flex; align-items:center; gap: var(--space-3);">
       <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark">
-  <span id="theme-icon">☀</span>
-</button>
+        <span id="theme-icon">☀</span>
+      </button>
 
-      <!-- <a href="/logout" class="nav-bell" aria-label="Logout" title="Logout">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-    <path d="M16 17l5-5-5-5"/>
-    <path d="M21 12H9"/>
-  </svg>
-</a> -->
-
-<a href="/logout" class="nav-bell mobile-only" aria-label="Logout" title="Logout">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>
-  </svg>
-</a>
+      <a href="/logout" class="nav-bell mobile-only" aria-label="Logout" title="Logout">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>
+        </svg>
+      </a>
 
       <% if (typeof user !== 'undefined' && user) { %>
         <a href="/profile" title="<%= user.username %>">
@@ -67,9 +234,8 @@
     Alerts
     <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %><span class="badge-dot" style="top:0; right:8px;"><%= unreadCount %></span><% } %>
   </a>
-   <a href="/about" class="tab <%= currentPage === 'about' ? 'active' : '' %>">
+  <a href="/about" class="tab <%= currentPage === 'about' ? 'active' : '' %>">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 16 0v2"/></svg>
     About Us
   </a>
 </nav>
- 
