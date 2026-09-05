@@ -111,7 +111,10 @@ html[data-theme="light"] {
   width: 100%; max-width: 420px;
   padding: env(safe-area-inset-top, 14px) 16px 0;
   box-sizing: border-box;
-  z-index: 5;
+  /* Always above every card layer, no matter how many cards are in
+     the deck — cards use small z-index tiers (a handful of ints
+     around VISIBLE_STACK), so 100 gives permanent headroom. */
+  z-index: 100;
 }
 .kravn-pips { display: flex; gap: 4px; margin-bottom: 14px; }
 .kravn-pip {
@@ -250,11 +253,22 @@ html[data-theme="light"] {
   cursor: grab;
   will-change: transform;
   user-select: none;
+  touch-action: none;
   padding: 8px;
   box-sizing: border-box;
-  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.35s ease;
+  transition: box-shadow 0.2s ease;
 }
-.kravn-card.dragging { transition: none; cursor: grabbing; }
+.kravn-card.dragging { cursor: grabbing; }
+
+/* thin Kravn-purple lining on every post card, feed/dashboard/profile alike */
+.post-card {
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.32);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.post-card:hover {
+  border-color: rgba(var(--kravn-primary-rgb), 0.55);
+  box-shadow: 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.12);
+}
 
 .kravn-card-frame {
   position: relative;
@@ -386,6 +400,63 @@ html[data-theme="light"] {
 }
 .kravn-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* One-time awareness hint: "tap a username to view their profile".
+   Pinned under the navbar so it never overlaps the hero banner, the
+   toolbar, or any post card — purely informational, auto-dismisses. */
+.kravn-profile-hint {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  z-index: 900;
+  background: rgba(10,10,12,0.88);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.4);
+  color: var(--kravn-primary-light);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  padding: 0.55rem 1rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.35);
+  opacity: 0;
+  pointer-events: none;
+  max-width: 90vw;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.kravn-profile-hint.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+@media (max-width: 480px) {
+  .kravn-profile-hint { font-size: 0.64rem; padding: 0.5rem 0.85rem; white-space: normal; }
+}
+
+/* ---- Page transition wrapper (arrival animation only on Feed;
+   Feed is the transition destination, not a page that navigates
+   "back", so it has no drag-handle / exit wiring). ---- */
+.kravn-page {
+  transform-origin: center top;
+  will-change: transform, opacity, border-radius;
+  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.3s ease,
+              border-radius 0.3s ease;
+  border-radius: 0px;
+  min-height: 100vh;
+  background: var(--bg, #0a0a0a);
+}
+.kravn-page.kravn-page-enter {
+  transform: translateY(28px) scale(0.97);
+  opacity: 0;
+}
+.kravn-page.kravn-page-enter-active {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
 </style>
   <script src="/js/theme.js"></script>
 
@@ -406,6 +477,13 @@ html[data-theme="light"] {
       mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 12%, rgba(0,0,0,0.9) 78%, transparent 100%),
                   linear-gradient(to right, transparent 0%, rgba(0,0,0,0.9) 8%, rgba(0,0,0,0.9) 92%, transparent 100%);
       mask-composite: intersect;
+      /* subtle refinement: a slow drift so the banner feels a touch
+         more alive, without changing layout, colors, or crop */
+      animation: kravn-hero-drift 26s ease-in-out infinite alternate;
+    }
+    @keyframes kravn-hero-drift {
+      0%   { transform: scale(1.02) translateX(0); }
+      100% { transform: scale(1.06) translateX(-1.5%); }
     }
 
     .hero-banner-overlay {
@@ -426,6 +504,26 @@ html[data-theme="light"] {
 
     .hero-greeting {
       text-shadow: 0 4px 24px rgba(0,0,0,0.35);
+      position: relative;
+    }
+    /* subtle refinement: a slow breathing glow behind the greeting */
+    .hero-greeting::after {
+      content: '';
+      position: absolute;
+      left: -12%;
+      top: 50%;
+      width: 60%;
+      height: 140%;
+      transform: translateY(-50%);
+      background: radial-gradient(ellipse at center, rgba(var(--kravn-primary-rgb, 139,92,246), 0.14), transparent 70%);
+      filter: blur(18px);
+      z-index: -1;
+      animation: kravn-hero-glow 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes kravn-hero-glow {
+      0%, 100% { opacity: 0.6; }
+      50%      { opacity: 1; }
     }
 
     .hero-stat-card {
@@ -460,6 +558,7 @@ html[data-theme="light"] {
     @media (max-width: 640px) {
       .hero-actions-row { flex-wrap: wrap; gap: 0.75rem; }
       .hero-poster-strip img { filter: saturate(0.9); }
+      .hero-poster-strip { animation-duration: 30s; }
     }
 
     /* ============================================================
@@ -700,6 +799,7 @@ html[data-theme="light"] {
 <body>
   <%- include('partials/navbar', { currentPage: 'feed' }) %>
 
+  <div class="kravn-page" id="kravn-page">
   <div class="page">
     <div class="hero-banner">
       <% if (posts.length > 0) { %>
@@ -764,6 +864,21 @@ html[data-theme="light"] {
           document.getElementById('search-input').focus();
         }
       });
+    </script>
+
+    <!-- One-time "tap a username to view their profile" awareness hint.
+         Purely informational — shown once per session, auto-dismisses. -->
+    <div class="kravn-profile-hint" id="kravn-profile-hint">Tip: tap a user's name to view their profile</div>
+    <script>
+      (function () {
+        var hintKey = 'kravnProfileHintSeen';
+        if (sessionStorage.getItem(hintKey)) return;
+        var el = document.getElementById('kravn-profile-hint');
+        if (!el) return;
+        sessionStorage.setItem(hintKey, '1');
+        setTimeout(function () { el.classList.add('show'); }, 900);
+        setTimeout(function () { el.classList.remove('show'); }, 900 + 4500);
+      })();
     </script>
 
     <!-- ===== KRAVN-CARDS-BUTTON: remove this block once the feature no longer needs the push ===== -->
@@ -836,6 +951,8 @@ html[data-theme="light"] {
       <% }); %>
     </div>
   </div>
+  </div>
+  <!-- /.kravn-page -->
 
   <!-- ================= KRAVN CARDS OVERLAY ================= -->
   <div class="kravn-overlay" id="kravn-overlay">
@@ -952,16 +1069,57 @@ html[data-theme="light"] {
 
   <script>
 /* ============================================================
-   KRAVN CARDS — shared engine
-   Call initKravnCards({ posts, hintKey }) on any page that has
-   the standard Kravn Cards markup (button #kravn-open-btn +
-   overlay #kravn-overlay with the ids below).
+   KRAVN CARDS — arc/spring engine (v2)
+   Shared by feed.ejs, dashboard.ejs, and userProfile.ejs.
 
-   Navigation is circular: swiping/clicking past the last card
-   wraps to the first, and vice versa. The top card always
-   animates in from the direction you navigated, and a downward
-   swipe (or the down arrow key) closes the overlay and returns
-   to the page underneath.
+   WHAT'S NEW VS THE ORIGINAL ENGINE
+   - Drag drives a single `progress` value that at once arcs the
+     top card away (it lifts up as it travels, rotates, and fades
+     — not a flat horizontal slide), and advances the card(s)
+     behind it toward the front slot, so the next card visibly
+     rises to meet your finger during the drag instead of
+     appearing only after the swap.
+   - Release hands off into a tiny requestAnimationFrame tween
+     that carries the drag's actual velocity into the completion
+     (animateProgress), so fast flicks finish fast and slow drags
+     ease out slowly — no seam between "dragging" and "settling".
+   - Snap-back uses a light springy overshoot (easeOutBack); a
+     committed swipe uses a plain easeOutCubic so it reads as
+     "thrown away" rather than "bounced".
+   - One pointer-event code path drives both touch and mouse, so
+     desktop and mobile feel identical; the desktop arrow buttons
+     trigger the same arc via a synthetic progress ramp.
+   - Feed uses circular navigation (wraps both ends). Dashboard
+     and Profile use non-circular navigation with a back-history
+     stack, matching their "browse forward, then go back" feel.
+   ============================================================ */
+/* ============================================================
+   KRAVN CARDS — Instagram-Stories-style slide engine (v3)
+   Shared by feed.ejs, dashboard.ejs, and userProfile.ejs.
+
+   BEHAVIOR (this is the part that changed)
+   - Swipe LEFT  = go forward. The top card slides left under your
+     finger (with a light tilt) and fades slightly as it leaves.
+     The next card — already sitting behind it, dimmed and slightly
+     scaled down — grows up to full size/opacity as you drag, so it
+     visibly "arrives" rather than popping in after release.
+   - Swipe RIGHT = go back. This is the true reverse of the above,
+     not a different animation: the current card slides right and
+     leaves, while the PREVIOUS card slides in from behind-left,
+     growing to full size — so going back genuinely looks like time
+     running backward on the same transition, exactly like flicking
+     back through Instagram Stories.
+   - Both directions run through the same pointer-event code path,
+     so touch (mobile) and mouse (desktop) behave identically; the
+     desktop arrow buttons trigger the same slide programmatically.
+   - Release still hands off into a velocity-aware requestAnimationFrame
+     tween (fast flicks finish fast, slow drags ease out slowly), and
+     an incomplete drag springs back with a light overshoot.
+   - Swipe DOWN still closes the overlay (Feed) using the same
+     smooth/spring language, independent of the left/right logic.
+   - At the ends of a non-circular deck (Dashboard/Profile), a drag
+     past the last/first card rubber-bands (dampened movement)
+     instead of sliding away into nothing.
    ============================================================ */
 function initKravnCards(config) {
   config = config || {};
@@ -983,6 +1141,7 @@ function initKravnCards(config) {
   const prevArrow  = document.getElementById(config.prevArrowId || 'kravn-arrow-prev');
   const nextArrow  = document.getElementById(config.nextArrowId || 'kravn-arrow-next');
   const hintKey    = config.hintKey || 'kravnHintSeen';
+  const circular   = config.circular !== undefined ? config.circular : true;
 
   if (!openBtn || !overlay || !stage) {
     console.warn('[KravnCards] Could not find required elements — check the ids on this page.', {
@@ -991,16 +1150,33 @@ function initKravnCards(config) {
     return;
   }
 
-  console.info('[KravnCards] Initialized with', posts.length, 'post(s). Button click should now open the overlay.');
-
   let deck = posts.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   let current = 0;
+  let history = [];
   let mode = 'latest';
   const likedSet = new Set();
-  let animatingOut = false;
+  let isAnimating = false;
 
   const VISIBLE_STACK = Math.min(3, deck.length);
   const gradId = 'kravnHeartGrad' + Math.random().toString(36).slice(2);
+
+  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+  const easeOutBack = t => {
+    const c1 = 1.4, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  };
+
+  function animateProgress(from, to, { duration = 300, easing = easeOutCubic, onUpdate, onDone }) {
+    const start = performance.now();
+    const span = to - from;
+    function frame(now) {
+      const t = Math.min((now - start) / duration, 1);
+      onUpdate(from + span * easing(t));
+      if (t < 1) requestAnimationFrame(frame);
+      else { onUpdate(to); if (onDone) onDone(); }
+    }
+    requestAnimationFrame(frame);
+  }
 
   function toast(msg) {
     if (!toastEl) return;
@@ -1031,10 +1207,15 @@ function initKravnCards(config) {
     });
   }
 
-  // Navigation is circular, so the arrows are always usable.
   function updateArrows() {
-    if (prevArrow) prevArrow.classList.remove('disabled');
-    if (nextArrow) nextArrow.classList.remove('disabled');
+    if (!prevArrow || !nextArrow) return;
+    if (circular) {
+      prevArrow.classList.remove('disabled');
+      nextArrow.classList.remove('disabled');
+    } else {
+      prevArrow.classList.toggle('disabled', history.length === 0);
+      nextArrow.classList.remove('disabled');
+    }
   }
 
   async function likePost(post, pillEl) {
@@ -1095,10 +1276,8 @@ function initKravnCards(config) {
     if (!canvas) return null;
     const accent = themeColor('--kravn-primary-light', '#c4b5fd');
     const accentRgb = themeColor('--kravn-primary-rgb', '139,92,246');
-
     const W = 900, H = 1500;
-    canvas.width = W;
-    canvas.height = H;
+    canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
 
     ctx.fillStyle = '#050507';
@@ -1112,7 +1291,7 @@ function initKravnCards(config) {
         if (ir > cr) { dh = H; dw = H * ir; dx = (W - dw) / 2; dy = 0; }
         else { dw = W; dh = W / ir; dx = 0; dy = (H - dh) / 2; }
         ctx.drawImage(img, dx, dy, dw, dh);
-        ctx.getImageData(0, 0, 1, 1); // triggers SecurityError early if tainted
+        ctx.getImageData(0, 0, 1, 1);
       } catch (err) {
         drawFallbackBg(ctx, W, H, accentRgb);
       }
@@ -1136,7 +1315,6 @@ function initKravnCards(config) {
     ctx.stroke();
     ctx.restore();
 
-    // Kravn wordmark, top-left — "Krav" white + "N" theme-colored
     ctx.font = '700 34px "JetBrains Mono", monospace';
     ctx.fillStyle = '#ffffff';
     ctx.fillText('Krav', 40, 70);
@@ -1200,13 +1378,11 @@ function initKravnCards(config) {
   async function shareCard(post) {
     const url = `${window.location.origin}/posts/${post.id}`;
     const shareText = `${post.title} — on Kravn`;
-
     try {
       await (document.fonts && document.fonts.ready);
       const blob = await renderCardToBlob(post);
       if (!blob) throw new Error('render failed');
       const file = new File([blob], `kravn-${post.id}.png`, { type: 'image/png' });
-
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: post.title, text: shareText, url });
         return;
@@ -1269,74 +1445,162 @@ function initKravnCards(config) {
     `;
   }
 
-  // entryDir: 'left'  → top card enters from the left  (we went back / previous)
-  //           'right' → top card enters from the right (we went forward / next)
-  //           null/undefined → no entrance animation (used on open / mode switch)
-  function render(entryDir) {
-    stage.querySelectorAll('.kravn-card').forEach(el => el.remove());
-    let topCard = null;
-
-    for (let i = VISIBLE_STACK - 1; i >= 0; i--) {
-      const idx = (current + i) % deck.length;
-      const post = deck[idx];
-      const card = document.createElement('div');
-      card.className = 'kravn-card';
-      card.innerHTML = cardMarkup(post);
-      card.dataset.postId = post.id;
-
-      const scale = 1 - i * 0.05;
-      const yOffset = i * 14;
-      const restTransform = `translateY(${yOffset}px) scale(${scale})`;
-      card.style.zIndex = String(VISIBLE_STACK - i);
-      card.style.opacity = i === VISIBLE_STACK - 1 && VISIBLE_STACK > 1 ? '0.55' : '1';
-
-      if (i === 0 && entryDir) {
-        card.style.transition = 'none';
-        card.style.transform = entryDir === 'left'
-          ? 'translateX(-520px) rotate(-22deg) scale(0.92)'
-          : 'translateX(520px) rotate(22deg) scale(0.92)';
-        card.style.opacity = '0';
-        topCard = { el: card, restTransform };
-      } else {
-        card.style.transform = restTransform;
-      }
-
-      if (likedSet.has(post.id)) card.querySelector('.kravn-liked-pill').classList.add('show');
-      if (i === 0) attachInteractions(card, post);
-      stage.appendChild(card);
-    }
-
-    if (topCard) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          topCard.el.style.transition = 'transform 0.42s cubic-bezier(0.22,1,0.36,1), opacity 0.32s ease';
-          topCard.el.style.transform = topCard.restTransform;
-          topCard.el.style.opacity = '1';
-        });
-      });
-    }
-
-    renderPips();
-    updateArrows();
+  function makeCardEl(post) {
+    const card = document.createElement('div');
+    card.className = 'kravn-card';
+    card.innerHTML = cardMarkup(post);
+    card.dataset.postId = post.id;
+    if (likedSet.has(post.id)) card.querySelector('.kravn-liked-pill').classList.add('show');
+    return card;
   }
 
-  // Circular navigation: direction +1 = next, -1 = previous. Wraps both ways.
-  function advance(direction) {
-    current = (current + direction + deck.length) % deck.length;
-    render(direction > 0 ? 'right' : 'left');
+  // Resting transform for stack slot i (0 = active/front).
+  function restSlot(i) {
+    const scale = 1 - i * 0.05;
+    const y = i * 14;
+    return { x: 0, y, scale, rotate: 0, opacity: i === VISIBLE_STACK - 1 && VISIBLE_STACK > 1 ? 0.55 : 1 };
+  }
+
+  // Resting (hidden) transform for the "previous" card while it waits
+  // off-stage to the left, before a backward drag reveals it.
+  function hiddenPrevSlot(stageWidth) {
+    return { x: -stageWidth * 0.55, y: 14, scale: 0.92, rotate: 0, opacity: 0.5 };
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function lerpTransform(from, to, t) {
+    return {
+      x: lerp(from.x, to.x, t),
+      y: lerp(from.y, to.y, t),
+      scale: lerp(from.scale, to.scale, t),
+      rotate: lerp(from.rotate, to.rotate, t),
+      opacity: lerp(from.opacity, to.opacity, t)
+    };
+  }
+
+  function applyTransform(el, t) {
+    el.style.transform = `translate(${t.x}px, ${t.y}px) rotate(${t.rotate}deg) scale(${t.scale})`;
+    el.style.opacity = String(t.opacity);
+  }
+
+  // Active-card transform while it's being dragged/animated away.
+  function activeCardTransform(progress, dragX, dragY) {
+    const absP = Math.min(Math.abs(progress), 1);
+    return {
+      x: dragX,
+      y: dragY * 0.15,
+      scale: 1 - absP * 0.03,
+      rotate: progress * 10,
+      opacity: 1 - absP * 0.45
+    };
+  }
+
+  let cardEls = [];   // [0]=active, [1]=next (behind), [2]=deeper background (static)
+  let prevEl = null;  // lazily-created "previous" card, used only mid backward-drag
+
+  function removePrevEl() {
+    if (prevEl && prevEl.parentNode) prevEl.parentNode.removeChild(prevEl);
+    prevEl = null;
+  }
+
+  function ensurePrevEl(stageWidth) {
+    if (prevEl) return prevEl;
+    if (!canGoPrev()) return null;
+    const prevIdx = circular ? (current - 1 + deck.length) % deck.length : history[history.length - 1];
+    const prevPost = deck[prevIdx];
+    if (!prevPost) return null;
+    prevEl = makeCardEl(prevPost);
+    // Sits just below the active card, but ABOVE every other stacked
+    // "shadow" card — otherwise the always-present forward-neighbor
+    // card (cardEls[1]) visually dominates during a backward drag,
+    // making the wrong post look like the incoming card until the
+    // swap snaps into place. This is what caused the glitchy preview.
+    prevEl.style.zIndex = String(VISIBLE_STACK + 1);
+    applyTransform(prevEl, { ...hiddenPrevSlot(stageWidth), opacity: 0 });
+    stage.insertBefore(prevEl, stage.firstChild);
+    return prevEl;
+  }
+
+  // progress < 0  => dragging left  (forward / next)
+  // progress > 0  => dragging right (backward / previous)
+  function layoutStack(progress, dragX, dragY, stageWidth) {
+    if (!cardEls[0]) return;
+    applyTransform(cardEls[0], activeCardTransform(progress, dragX, dragY));
+    const advance = Math.min(Math.abs(progress), 1);
+
+    if (progress <= 0) {
+      // forward: the already-stacked "next" card grows into the front
+      // slot; any leftover "previous" preview is fully hidden so it
+      // can't bleed through underneath.
+      if (cardEls[1]) applyTransform(cardEls[1], lerpTransform(restSlot(1), restSlot(0), advance));
+      if (prevEl) applyTransform(prevEl, { ...hiddenPrevSlot(stageWidth), opacity: 0 });
+    } else {
+      // backward: the previous card slides in from behind-left and is
+      // now the topmost background layer (see ensurePrevEl above), so
+      // it's what the user actually sees growing in. The forward
+      // "next" shadow card fades out of the way instead of sitting on
+      // top of it, since it isn't the card that's about to appear.
+      const el = ensurePrevEl(stageWidth);
+      if (el) applyTransform(el, lerpTransform(hiddenPrevSlot(stageWidth), { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1 }, advance));
+      if (cardEls[1]) {
+        const base = restSlot(1);
+        applyTransform(cardEls[1], { ...base, opacity: base.opacity * (1 - advance) });
+      }
+    }
   }
 
   function dismissHint() {
     if (hintEl) hintEl.classList.remove('show');
   }
-
   function showHintOnce() {
     if (!hintEl) return;
     if (sessionStorage.getItem(hintKey)) return;
-    hintEl.textContent = 'Swipe to browse · Swipe down to close · Double-tap to like';
+    hintEl.textContent = circular
+      ? 'Swipe to browse · Swipe down to close · Double-tap to like'
+      : 'Swipe to browse · Double-tap to like';
     hintEl.classList.add('show');
     sessionStorage.setItem(hintKey, '1');
     setTimeout(dismissHint, 2800);
+  }
+
+  function render() {
+    stage.querySelectorAll('.kravn-card').forEach(el => el.remove());
+    cardEls = [];
+    prevEl = null;
+    for (let i = VISIBLE_STACK - 1; i >= 0; i--) {
+      const idx = circular ? (current + i) % deck.length : current + i;
+      if (idx >= deck.length) continue;
+      const post = deck[idx];
+      const card = makeCardEl(post);
+      applyTransform(card, restSlot(i));
+      // Active card (i=0) sits above prevEl's VISIBLE_STACK+1 reserved
+      // slot; other stacked cards use their normal low z-order.
+      card.style.zIndex = i === 0 ? String(VISIBLE_STACK + 2) : String(VISIBLE_STACK - i);
+      if (i === 0) attachInteractions(card, post);
+      stage.appendChild(card);
+      cardEls[i] = card;
+    }
+    renderPips();
+    updateArrows();
+  }
+
+  function canGoNext() {
+    return circular || current + 1 < deck.length;
+  }
+  function canGoPrev() {
+    return circular || history.length > 0;
+  }
+
+  function commitAdvance(direction) {
+    if (direction > 0) {
+      if (!canGoNext()) return;
+      if (!circular) history.push(current);
+      current = circular ? (current + 1) % deck.length : current + 1;
+    } else {
+      if (!canGoPrev()) return;
+      current = circular ? (current - 1 + deck.length) % deck.length : history.pop();
+    }
+    render();
   }
 
   function attachInteractions(card, post) {
@@ -1348,57 +1612,128 @@ function initKravnCards(config) {
     shareEl.addEventListener('click', (e) => { e.stopPropagation(); dismissHint(); shareCard(post); });
     downloadEl.addEventListener('click', (e) => { e.stopPropagation(); dismissHint(); downloadCard(post); });
 
-    let dragging = false, startX = 0, startY = 0, deltaX = 0, deltaY = 0, moved = false;
+    let dragging = false, moved = false;
+    let startX = 0, startY = 0, dragX = 0, dragY = 0;
+    let lastX = 0, lastY = 0, lastT = 0, vx = 0, vy = 0;
     let clickTimer = null, clickCount = 0;
 
+    const SIDE_COMMIT_DIST = 100;
+    const SIDE_COMMIT_VEL  = 0.5;
+    const DOWN_COMMIT_DIST = 120;
+    const DOWN_COMMIT_VEL  = 0.6;
+    const EDGE_DAMPEN      = 0.32;
+
+    function stageWidth() { return stage.clientWidth || 340; }
+
     card.addEventListener('pointerdown', (e) => {
-      if (animatingOut || e.target === shareEl || e.target === downloadEl) return;
+      if (isAnimating || e.target === shareEl || e.target === downloadEl) return;
       dragging = true; moved = false;
       startX = e.clientX; startY = e.clientY;
-      deltaX = 0; deltaY = 0;
+      lastX = e.clientX; lastY = e.clientY; lastT = performance.now();
+      dragX = 0; dragY = 0; vx = 0; vy = 0;
       card.classList.add('dragging');
       card.setPointerCapture(e.pointerId);
     });
 
     card.addEventListener('pointermove', (e) => {
       if (!dragging) return;
-      deltaX = e.clientX - startX;
-      deltaY = e.clientY - startY;
-      if (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6) { moved = true; dismissHint(); }
-      const rotate = deltaX * 0.05;
-      const downPull = deltaY > 0 ? deltaY * 0.15 : deltaY * 0.4;
-      card.style.transform = `translate(${deltaX}px, ${downPull}px) rotate(${rotate}deg)`;
-      const dist = Math.max(Math.abs(deltaX), Math.abs(deltaY) * 1.4);
-      card.style.opacity = String(Math.max(1 - dist / 480, 0.4));
+      let rawDX = e.clientX - startX;
+      const rawDY = e.clientY - startY;
+      const now = performance.now();
+      const dt = Math.max(now - lastT, 1);
+      vx = (e.clientX - lastX) / dt;
+      vy = (e.clientY - lastY) / dt;
+      lastX = e.clientX; lastY = e.clientY; lastT = now;
+
+      if (Math.abs(rawDX) > 6 || Math.abs(rawDY) > 6) { moved = true; dismissHint(); }
+
+      const downwardBias = rawDY > 0 && Math.abs(rawDY) > Math.abs(rawDX);
+      if (downwardBias) {
+        dragY = rawDY; dragX = rawDX;
+        applyTransform(card, {
+          x: dragX * 0.3,
+          y: dragY * 0.7,
+          scale: 1 - Math.min(dragY / 900, 0.12),
+          rotate: dragX * 0.02,
+          opacity: Math.max(1 - dragY / 420, 0.3)
+        });
+        return;
+      }
+
+      // rubber-band at the ends of a non-circular deck
+      if (rawDX < 0 && !canGoNext()) rawDX *= EDGE_DAMPEN;
+      if (rawDX > 0 && !canGoPrev()) rawDX *= EDGE_DAMPEN;
+
+      dragX = rawDX; dragY = rawDY;
+      const progress = Math.max(-1, Math.min(1, dragX / (stageWidth() * 0.55)));
+      layoutStack(progress, dragX, dragY, stageWidth());
     });
 
-    // Swipe LEFT = next card. Swipe RIGHT = previous card (wraps circularly).
-    // Swipe DOWN = close the overlay and return to the page underneath.
-    function flyOffForward() {
-      animatingOut = true;
-      card.style.transition = 'transform 0.32s ease, opacity 0.32s ease';
-      card.style.transform = `translate(-520px, ${deltaY * 0.3}px) rotate(-26deg)`;
-      card.style.opacity = '0';
-      setTimeout(() => { animatingOut = false; advance(1); }, 200);
+    function finishToRest() {
+      isAnimating = true;
+      const w = stageWidth();
+      const startProgress = Math.max(-1, Math.min(1, dragX / (w * 0.55)));
+      const startDX = dragX, startDY = dragY;
+      const downwardBias = startDY > 0 && Math.abs(startDY) > Math.abs(startDX);
+      animateProgress(1, 0, {
+        duration: 260,
+        easing: easeOutBack,
+        onUpdate: (t) => {
+          if (downwardBias) {
+            applyTransform(card, {
+              x: startDX * t,
+              y: startDY * t,
+              scale: lerp(1, 1 - Math.min(startDY / 900, 0.12), t),
+              rotate: startDX * 0.02 * t,
+              opacity: lerp(1, Math.max(1 - startDY / 420, 0.3), t)
+            });
+          } else {
+            layoutStack(startProgress * t, startDX * t, startDY * t, w);
+          }
+        },
+        onDone: () => { isAnimating = false; removePrevEl(); }
+      });
     }
-    function flyOffBack() {
-      animatingOut = true;
-      card.style.transition = 'transform 0.32s ease, opacity 0.32s ease';
-      card.style.transform = `translate(520px, ${deltaY * 0.3}px) rotate(26deg)`;
-      card.style.opacity = '0';
-      setTimeout(() => { animatingOut = false; advance(-1); }, 200);
+
+    function finishCommit(direction) {
+      isAnimating = true;
+      const w = stageWidth();
+      const startProgress = Math.max(-1, Math.min(1, dragX / (w * 0.55)));
+      const targetX = direction > 0 ? -w * 1.3 : w * 1.3;
+      const speed = Math.max(Math.abs(vx), 0.35);
+      const duration = Math.max(140, Math.min(260, 220 / speed));
+      animateProgress(0, 1, {
+        duration,
+        easing: easeOutCubic,
+        onUpdate: (t) => {
+          const p = lerp(startProgress, direction > 0 ? -1 : 1, t);
+          const x = lerp(dragX, targetX, t);
+          layoutStack(p, x, dragY * (1 - t * 0.6), w);
+        },
+        onDone: () => {
+          isAnimating = false;
+          commitAdvance(direction);
+        }
+      });
     }
-    function flyOffDown() {
-      animatingOut = true;
-      card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-      card.style.transform = `translate(${deltaX * 0.4}px, 460px) rotate(${deltaX * 0.03}deg) scale(0.85)`;
-      card.style.opacity = '0';
-      setTimeout(() => { closeOverlay(); animatingOut = false; }, 180);
-    }
-    function snapBack() {
-      card.style.transition = 'transform 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease';
-      card.style.transform = 'translateY(0px) scale(1)';
-      card.style.opacity = '1';
+
+    function finishDownClose() {
+      isAnimating = true;
+      const startDX = dragX, startDY = dragY;
+      animateProgress(0, 1, {
+        duration: 200,
+        easing: easeOutCubic,
+        onUpdate: (t) => {
+          applyTransform(card, {
+            x: startDX * (1 - t * 0.2),
+            y: lerp(startDY, 640, t),
+            scale: lerp(1 - Math.min(startDY / 900, 0.12), 0.82, t),
+            rotate: startDX * 0.02,
+            opacity: lerp(Math.max(1 - startDY / 420, 0.3), 0, t)
+          });
+        },
+        onDone: () => { isAnimating = false; closeOverlay(); }
+      });
     }
 
     card.addEventListener('pointerup', () => {
@@ -1406,21 +1741,21 @@ function initKravnCards(config) {
       dragging = false;
       card.classList.remove('dragging');
 
-      const absX = Math.abs(deltaX), absY = Math.abs(deltaY);
-      const downThreshold = 100;
-      const sideThreshold = 90;
+      const downwardBias = dragY > 0 && Math.abs(dragY) > Math.abs(dragX);
 
-      if (!animatingOut && deltaY > downThreshold && deltaY > absX * 1.1) {
-        dismissHint();
-        flyOffDown();
+      if (downwardBias && circular) {
+        if (dragY > DOWN_COMMIT_DIST || vy > DOWN_COMMIT_VEL) {
+          dismissHint();
+          finishDownClose();
+        } else {
+          finishToRest();
+        }
         return;
       }
-      if (!animatingOut && absX > sideThreshold && absX > absY) {
-        dismissHint();
-        if (deltaX > 0) flyOffBack(); else flyOffForward();
-        return;
-      }
-      snapBack();
+
+      const wantsCommit = Math.abs(dragX) > SIDE_COMMIT_DIST || Math.abs(vx) > SIDE_COMMIT_VEL;
+      const direction = dragX < 0 ? 1 : -1; // left = forward(+1), right = backward(-1)
+      const allowed = direction > 0 ? canGoNext() : canGoPrev();
 
       if (!moved) {
         clickCount++;
@@ -1435,16 +1770,30 @@ function initKravnCards(config) {
           burstEl.classList.add('pop');
           likePost(post, pillEl);
         }
+        return;
+      }
+
+      if (wantsCommit && allowed) {
+        dismissHint();
+        finishCommit(direction);
+      } else {
+        finishToRest();
       }
     });
 
-    card.addEventListener('pointercancel', () => { dragging = false; card.classList.remove('dragging'); snapBack(); });
+    card.addEventListener('pointercancel', () => {
+      if (!dragging) return;
+      dragging = false;
+      card.classList.remove('dragging');
+      finishToRest();
+    });
   }
 
   function openOverlay() {
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
     current = 0;
+    history = [];
     render();
     showHintOnce();
   }
@@ -1472,7 +1821,7 @@ function initKravnCards(config) {
     }
     mode = next;
     if (modeToggle) modeToggle.classList.toggle('shuffle', mode === 'shuffle');
-    current = 0;
+    current = 0; history = [];
     render();
   }
 
@@ -1483,18 +1832,63 @@ function initKravnCards(config) {
     });
   }
 
-  if (prevArrow) prevArrow.addEventListener('click', () => { if (!animatingOut) { dismissHint(); advance(-1); } });
-  if (nextArrow) nextArrow.addEventListener('click', () => { if (!animatingOut) { dismissHint(); advance(1); } });
+  function arrowNav(direction) {
+    if (isAnimating) return;
+    const allowed = direction > 0 ? canGoNext() : canGoPrev();
+    if (!allowed) return;
+    dismissHint();
+    isAnimating = true;
+    const w = stage.clientWidth || 340;
+    if (direction < 0) ensurePrevEl(w);
+    animateProgress(0, 1, {
+      duration: 280,
+      easing: easeOutCubic,
+      onUpdate: (t) => {
+        const p = direction > 0 ? -t : t;
+        const x = direction > 0 ? -w * 1.1 * t : w * 1.1 * t;
+        layoutStack(p, x, 0, w);
+      },
+      onDone: () => { isAnimating = false; commitAdvance(direction); }
+    });
+  }
+
+  if (prevArrow) prevArrow.addEventListener('click', () => arrowNav(-1));
+  if (nextArrow) nextArrow.addEventListener('click', () => arrowNav(1));
 
   document.addEventListener('keydown', (e) => {
     if (!overlay.classList.contains('active')) return;
     if (e.key === 'Escape') closeOverlay();
-    if (e.key === 'ArrowRight') { dismissHint(); advance(1); }
-    if (e.key === 'ArrowLeft') { dismissHint(); advance(-1); }
-    if (e.key === 'ArrowDown') { dismissHint(); closeOverlay(); }
+    if (e.key === 'ArrowRight') arrowNav(1);
+    if (e.key === 'ArrowLeft') arrowNav(-1);
+    if (e.key === 'ArrowDown' && circular) closeOverlay();
   });
 }
 
+/* ============================================================
+   KRAVN PAGE ARRIVAL (Feed is the transition's destination)
+   If the visitor arrived here via the swipe-down/back-button
+   exit on Dashboard or Profile, settle the page in from a
+   slightly lifted state instead of popping in, so the two
+   halves read as one motion.
+   ============================================================ */
+function initKravnPageArrival(config) {
+  config = config || {};
+  const page = document.getElementById(config.pageId || 'kravn-page');
+  const flagKey = 'kravnPageTransitionOut';
+  if (!page) return;
+
+  if (sessionStorage.getItem(flagKey)) {
+    sessionStorage.removeItem(flagKey);
+    page.classList.add('kravn-page-enter');
+    void page.offsetWidth;
+    requestAnimationFrame(() => {
+      page.classList.add('kravn-page-enter-active');
+      setTimeout(() => {
+        page.classList.remove('kravn-page-enter', 'kravn-page-enter-active');
+      }, 380);
+    });
+  }
+}
 </script>
   <script>
     const KRAVN_FEED_POSTS = <%- JSON.stringify(posts.map(p => ({
@@ -1508,7 +1902,8 @@ function initKravnCards(config) {
     }))) %>;
 
     document.addEventListener('DOMContentLoaded', () => {
-      initKravnCards({ posts: KRAVN_FEED_POSTS, hintKey: 'kravnHintSeen_feed' });
+      initKravnCards({ posts: KRAVN_FEED_POSTS, hintKey: 'kravnHintSeen_feed', circular: true });
+      initKravnPageArrival();
     });
   </script>
 </body>

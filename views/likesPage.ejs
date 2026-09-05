@@ -1,32 +1,405 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Likes - KravN</title>
+
+  <title>Likes · <%= post.movie_name %> — KravN</title>
+
   <link rel="stylesheet" href="/css/style.css">
-  <script src="/js/theme.js"></script>
+  <script src="/js/theme.js" defer></script>
+
+  <style>
+    /* ================================
+       KRAVN LIKES PAGE — "ticket stub" layout
+       A KravN post is a screening. Liking it is leaving your
+       name on the stub. The page reads like a torn ticket,
+       followed by a reel of the people who showed up.
+
+       Built entirely on the site's real tokens (--accent,
+       --surface-1/2, --text/--text-muted, --space-*, --radius-*,
+       --dur-*, --font-display/--font-body) so it follows the
+       purple/gold data-theme toggle automatically.
+       ================================ */
+
+    .likes-page {
+      min-height: calc(100vh - 70px);
+      padding: var(--space-8) var(--space-4) var(--space-16);
+    }
+
+    .likes-container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    /* ---- Back link -------------------------------------------------- */
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: var(--space-5);
+
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .back-link:hover,
+    .back-link:focus-visible {
+      color: var(--accent);
+    }
+
+    .back-link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: var(--radius-sm);
+    }
+
+    .back-link svg {
+      width: 16px;
+      height: 16px;
+      flex: none;
+      transition: transform var(--dur-fast) var(--ease-out);
+    }
+
+    .back-link:hover svg {
+      transform: translateX(-2px);
+    }
+
+    /* ---- Ticket header ------------------------------------------------ */
+    /* Shaped like a torn stub: squared body, a perforated tear line,
+       and a stub strip carrying the tally. Deliberately not the same
+       card shape as the list below it. */
+
+    .ticket {
+      position: relative;
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin-bottom: var(--space-7, 1.75rem);
+    }
+
+    .ticket-body {
+      padding: var(--space-6) var(--space-6) var(--space-5);
+    }
+
+    .marquee-title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-size: clamp(1.6rem, 5vw, 2.15rem);
+      line-height: 1.15;
+      color: var(--text);
+    }
+
+    .ticket-sub {
+      margin: var(--space-2) 0 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      max-width: 46ch;
+    }
+
+    /* Perforated tear between the poster info and the stub */
+    .tear {
+      height: 0;
+      border-top: 2px dashed var(--border-mid);
+      position: relative;
+    }
+
+    .tear::before,
+    .tear::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 20px;
+      height: 20px;
+      background: var(--bg);
+      border-radius: 50%;
+      transform: translateY(-50%);
+    }
+
+    .tear::before { left: -10px; }
+    .tear::after { right: -10px; }
+
+    .stub {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-3);
+      padding: var(--space-4) var(--space-6);
+    }
+
+    .stub-count {
+      font-family: var(--font-mono, monospace);
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stub-label {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    /* ---- Reel list ---------------------------------------------------- */
+    /* Ordered list on purpose — this really is a sequence (who liked
+       it, in order), so a running number earns its place here. */
+
+    .reel-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .frame {
+      /* Renders offscreen rows cheaply on long lists. */
+      content-visibility: auto;
+      contain-intrinsic-size: 68px;
+    }
+
+    .frame-link {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4) var(--space-3) var(--space-3);
+
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface-1);
+      color: inherit;
+      text-decoration: none;
+
+      /* Sprocket edge — a filmstrip's left border, not a generic card. */
+      border-left: 10px solid transparent;
+      background-image: radial-gradient(circle, var(--bg) 2px, transparent 2.2px);
+      background-size: 10px 12px;
+      background-repeat: repeat-y;
+      background-position: 0 4px;
+
+      opacity: 0;
+      transform: translateY(6px);
+      animation: frameIn 0.32s ease forwards;
+      animation-delay: var(--d, 0s);
+
+      transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+    }
+
+    .frame-link:hover,
+    .frame-link:focus-visible {
+      border-color: var(--accent-dim);
+      transform: translateX(2px);
+    }
+
+    .frame-link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .frame-number {
+      flex: none;
+      width: 26px;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .frame-avatar {
+      flex: none;
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .frame-info {
+      min-width: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .frame-name {
+      color: var(--text);
+      font-weight: 700;
+      font-size: 0.96rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .frame-link:hover .frame-name,
+    .frame-link:focus-visible .frame-name {
+      color: var(--accent);
+    }
+
+    /* ---- Empty state --------------------------------------------------- */
+
+    .empty-state {
+      padding: var(--space-8) var(--space-5);
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-1);
+    }
+
+    .empty-state h2 {
+      margin: 0 0 var(--space-2);
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1.15rem;
+      color: var(--text);
+    }
+
+    .empty-state p {
+      max-width: 340px;
+      margin: 0 auto;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    @keyframes frameIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile */
+    @media (max-width: 600px) {
+      .likes-page { padding: var(--space-4) var(--space-3) var(--space-12); }
+      .ticket-body { padding: var(--space-5) var(--space-5) var(--space-4); }
+      .stub { padding: var(--space-3) var(--space-5); }
+      .frame-link { padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2); gap: var(--space-2); }
+      .frame-avatar { width: 36px; height: 36px; }
+    }
+
+    /* Accessibility / performance */
+    @media (prefers-reduced-motion: reduce) {
+      .frame-link {
+        animation: none;
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+      .back-link svg { transition: none; }
+    }
+  </style>
 </head>
+
 <body>
+
   <%- include('partials/navbar', { currentPage: 'likesPage' }) %>
- 
 
-  <div class="page-narrow">
-    <h1 style="font-size: 1.4rem; margin-top: var(--space-6); margin-bottom: 0.25rem;">People who liked this</h1>
-    <p class="auth-subtitle" style="margin-bottom: 1.5rem;"><%= post.movie_name %>: <%= post.title %></p>
+  <main class="likes-page">
+    <div class="likes-container">
 
-    <% if (likers.length === 0) { %>
-      <div class="empty-state"><p>No likes yet.</p></div>
-    <% } %>
+      <!--
+        Back navigation: if the visitor arrived from the post page
+        (same-origin referrer), a click just calls history.back() so
+        they land exactly where they left off — same scroll position,
+        no reload. If they opened this page directly (shared link,
+        new tab), the href below takes them straight to the post.
+        Adjust the route/field below (post.id) to match your schema.
+      -->
+      <a class="back-link" id="backLink" href="/posts/<%= post.id %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+        Back to <%= post.movie_name %>
+      </a>
 
-    <% likers.forEach(user => { %>
-      <div style="padding: 0.75rem 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
-        <div class="avatar-placeholder">
-          <%= user.username[0].toUpperCase() %>
+      <!-- Ticket header -->
+      <section class="ticket">
+        <div class="ticket-body">
+          <h1 class="marquee-title"><%= post.movie_name %></h1>
+          <p class="ticket-sub"><%= post.title %></p>
         </div>
-        <a href="/users/<%= user.username %>"><%= user.username %></a>
-      </div>
-    <% }); %>
-  </div>
+
+        <div class="tear" role="presentation"></div>
+
+        <div class="stub">
+          <span class="stub-count"><%= likers.length %></span>
+          <span class="stub-label">
+            <%= likers.length === 1 ? 'person liked this screening' : 'people liked this screening' %>
+          </span>
+        </div>
+      </section>
+
+      <!-- Reel -->
+      <% if (likers.length === 0) { %>
+
+        <section class="empty-state">
+          <h2>Nobody's clapped for this one yet</h2>
+          <p>Be the first to like <strong><%= post.movie_name %></strong> and your name opens the reel.</p>
+        </section>
+
+      <% } else { %>
+
+        <ol class="reel-list" aria-label="People who liked this post">
+
+          <% likers.forEach((user, index) => {
+               const delay = Math.min(index * 0.03, 0.24).toFixed(2);
+          %>
+
+            <li class="frame">
+              <a
+                class="frame-link"
+                style="--d: <%= delay %>s"
+                href="/users/<%= encodeURIComponent(user.username) %>"
+                aria-label="View <%= user.username %>'s profile"
+              >
+                <span class="frame-number" aria-hidden="true"><%= String(index + 1).padStart(2, '0') %></span>
+
+                <span class="frame-avatar" aria-hidden="true">
+                  <%= user.username.charAt(0).toUpperCase() %>
+                </span>
+
+                <span class="frame-info">
+                  <span class="frame-name"><%= user.username %></span>
+                </span>
+              </a>
+            </li>
+
+          <% }); %>
+
+        </ol>
+
+      <% } %>
+
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var backLink = document.getElementById('backLink');
+      if (!backLink || !document.referrer) return;
+      try {
+        var ref = new URL(document.referrer);
+        if (ref.origin === window.location.origin) {
+          backLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            history.back();
+          });
+        }
+      } catch (e) { /* malformed referrer, fall back to href */ }
+    })();
+  </script>
+
 </body>
 </html>
