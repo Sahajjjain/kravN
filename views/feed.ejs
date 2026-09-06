@@ -457,7 +457,269 @@ html[data-theme="light"] {
   transform: translateY(0) scale(1);
   opacity: 1;
 }
-</style>
+
+/* ============================================================
+   KRAVN 2.0 — TOP PICKS
+   A single, tight horizontal shelf of the highest-IMDb-rated
+   discussions, ending in a "View All" tile that opens a full
+   ranked list overlay. No filler sections above the discussion
+   feed — everything here is built off posts[] already on page.
+   ============================================================ */
+
+.kravn2-section {
+  margin: 0 0 var(--space-5, 1.4rem);
+}
+.kravn2-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.kravn2-section-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: -0.1px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.kravn2-section-sub {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted, #888);
+}
+
+/* ---- Horizontal scroll row (Top Picks) ---- */
+.kravn2-scroll-row {
+  display: flex;
+  gap: 0.85rem;
+  overflow-x: auto;
+  padding: 0.2rem 0.1rem 0.6rem;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.kravn2-scroll-row::-webkit-scrollbar { height: 5px; }
+.kravn2-scroll-row::-webkit-scrollbar-thumb { background: rgba(var(--kravn-primary-rgb), 0.35); border-radius: 4px; }
+
+.kravn2-poster-card {
+  position: relative;
+  flex: 0 0 auto;
+  width: 138px;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  scroll-snap-align: start;
+  cursor: pointer;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.25);
+  background: #0a0a0c;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+.kravn2-poster-card:hover { transform: translateY(-3px); border-color: rgba(var(--kravn-primary-rgb), 0.55); }
+.kravn2-poster-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.kravn2-poster-fallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+  background: linear-gradient(150deg, #1a1425, #060606 60%);
+}
+.kravn2-poster-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.92) 100%);
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 8px;
+}
+.kravn2-poster-movie {
+  font-size: 0.68rem; font-weight: 800; color: #fff; line-height: 1.2;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.kravn2-poster-meta {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.58rem; color: var(--kravn-primary-light);
+  margin-top: 3px;
+}
+.kravn2-rank-badge {
+  position: absolute; top: 6px; left: 6px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(5,5,9,0.75);
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.5);
+  color: var(--kravn-primary-light);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ---- "View All" tile, last item in the Top Picks shelf ---- */
+.kravn2-viewall-card {
+  flex: 0 0 auto;
+  width: 138px;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+  border: 1px dashed rgba(var(--kravn-primary-rgb), 0.45);
+  background: rgba(var(--kravn-primary-rgb), 0.05);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--kravn-primary-light);
+  transition: all 0.18s ease;
+  scroll-snap-align: start;
+}
+.kravn2-viewall-card:hover {
+  background: rgba(var(--kravn-primary-rgb), 0.12);
+  border-color: rgba(var(--kravn-primary-rgb), 0.75);
+  transform: translateY(-3px);
+}
+.kravn2-viewall-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+}
+.kravn2-viewall-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  text-align: center; padding: 0 0.4rem;
+}
+
+@media (max-width: 480px) {
+  .kravn2-poster-card, .kravn2-viewall-card { width: 116px; }
+}
+
+/* ============================================================
+   KRAVN TOP PICKS — full ranked list overlay
+   Opened by the "View All" tile. All posts with an IMDb rating,
+   ranked highest to lowest, poster + title, tap to open the post.
+   ============================================================ */
+.kravn2-overlay {
+  position: fixed; inset: 0; z-index: 998;
+  background: #050505;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.kravn2-overlay.active { display: flex; animation: kravn-fade-in 0.25s ease; }
+
+.kravn2-overlay-header {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px 14px;
+  border-bottom: 1px solid rgba(var(--kravn-primary-rgb), 0.18);
+  flex-shrink: 0;
+}
+.kravn2-overlay-back {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.35);
+  background: rgba(var(--kravn-primary-rgb), 0.08);
+  color: var(--kravn-primary-light);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 1.1rem; flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+.kravn2-overlay-back:hover { background: rgba(var(--kravn-primary-rgb), 0.18); }
+.kravn2-overlay-title {
+  font-size: 1.15rem; font-weight: 800; letter-spacing: -0.2px;
+}
+.kravn2-overlay-sub {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.64rem; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--text-muted, #888); margin-top: 2px;
+}
+
+.kravn2-overlay-body {
+  flex: 1; overflow-y: auto;
+  padding: 18px 20px calc(env(safe-area-inset-bottom, 0px) + 30px);
+}
+.kravn2-rank-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.kravn2-rank-item {
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.22);
+  background: #0a0a0c;
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+.kravn2-rank-item:hover { transform: translateY(-3px); border-color: rgba(var(--kravn-primary-rgb), 0.55); }
+.kravn2-rank-poster-wrap { position: relative; width: 100%; aspect-ratio: 2 / 3; background: #0a0a0c; }
+.kravn2-rank-poster-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.kravn2-rank-num {
+  position: absolute; top: 6px; left: 6px;
+  min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px;
+  background: rgba(5,5,9,0.8);
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.5);
+  color: var(--kravn-primary-light);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.66rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.kravn2-rank-rating {
+  position: absolute; top: 6px; right: 6px;
+  padding: 3px 8px; border-radius: 20px;
+  background: rgba(5,5,9,0.8);
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.5);
+  color: var(--kravn-primary-light);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem; font-weight: 700;
+}
+.kravn2-rank-info { padding: 0.6rem 0.65rem 0.75rem; }
+.kravn2-rank-movie {
+  font-size: 0.78rem; font-weight: 800; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.kravn2-rank-post {
+  font-size: 0.68rem; color: var(--text-muted, #999); margin-top: 3px;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* ---- Movie discussions list (all posts made about one movie) ---- */
+.kravn2-movie-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.kravn2-movie-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.22);
+  background: rgba(var(--kravn-primary-rgb), 0.03);
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+.kravn2-movie-row:hover {
+  border-color: rgba(var(--kravn-primary-rgb), 0.5);
+  background: rgba(var(--kravn-primary-rgb), 0.08);
+  transform: translateX(3px);
+}
+.kravn2-movie-row-body { flex: 1; min-width: 0; }
+.kravn2-movie-row-title {
+  font-size: 0.9rem; font-weight: 700; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.kravn2-movie-row-meta {
+  margin-top: 0.35rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.66rem;
+  color: var(--text-muted, #999);
+  letter-spacing: 0.02em;
+}
+.kravn2-movie-row-meta span { color: var(--kravn-primary-light); }
+.kravn2-movie-row-arrow { color: var(--kravn-primary-light); font-size: 1.1rem; flex-shrink: 0; }
+  </style>
   <script src="/js/theme.js"></script>
 
   <style>
@@ -477,8 +739,6 @@ html[data-theme="light"] {
       mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 12%, rgba(0,0,0,0.9) 78%, transparent 100%),
                   linear-gradient(to right, transparent 0%, rgba(0,0,0,0.9) 8%, rgba(0,0,0,0.9) 92%, transparent 100%);
       mask-composite: intersect;
-      /* subtle refinement: a slow drift so the banner feels a touch
-         more alive, without changing layout, colors, or crop */
       animation: kravn-hero-drift 26s ease-in-out infinite alternate;
     }
     @keyframes kravn-hero-drift {
@@ -506,7 +766,6 @@ html[data-theme="light"] {
       text-shadow: 0 4px 24px rgba(0,0,0,0.35);
       position: relative;
     }
-    /* subtle refinement: a slow breathing glow behind the greeting */
     .hero-greeting::after {
       content: '';
       position: absolute;
@@ -539,7 +798,6 @@ html[data-theme="light"] {
       text-shadow: 0 0 20px rgba(212,255,63,0.18);
     }
 
-    /* "Have a Theory?" — premium: soft gradient border + slow shine sweep */
     .hero-actions-row .btn {
       position: relative;
       overflow: hidden;
@@ -618,7 +876,6 @@ html[data-theme="light"] {
       transform: translateY(-1px);
     }
 
-    /* suggestions dropdown themed to match */
     .suggestions-dropdown {
       border: 1px solid rgba(var(--kravn-primary-rgb), 0.25) !important;
       box-shadow: 0 16px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.06) !important;
@@ -629,7 +886,6 @@ html[data-theme="light"] {
       letter-spacing: 0.01em;
     }
 
-    /* Toolbar row: heading + (sort dropdown / view-toggle) */
     .kravn-feed-toolbar {
       display: flex;
       align-items: center;
@@ -645,9 +901,6 @@ html[data-theme="light"] {
       gap: 0.6rem;
     }
 
-    /* Latest / Oldest / Random — premium Kravn-branded custom dropdown:
-       gradient border + shine sweep on the trigger, floating glass menu
-       with a gradient highlight on the active option. */
     .kravn-sort-dropdown {
       position: relative;
       display: inline-flex;
@@ -747,9 +1000,6 @@ html[data-theme="light"] {
     }
     .kravn-sort-option.active .kravn-sort-check { opacity: 1; }
 
-    /* ============================================================
-       VIEW TOGGLE (list / grid) — Kravn purple themed
-       ============================================================ */
     .kravn-toolbar-controls .view-toggle {
       display: inline-flex !important;
       align-items: stretch !important;
@@ -830,6 +1080,17 @@ html[data-theme="light"] {
       </div>
     </div>
 
+    <!-- ===== KRAVN-CARDS-BUTTON: main feature, sits right under the hero ===== -->
+    <% if (posts.length > 0) { %>
+      <div class="kravn-cards-row">
+        <button type="button" class="kravn-cards-btn" id="kravn-open-btn">
+          <span class="kravn-cards-btn-icon"></span>
+          Kravn Cards
+        </button>
+      </div>
+    <% } %>
+    <!-- ===== END KRAVN-CARDS-BUTTON ===== -->
+
     <form class="search-form" id="search-form" action="/search" method="GET">
       <div class="movie-autocomplete" style="flex: 1; max-width: 560px;">
         <input type="text" name="q" id="search-input" placeholder="Search movies or shows..." autocomplete="off">
@@ -866,8 +1127,7 @@ html[data-theme="light"] {
       });
     </script>
 
-    <!-- One-time "tap a username to view their profile" awareness hint.
-         Purely informational — shown once per session, auto-dismisses. -->
+    <!-- One-time "tap a username to view their profile" awareness hint. -->
     <div class="kravn-profile-hint" id="kravn-profile-hint">Tip: tap a user's name to view their profile</div>
     <script>
       (function () {
@@ -881,16 +1141,16 @@ html[data-theme="light"] {
       })();
     </script>
 
-    <!-- ===== KRAVN-CARDS-BUTTON: remove this block once the feature no longer needs the push ===== -->
+    <!-- ============ KRAVN TOP PICKS ============ -->
     <% if (posts.length > 0) { %>
-      <div class="kravn-cards-row">
-        <button type="button" class="kravn-cards-btn" id="kravn-open-btn">
-          <span class="kravn-cards-btn-icon"></span>
-          Kravn Cards
-        </button>
+    <div class="kravn2-section" id="kravn2-picks-section">
+      <div class="kravn2-section-head">
+        <span class="kravn2-section-title"> KravN Top Picks :</span>
+        <span class="kravn2-section-sub">Ranked by IMDb</span>
       </div>
+      <div class="kravn2-scroll-row" id="kravn2-picks-row"></div>
+    </div>
     <% } %>
-    <!-- ===== END KRAVN-CARDS-BUTTON ===== -->
 
     <div class="kravn-feed-toolbar">
       <h2 class="kravn-discussions-heading">Krav<span class="kravn-wordmark-n">N</span> discussions :</h2>
@@ -926,7 +1186,11 @@ html[data-theme="light"] {
 
     <div class="feed-grid" id="feed-container">
       <% posts.forEach(post => { %>
-        <div class="post-card" data-created="<%= post.created_at %>" onclick="window.location.href='/posts/<%= post.id %>'">
+        <div class="post-card"
+             data-created="<%= post.created_at %>"
+             data-rating="<%= (post.imdb_rating && post.imdb_rating !== 'N/A') ? parseFloat(post.imdb_rating) : 0 %>"
+             data-username="<%= post.username %>"
+             onclick="window.location.href='/posts/<%= post.id %>'">
           <% if (post.poster_url && post.poster_url !== 'N/A') { %>
             <img class="post-poster" src="<%= post.poster_url %>" alt="<%= post.movie_name %>">
           <% } else { %>
@@ -978,6 +1242,34 @@ html[data-theme="light"] {
       <% if (posts.length === 0) { %>
         <p class="kravn-empty">No cards yet. Start a discussion to see it here.</p>
       <% } %>
+    </div>
+  </div>
+
+  <!-- ================= KRAVN TOP PICKS — FULL LIST ================= -->
+  <div class="kravn2-overlay" id="kravn2-rank-overlay">
+    <div class="kravn2-overlay-header">
+      <button type="button" class="kravn2-overlay-back" id="kravn2-rank-back" title="Back">‹</button>
+      <div>
+        <div class="kravn2-overlay-title">KravN Top Picks</div>
+        <div class="kravn2-overlay-sub" id="kravn2-rank-count"></div>
+      </div>
+    </div>
+    <div class="kravn2-overlay-body">
+      <div class="kravn2-rank-grid" id="kravn2-rank-grid"></div>
+    </div>
+  </div>
+
+  <!-- ================= MOVIE DISCUSSIONS (opened from a Top Pick) ================= -->
+  <div class="kravn2-overlay" id="kravn2-movie-overlay" style="z-index: 1000;">
+    <div class="kravn2-overlay-header">
+      <button type="button" class="kravn2-overlay-back" id="kravn2-movie-back" title="Back">‹</button>
+      <div>
+        <div class="kravn2-overlay-title" id="kravn2-movie-title"></div>
+        <div class="kravn2-overlay-sub" id="kravn2-movie-count"></div>
+      </div>
+    </div>
+    <div class="kravn2-overlay-body">
+      <div class="kravn2-movie-list" id="kravn2-movie-list"></div>
     </div>
   </div>
 
@@ -1069,57 +1361,8 @@ html[data-theme="light"] {
 
   <script>
 /* ============================================================
-   KRAVN CARDS — arc/spring engine (v2)
+   KRAVN CARDS — arc/spring engine (v3, unchanged from prior release)
    Shared by feed.ejs, dashboard.ejs, and userProfile.ejs.
-
-   WHAT'S NEW VS THE ORIGINAL ENGINE
-   - Drag drives a single `progress` value that at once arcs the
-     top card away (it lifts up as it travels, rotates, and fades
-     — not a flat horizontal slide), and advances the card(s)
-     behind it toward the front slot, so the next card visibly
-     rises to meet your finger during the drag instead of
-     appearing only after the swap.
-   - Release hands off into a tiny requestAnimationFrame tween
-     that carries the drag's actual velocity into the completion
-     (animateProgress), so fast flicks finish fast and slow drags
-     ease out slowly — no seam between "dragging" and "settling".
-   - Snap-back uses a light springy overshoot (easeOutBack); a
-     committed swipe uses a plain easeOutCubic so it reads as
-     "thrown away" rather than "bounced".
-   - One pointer-event code path drives both touch and mouse, so
-     desktop and mobile feel identical; the desktop arrow buttons
-     trigger the same arc via a synthetic progress ramp.
-   - Feed uses circular navigation (wraps both ends). Dashboard
-     and Profile use non-circular navigation with a back-history
-     stack, matching their "browse forward, then go back" feel.
-   ============================================================ */
-/* ============================================================
-   KRAVN CARDS — Instagram-Stories-style slide engine (v3)
-   Shared by feed.ejs, dashboard.ejs, and userProfile.ejs.
-
-   BEHAVIOR (this is the part that changed)
-   - Swipe LEFT  = go forward. The top card slides left under your
-     finger (with a light tilt) and fades slightly as it leaves.
-     The next card — already sitting behind it, dimmed and slightly
-     scaled down — grows up to full size/opacity as you drag, so it
-     visibly "arrives" rather than popping in after release.
-   - Swipe RIGHT = go back. This is the true reverse of the above,
-     not a different animation: the current card slides right and
-     leaves, while the PREVIOUS card slides in from behind-left,
-     growing to full size — so going back genuinely looks like time
-     running backward on the same transition, exactly like flicking
-     back through Instagram Stories.
-   - Both directions run through the same pointer-event code path,
-     so touch (mobile) and mouse (desktop) behave identically; the
-     desktop arrow buttons trigger the same slide programmatically.
-   - Release still hands off into a velocity-aware requestAnimationFrame
-     tween (fast flicks finish fast, slow drags ease out slowly), and
-     an incomplete drag springs back with a light overshoot.
-   - Swipe DOWN still closes the overlay (Feed) using the same
-     smooth/spring language, independent of the left/right logic.
-   - At the ends of a non-circular deck (Dashboard/Profile), a drag
-     past the last/first card rubber-bands (dampened movement)
-     instead of sliding away into nothing.
    ============================================================ */
 function initKravnCards(config) {
   config = config || {};
@@ -1454,15 +1697,12 @@ function initKravnCards(config) {
     return card;
   }
 
-  // Resting transform for stack slot i (0 = active/front).
   function restSlot(i) {
     const scale = 1 - i * 0.05;
     const y = i * 14;
     return { x: 0, y, scale, rotate: 0, opacity: i === VISIBLE_STACK - 1 && VISIBLE_STACK > 1 ? 0.55 : 1 };
   }
 
-  // Resting (hidden) transform for the "previous" card while it waits
-  // off-stage to the left, before a backward drag reveals it.
   function hiddenPrevSlot(stageWidth) {
     return { x: -stageWidth * 0.55, y: 14, scale: 0.92, rotate: 0, opacity: 0.5 };
   }
@@ -1483,7 +1723,6 @@ function initKravnCards(config) {
     el.style.opacity = String(t.opacity);
   }
 
-  // Active-card transform while it's being dragged/animated away.
   function activeCardTransform(progress, dragX, dragY) {
     const absP = Math.min(Math.abs(progress), 1);
     return {
@@ -1495,8 +1734,8 @@ function initKravnCards(config) {
     };
   }
 
-  let cardEls = [];   // [0]=active, [1]=next (behind), [2]=deeper background (static)
-  let prevEl = null;  // lazily-created "previous" card, used only mid backward-drag
+  let cardEls = [];
+  let prevEl = null;
 
   function removePrevEl() {
     if (prevEl && prevEl.parentNode) prevEl.parentNode.removeChild(prevEl);
@@ -1510,36 +1749,21 @@ function initKravnCards(config) {
     const prevPost = deck[prevIdx];
     if (!prevPost) return null;
     prevEl = makeCardEl(prevPost);
-    // Sits just below the active card, but ABOVE every other stacked
-    // "shadow" card — otherwise the always-present forward-neighbor
-    // card (cardEls[1]) visually dominates during a backward drag,
-    // making the wrong post look like the incoming card until the
-    // swap snaps into place. This is what caused the glitchy preview.
     prevEl.style.zIndex = String(VISIBLE_STACK + 1);
     applyTransform(prevEl, { ...hiddenPrevSlot(stageWidth), opacity: 0 });
     stage.insertBefore(prevEl, stage.firstChild);
     return prevEl;
   }
 
-  // progress < 0  => dragging left  (forward / next)
-  // progress > 0  => dragging right (backward / previous)
   function layoutStack(progress, dragX, dragY, stageWidth) {
     if (!cardEls[0]) return;
     applyTransform(cardEls[0], activeCardTransform(progress, dragX, dragY));
     const advance = Math.min(Math.abs(progress), 1);
 
     if (progress <= 0) {
-      // forward: the already-stacked "next" card grows into the front
-      // slot; any leftover "previous" preview is fully hidden so it
-      // can't bleed through underneath.
       if (cardEls[1]) applyTransform(cardEls[1], lerpTransform(restSlot(1), restSlot(0), advance));
       if (prevEl) applyTransform(prevEl, { ...hiddenPrevSlot(stageWidth), opacity: 0 });
     } else {
-      // backward: the previous card slides in from behind-left and is
-      // now the topmost background layer (see ensurePrevEl above), so
-      // it's what the user actually sees growing in. The forward
-      // "next" shadow card fades out of the way instead of sitting on
-      // top of it, since it isn't the card that's about to appear.
       const el = ensurePrevEl(stageWidth);
       if (el) applyTransform(el, lerpTransform(hiddenPrevSlot(stageWidth), { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1 }, advance));
       if (cardEls[1]) {
@@ -1573,8 +1797,6 @@ function initKravnCards(config) {
       const post = deck[idx];
       const card = makeCardEl(post);
       applyTransform(card, restSlot(i));
-      // Active card (i=0) sits above prevEl's VISIBLE_STACK+1 reserved
-      // slot; other stacked cards use their normal low z-order.
       card.style.zIndex = i === 0 ? String(VISIBLE_STACK + 2) : String(VISIBLE_STACK - i);
       if (i === 0) attachInteractions(card, post);
       stage.appendChild(card);
@@ -1660,7 +1882,6 @@ function initKravnCards(config) {
         return;
       }
 
-      // rubber-band at the ends of a non-circular deck
       if (rawDX < 0 && !canGoNext()) rawDX *= EDGE_DAMPEN;
       if (rawDX > 0 && !canGoPrev()) rawDX *= EDGE_DAMPEN;
 
@@ -1754,7 +1975,7 @@ function initKravnCards(config) {
       }
 
       const wantsCommit = Math.abs(dragX) > SIDE_COMMIT_DIST || Math.abs(vx) > SIDE_COMMIT_VEL;
-      const direction = dragX < 0 ? 1 : -1; // left = forward(+1), right = backward(-1)
+      const direction = dragX < 0 ? 1 : -1;
       const allowed = direction > 0 ? canGoNext() : canGoPrev();
 
       if (!moved) {
@@ -1865,11 +2086,7 @@ function initKravnCards(config) {
 }
 
 /* ============================================================
-   KRAVN PAGE ARRIVAL (Feed is the transition's destination)
-   If the visitor arrived here via the swipe-down/back-button
-   exit on Dashboard or Profile, settle the page in from a
-   slightly lifted state instead of popping in, so the two
-   halves read as one motion.
+   KRAVN PAGE ARRIVAL
    ============================================================ */
 function initKravnPageArrival(config) {
   config = config || {};
@@ -1889,6 +2106,163 @@ function initKravnPageArrival(config) {
     });
   }
 }
+
+/* ============================================================
+   KRAVN TOP PICKS
+   Movies are grouped so each title appears once, ranked by its
+   highest IMDb rating, capped with a "View All" tile that opens
+   the full ranked list. Clicking a movie opens every discussion
+   posted about it (title, author, date) before drilling into a
+   specific post — mirrors how most social apps handle "topic"
+   pages. Everything derives from KRAVN_FEED_POSTS already on page.
+   ============================================================ */
+function initKravnTopPicks(posts) {
+  if (!posts || !posts.length) return;
+
+  const rated = posts.filter(p => p.imdbRating && !isNaN(parseFloat(p.imdbRating)));
+
+  const picksSection = document.getElementById('kravn2-picks-section');
+  const picksRow = document.getElementById('kravn2-picks-row');
+  if (!picksRow) return;
+
+  if (!rated.length) {
+    if (picksSection) picksSection.style.display = 'none';
+    return;
+  }
+
+  // Group by movie name (case/space-insensitive) so the same movie
+  // posted multiple times shows up as a single tile.
+  const groupsMap = new Map();
+  rated.forEach(p => {
+    const key = (p.movieName || p.title || '').trim().toLowerCase();
+    if (!key) return;
+    if (!groupsMap.has(key)) {
+      groupsMap.set(key, {
+        movieName: p.movieName || p.title,
+        posterUrl: p.posterUrl,
+        bestRating: parseFloat(p.imdbRating),
+        posts: []
+      });
+    }
+    const g = groupsMap.get(key);
+    g.posts.push(p);
+    const r = parseFloat(p.imdbRating);
+    if (r > g.bestRating) g.bestRating = r;
+    if (!g.posterUrl && p.posterUrl) g.posterUrl = p.posterUrl;
+  });
+  const groups = Array.from(groupsMap.values()).sort((a, b) => b.bestRating - a.bestRating);
+
+  function posterInner(group) {
+    return group.posterUrl
+      ? `<img src="${group.posterUrl}" alt="" onerror="this.parentElement.innerHTML='<div class=\\'kravn2-poster-fallback\\'>\uD83C\uDFAC</div>'">`
+      : `<div class="kravn2-poster-fallback">\uD83C\uDFAC</div>`;
+  }
+
+  function posterCard(group, rank) {
+    const el = document.createElement('div');
+    el.className = 'kravn2-poster-card';
+    el.addEventListener('click', () => openMovieOverlay(group, false));
+    el.innerHTML = `
+      ${posterInner(group)}
+      <div class="kravn2-rank-badge">#${rank}</div>
+      <div class="kravn2-poster-overlay">
+        <div class="kravn2-poster-movie">${group.movieName}</div>
+        <div class="kravn2-poster-meta">IMDb ${group.bestRating}${group.posts.length > 1 ? ' · ' + group.posts.length + ' posts' : ''}</div>
+      </div>`;
+    return el;
+  }
+
+  const SHELF_SIZE = 10;
+  groups.slice(0, SHELF_SIZE).forEach((g, i) => picksRow.appendChild(posterCard(g, i + 1)));
+
+  if (groups.length > 3) {
+    const viewAll = document.createElement('div');
+    viewAll.className = 'kravn2-viewall-card';
+    viewAll.innerHTML = `
+      <div class="kravn2-viewall-icon">→</div>
+      <div class="kravn2-viewall-label">View All<br>(${groups.length})</div>`;
+    viewAll.addEventListener('click', () => openRankOverlay());
+    picksRow.appendChild(viewAll);
+  }
+
+  /* ---------- Full ranked-list overlay (one tile per movie) ---------- */
+  const rankOverlay = document.getElementById('kravn2-rank-overlay');
+  const rankGrid = document.getElementById('kravn2-rank-grid');
+  const rankBack = document.getElementById('kravn2-rank-back');
+  const rankCount = document.getElementById('kravn2-rank-count');
+
+  function openRankOverlay() {
+    if (!rankOverlay || !rankGrid) return;
+    rankGrid.innerHTML = '';
+    groups.forEach((g, i) => {
+      const item = document.createElement('div');
+      item.className = 'kravn2-rank-item';
+      item.addEventListener('click', () => openMovieOverlay(g, true));
+      item.innerHTML = `
+        <div class="kravn2-rank-poster-wrap">
+          ${posterInner(g)}
+          <div class="kravn2-rank-num">#${i + 1}</div>
+          <div class="kravn2-rank-rating">★ ${g.bestRating}</div>
+        </div>
+        <div class="kravn2-rank-info">
+          <div class="kravn2-rank-movie">${g.movieName}</div>
+          <div class="kravn2-rank-post">${g.posts.length} discussion${g.posts.length > 1 ? 's' : ''}</div>
+        </div>`;
+      rankGrid.appendChild(item);
+    });
+    if (rankCount) rankCount.textContent = `${groups.length} movies · ranked by IMDb rating`;
+    rankOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeRankOverlay() {
+    rankOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  if (rankBack) rankBack.addEventListener('click', closeRankOverlay);
+
+  /* ---------- Movie discussions overlay (all posts for one movie) ---------- */
+  const movieOverlay = document.getElementById('kravn2-movie-overlay');
+  const movieList = document.getElementById('kravn2-movie-list');
+  const movieBack = document.getElementById('kravn2-movie-back');
+  const movieTitleEl = document.getElementById('kravn2-movie-title');
+  const movieCountEl = document.getElementById('kravn2-movie-count');
+  let cameFromRank = false;
+
+  function openMovieOverlay(group, fromRank) {
+    if (!movieOverlay || !movieList) return;
+    cameFromRank = !!fromRank;
+    movieTitleEl.textContent = group.movieName;
+    movieCountEl.textContent = `${group.posts.length} discussion${group.posts.length > 1 ? 's' : ''}`;
+    movieList.innerHTML = '';
+    const sorted = group.posts.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    sorted.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'kravn2-movie-row';
+      row.addEventListener('click', () => { window.location.href = `/posts/${p.id}`; });
+      const dateStr = new Date(p.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
+      row.innerHTML = `
+        <div class="kravn2-movie-row-body">
+          <div class="kravn2-movie-row-title">${p.title}</div>
+          <div class="kravn2-movie-row-meta">Posted by <span>${p.username}</span> · ${dateStr}${p.imdbRating ? ' · IMDb ' + p.imdbRating : ''}</div>
+        </div>
+        <div class="kravn2-movie-row-arrow">→</div>`;
+      movieList.appendChild(row);
+    });
+    movieOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeMovieOverlay() {
+    movieOverlay.classList.remove('active');
+    if (!cameFromRank) document.body.style.overflow = '';
+  }
+  if (movieBack) movieBack.addEventListener('click', closeMovieOverlay);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (movieOverlay && movieOverlay.classList.contains('active')) { closeMovieOverlay(); return; }
+    if (rankOverlay && rankOverlay.classList.contains('active')) closeRankOverlay();
+  });
+}
 </script>
   <script>
     const KRAVN_FEED_POSTS = <%- JSON.stringify(posts.map(p => ({
@@ -1903,6 +2277,7 @@ function initKravnPageArrival(config) {
 
     document.addEventListener('DOMContentLoaded', () => {
       initKravnCards({ posts: KRAVN_FEED_POSTS, hintKey: 'kravnHintSeen_feed', circular: true });
+      initKravnTopPicks(KRAVN_FEED_POSTS);
       initKravnPageArrival();
     });
   </script>
