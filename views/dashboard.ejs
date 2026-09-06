@@ -9,13 +9,6 @@
 
   <link rel="stylesheet" href="/css/style.css">
   <style>
-/* ============================================================
-   KRAVN CARDS — shared engine styles
-   Used by feed.ejs, dashboard.ejs, and userProfile.ejs.
-   Colors are theme-aware: purple in dark mode, gold in light
-   mode, driven by html[data-theme].
-   ============================================================ */
-
 :root {
   --kravn-primary: #8b5cf6;
   --kravn-primary-rgb: 139, 92, 246;
@@ -32,9 +25,22 @@ html[data-theme="light"] {
   --kravn-heart-red: #e0703a;
 }
 
-.kravn-wordmark-n { color: var(--kravn-primary-light); }
+.kravn-wordmark-n {
+  background: linear-gradient(115deg, var(--kravn-primary-light) 0%, #fff 18%, var(--kravn-primary) 45%, var(--kravn-primary-light) 70%, var(--kravn-primary) 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--kravn-primary-light);
+  -webkit-text-fill-color: transparent;
+  animation: kravn-n-shimmer 3.2s linear infinite;
+  filter: drop-shadow(0 0 10px rgba(var(--kravn-primary-rgb), 0.45));
+  display: inline-block;
+}
+@keyframes kravn-n-shimmer {
+  0%   { background-position: 0% center; }
+  100% { background-position: 250% center; }
+}
 
-/* ---- Cards entry button — rectangular, minimalist, premium shine ---- */
 .kravn-cards-row {
   display: flex;
   justify-content: center;
@@ -98,7 +104,6 @@ html[data-theme="light"] {
   .kravn-cards-btn { padding: 0.6rem 1.3rem; font-size: 0.7rem; letter-spacing: 0.13em; }
 }
 
-/* ---- Overlay shell ---- */
 .kravn-overlay {
   position: fixed; inset: 0; z-index: 999;
   background: #050505;
@@ -114,9 +119,6 @@ html[data-theme="light"] {
   width: 100%; max-width: 420px;
   padding: env(safe-area-inset-top, 14px) 16px 0;
   box-sizing: border-box;
-  /* Always above every card layer, no matter how many cards are in
-     the deck — cards use small z-index tiers (a handful of ints
-     around VISIBLE_STACK), so 100 gives permanent headroom. */
   z-index: 100;
 }
 .kravn-pips { display: flex; gap: 4px; margin-bottom: 14px; }
@@ -141,7 +143,6 @@ html[data-theme="light"] {
 
 .kravn-header-actions { display: flex; gap: 0.55rem; align-items: center; }
 
-/* Premium toggle switch: Latest <-> Shuffle */
 .kravn-mode-toggle {
   position: relative;
   display: flex;
@@ -166,7 +167,7 @@ html[data-theme="light"] {
   box-shadow: 0 2px 10px rgba(var(--kravn-primary-rgb), 0.5);
   transition: transform 0.28s cubic-bezier(0.22,1,0.36,1);
 }
-.kravn-mode-toggle.shuffle .kravn-mode-thumb { transform: translateX(100%); }
+.kravn-mode-toggle.toprated .kravn-mode-thumb { transform: translateX(100%); }
 .kravn-mode-option {
   position: relative; z-index: 1;
   flex: 1; text-align: center;
@@ -175,8 +176,8 @@ html[data-theme="light"] {
   color: rgba(255,255,255,0.45);
   transition: color 0.25s ease;
 }
-.kravn-mode-toggle:not(.shuffle) .kravn-mode-option[data-mode="latest"],
-.kravn-mode-toggle.shuffle .kravn-mode-option[data-mode="shuffle"] {
+.kravn-mode-toggle:not(.toprated) .kravn-mode-option[data-mode="latest"],
+.kravn-mode-toggle.toprated .kravn-mode-option[data-mode="toprated"] {
   color: #fff; font-weight: 700;
 }
 
@@ -219,7 +220,6 @@ html[data-theme="light"] {
   font-size: 0.85rem; text-align: center;
 }
 
-/* side arrow buttons — desktop / laptop only */
 .kravn-side-arrow {
   display: none;
   position: absolute;
@@ -244,7 +244,6 @@ html[data-theme="light"] {
 .kravn-side-arrow.next { right: max(2vw, 24px); }
 @media (min-width: 900px) { .kravn-side-arrow { display: flex; } }
 
-/* card shell — matte frame around an HD, theme-colored poster */
 .kravn-card {
   position: absolute;
   width: min(88vw, 340px);
@@ -263,7 +262,6 @@ html[data-theme="light"] {
 }
 .kravn-card.dragging { cursor: grabbing; }
 
-/* thin Kravn-purple lining on every post card, feed/dashboard/profile alike */
 .post-card {
   border: 1px solid rgba(var(--kravn-primary-rgb), 0.32);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -303,7 +301,7 @@ html[data-theme="light"] {
   font-size: 15px; font-weight: 800; letter-spacing: -0.5px; color: #fff;
   text-shadow: 0 3px 10px rgba(0,0,0,0.7);
 }
-.kravn-card-logo .kravn-wordmark-n { color: var(--kravn-primary-light); }
+.kravn-card-logo .kravn-wordmark-n { filter: drop-shadow(0 0 6px rgba(var(--kravn-primary-rgb), 0.55)); }
 .kravn-card-badge {
   font-family: var(--font-mono, monospace);
   font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase;
@@ -346,7 +344,6 @@ html[data-theme="light"] {
   transform: translateY(-1px);
 }
 
-/* double-tap like: minimal red -> theme-color gradient heart */
 .kravn-heart-burst {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%) scale(0.4);
@@ -373,7 +370,6 @@ html[data-theme="light"] {
 }
 .kravn-liked-pill.show { opacity: 1; }
 
-/* first-time hint, shown once per session then fades */
 .kravn-hint-toast {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
@@ -403,9 +399,6 @@ html[data-theme="light"] {
 }
 .kravn-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* ---- Page transition wrapper: back button / swipe-down-from-header
-   smoothly drops this page away and rounds it off like a card being
-   set down, revealing the Feed underneath as it navigates there. ---- */
 .kravn-page {
   transform-origin: center top;
   will-change: transform, opacity, border-radius;
@@ -437,7 +430,6 @@ html[data-theme="light"] {
   cursor: grabbing;
 }
 
-/* small back-button placement, top-left above the profile header */
 .kravn-back-row {
   display: flex;
   align-items: center;
@@ -635,10 +627,10 @@ html[data-theme="light"] {
       <div class="kravn-overlay-header">
         <div class="kravn-brand">Krav<span class="kravn-wordmark-n">N</span> Cards</div>
         <div class="kravn-header-actions">
-          <div class="kravn-mode-toggle" id="kravn-mode-toggle" role="button" tabindex="0" title="Latest / Shuffle">
+          <div class="kravn-mode-toggle" id="kravn-mode-toggle" role="button" tabindex="0" title="Latest / Top Rated">
             <span class="kravn-mode-thumb"></span>
             <span class="kravn-mode-option" data-mode="latest">Latest</span>
-            <span class="kravn-mode-option" data-mode="shuffle">Shuffle</span>
+            <span class="kravn-mode-option" data-mode="toprated">Top Rated</span>
           </div>
           <button type="button" class="kravn-icon-btn" id="kravn-close-btn" title="Close">✕</button>
         </div>
@@ -659,39 +651,6 @@ html[data-theme="light"] {
   <canvas id="kravn-render-canvas" style="display:none;"></canvas>
 
   <script>
-/* ============================================================
-   KRAVN CARDS — arc/spring engine (v2)
-   Shared by feed.ejs, dashboard.ejs, and userProfile.ejs.
-   See feed.ejs for the full explanatory header comment.
-   ============================================================ */
-/* ============================================================
-   KRAVN CARDS — Instagram-Stories-style slide engine (v3)
-   Shared by feed.ejs, dashboard.ejs, and userProfile.ejs.
-
-   BEHAVIOR (this is the part that changed)
-   - Swipe LEFT  = go forward. The top card slides left under your
-     finger (with a light tilt) and fades slightly as it leaves.
-     The next card — already sitting behind it, dimmed and slightly
-     scaled down — grows up to full size/opacity as you drag, so it
-     visibly "arrives" rather than popping in after release.
-   - Swipe RIGHT = go back. This is the true reverse of the above,
-     not a different animation: the current card slides right and
-     leaves, while the PREVIOUS card slides in from behind-left,
-     growing to full size — so going back genuinely looks like time
-     running backward on the same transition, exactly like flicking
-     back through Instagram Stories.
-   - Both directions run through the same pointer-event code path,
-     so touch (mobile) and mouse (desktop) behave identically; the
-     desktop arrow buttons trigger the same slide programmatically.
-   - Release still hands off into a velocity-aware requestAnimationFrame
-     tween (fast flicks finish fast, slow drags ease out slowly), and
-     an incomplete drag springs back with a light overshoot.
-   - Swipe DOWN still closes the overlay (Feed) using the same
-     smooth/spring language, independent of the left/right logic.
-   - At the ends of a non-circular deck (Dashboard/Profile), a drag
-     past the last/first card rubber-bands (dampened movement)
-     instead of sliding away into nothing.
-   ============================================================ */
 function initKravnCards(config) {
   config = config || {};
   const posts = config.posts || [];
@@ -1025,15 +984,12 @@ function initKravnCards(config) {
     return card;
   }
 
-  // Resting transform for stack slot i (0 = active/front).
   function restSlot(i) {
     const scale = 1 - i * 0.05;
     const y = i * 14;
     return { x: 0, y, scale, rotate: 0, opacity: i === VISIBLE_STACK - 1 && VISIBLE_STACK > 1 ? 0.55 : 1 };
   }
 
-  // Resting (hidden) transform for the "previous" card while it waits
-  // off-stage to the left, before a backward drag reveals it.
   function hiddenPrevSlot(stageWidth) {
     return { x: -stageWidth * 0.55, y: 14, scale: 0.92, rotate: 0, opacity: 0.5 };
   }
@@ -1054,7 +1010,6 @@ function initKravnCards(config) {
     el.style.opacity = String(t.opacity);
   }
 
-  // Active-card transform while it's being dragged/animated away.
   function activeCardTransform(progress, dragX, dragY) {
     const absP = Math.min(Math.abs(progress), 1);
     return {
@@ -1066,8 +1021,8 @@ function initKravnCards(config) {
     };
   }
 
-  let cardEls = [];   // [0]=active, [1]=next (behind), [2]=deeper background (static)
-  let prevEl = null;  // lazily-created "previous" card, used only mid backward-drag
+  let cardEls = [];
+  let prevEl = null;
 
   function removePrevEl() {
     if (prevEl && prevEl.parentNode) prevEl.parentNode.removeChild(prevEl);
@@ -1081,36 +1036,21 @@ function initKravnCards(config) {
     const prevPost = deck[prevIdx];
     if (!prevPost) return null;
     prevEl = makeCardEl(prevPost);
-    // Sits just below the active card, but ABOVE every other stacked
-    // "shadow" card — otherwise the always-present forward-neighbor
-    // card (cardEls[1]) visually dominates during a backward drag,
-    // making the wrong post look like the incoming card until the
-    // swap snaps into place. This is what caused the glitchy preview.
     prevEl.style.zIndex = String(VISIBLE_STACK + 1);
     applyTransform(prevEl, { ...hiddenPrevSlot(stageWidth), opacity: 0 });
     stage.insertBefore(prevEl, stage.firstChild);
     return prevEl;
   }
 
-  // progress < 0  => dragging left  (forward / next)
-  // progress > 0  => dragging right (backward / previous)
   function layoutStack(progress, dragX, dragY, stageWidth) {
     if (!cardEls[0]) return;
     applyTransform(cardEls[0], activeCardTransform(progress, dragX, dragY));
     const advance = Math.min(Math.abs(progress), 1);
 
     if (progress <= 0) {
-      // forward: the already-stacked "next" card grows into the front
-      // slot; any leftover "previous" preview is fully hidden so it
-      // can't bleed through underneath.
       if (cardEls[1]) applyTransform(cardEls[1], lerpTransform(restSlot(1), restSlot(0), advance));
       if (prevEl) applyTransform(prevEl, { ...hiddenPrevSlot(stageWidth), opacity: 0 });
     } else {
-      // backward: the previous card slides in from behind-left and is
-      // now the topmost background layer (see ensurePrevEl above), so
-      // it's what the user actually sees growing in. The forward
-      // "next" shadow card fades out of the way instead of sitting on
-      // top of it, since it isn't the card that's about to appear.
       const el = ensurePrevEl(stageWidth);
       if (el) applyTransform(el, lerpTransform(hiddenPrevSlot(stageWidth), { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1 }, advance));
       if (cardEls[1]) {
@@ -1144,8 +1084,6 @@ function initKravnCards(config) {
       const post = deck[idx];
       const card = makeCardEl(post);
       applyTransform(card, restSlot(i));
-      // Active card (i=0) sits above prevEl's VISIBLE_STACK+1 reserved
-      // slot; other stacked cards use their normal low z-order.
       card.style.zIndex = i === 0 ? String(VISIBLE_STACK + 2) : String(VISIBLE_STACK - i);
       if (i === 0) attachInteractions(card, post);
       stage.appendChild(card);
@@ -1231,7 +1169,6 @@ function initKravnCards(config) {
         return;
       }
 
-      // rubber-band at the ends of a non-circular deck
       if (rawDX < 0 && !canGoNext()) rawDX *= EDGE_DAMPEN;
       if (rawDX > 0 && !canGoPrev()) rawDX *= EDGE_DAMPEN;
 
@@ -1325,7 +1262,7 @@ function initKravnCards(config) {
       }
 
       const wantsCommit = Math.abs(dragX) > SIDE_COMMIT_DIST || Math.abs(vx) > SIDE_COMMIT_VEL;
-      const direction = dragX < 0 ? 1 : -1; // left = forward(+1), right = backward(-1)
+      const direction = dragX < 0 ? 1 : -1;
       const allowed = direction > 0 ? canGoNext() : canGoPrev();
 
       if (!moved) {
@@ -1367,6 +1304,7 @@ function initKravnCards(config) {
     history = [];
     render();
     showHintOnce();
+    if (window.kravnPushOverlayState) window.kravnPushOverlayState();
   }
   function closeOverlay() {
     overlay.classList.remove('active');
@@ -1380,26 +1318,23 @@ function initKravnCards(config) {
 
   function setMode(next) {
     if (next === mode) return;
-    if (next === 'shuffle') {
-      for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
-      }
-      toast('Shuffled');
+    if (next === 'toprated') {
+      deck = deck.slice().sort((a, b) => (parseFloat(b.imdbRating) || -1) - (parseFloat(a.imdbRating) || -1));
+      toast('Sorted: Top Rated');
     } else {
       deck = deck.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       toast('Sorted: Latest');
     }
     mode = next;
-    if (modeToggle) modeToggle.classList.toggle('shuffle', mode === 'shuffle');
+    if (modeToggle) modeToggle.classList.toggle('toprated', mode === 'toprated');
     current = 0; history = [];
     render();
   }
 
   if (modeToggle) {
-    modeToggle.addEventListener('click', () => setMode(mode === 'latest' ? 'shuffle' : 'latest'));
+    modeToggle.addEventListener('click', () => setMode(mode === 'latest' ? 'toprated' : 'latest'));
     modeToggle.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') setMode(mode === 'latest' ? 'shuffle' : 'latest');
+      if (e.key === 'Enter' || e.key === ' ') setMode(mode === 'latest' ? 'toprated' : 'latest');
     });
   }
 
@@ -1433,18 +1368,10 @@ function initKravnCards(config) {
     if (e.key === 'ArrowLeft') arrowNav(-1);
     if (e.key === 'ArrowDown' && circular) closeOverlay();
   });
+
+  if (window.kravnRegisterOverlay) window.kravnRegisterOverlay(overlay, closeOverlay);
 }
 
-/* ============================================================
-   KRAVN PAGE TRANSITIONS (Dashboard / Profile -> Feed)
-   Since these are separate server-rendered pages rather than an
-   SPA, a truly continuous shared-element animation isn't
-   possible — this gets close: the outgoing page visibly drops
-   away and rounds off like a card being set down, THEN the
-   browser navigates, and the incoming Feed settles in from a
-   lifted state (see initKravnPageArrival() in feed.ejs) so the
-   two halves read as one motion.
-   ============================================================ */
 function initKravnPageTransition(config) {
   config = config || {};
   const backHref   = config.backHref || '/feed';
@@ -1512,6 +1439,44 @@ function initKravnPageTransition(config) {
     });
   }
 }
+
+/* ============================================================
+   KRAVN BACK-BUTTON GUARD
+   While the Kravn Cards overlay is open on this page, pressing
+   the browser/mobile back button closes it and sends the person
+   to the Feed (home) instead of wherever normal history would go.
+   ============================================================ */
+(function initKravnBackGuard() {
+  const registered = [];
+  let depth = 0;
+
+  window.kravnRegisterOverlay = function (overlayEl, closeFn) {
+    registered.push({ overlayEl, closeFn });
+  };
+  window.kravnPushOverlayState = function () {
+    depth++;
+    history.pushState({ kravnOverlayDepth: depth }, '');
+  };
+
+  function closeTopMostOpenOverlay() {
+    for (let i = registered.length - 1; i >= 0; i--) {
+      const { overlayEl, closeFn } = registered[i];
+      if (overlayEl && overlayEl.classList.contains('active')) {
+        closeFn();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  window.addEventListener('popstate', () => {
+    if (depth > 0) {
+      depth--;
+      closeTopMostOpenOverlay();
+      window.location.href = '/feed';
+    }
+  });
+})();
 </script>
   <script>
     const KRAVN_DASHBOARD_USERNAME = <%- JSON.stringify(username || '') %>;
