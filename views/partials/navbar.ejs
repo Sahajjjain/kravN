@@ -1,207 +1,262 @@
 <style>
   /* ============================================================
-     KRAVN NAVBAR — premium polish
-     Uses the same --kravn-primary / --kravn-primary-rgb variables
-     defined globally (purple in dark mode, gold in light mode).
-     No theme colors are overridden here — only structure, spacing,
-     hover states and accent treatments.
+     KRAVN NAVBAR — minimal, icon-only, consistent on desktop
+     and mobile. Active state = the icon itself turns the accent
+     color (purple in dark mode, gold in light mode). No fills,
+     no borders, no labels — nothing that competes with content
+     while scrolling.
      ============================================================ */
 
   .topbar {
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(var(--kravn-primary-rgb), 0.12);
+    backdrop-filter: blur(18px) saturate(1.3);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
+    background: rgba(var(--bg-rgb, 10, 10, 10), 0.72);
+    border-bottom: 1px solid rgba(var(--kravn-primary-rgb), 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 500;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
   }
 
   .topbar-inner {
     display: flex;
     align-items: center;
-    gap: var(--space-5, 1.5rem);
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 1180px;
+    margin: 0 auto;
   }
 
   /* ---- Brand ---- */
   .topbar .brand {
     font-weight: 800;
-    letter-spacing: -0.3px;
-    transition: opacity 0.2s ease;
+    letter-spacing: -0.4px;
+    font-size: 1.1rem;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    flex-shrink: 0;
   }
-  .topbar .brand:hover { opacity: 0.85; }
-  .topbar .brand span { color: var(--kravn-primary-light); }
+  .topbar .brand:hover { opacity: 0.88; transform: translateY(-1px); }
+  .topbar .brand span {
+    color: var(--kravn-primary-light);
+    filter: drop-shadow(0 0 8px rgba(var(--kravn-primary-rgb), 0.4));
+  }
 
-  /* ---- Nav links (desktop) ---- */
+  /* ============================================================
+     ICON BUTTON — shared by the desktop bar and the mobile bar.
+     Resting state: soft neutral icon. Active state: ONLY the
+     icon glyph recolors to the accent — the button itself never
+     gets a background, border or ring, so nothing but the tiny
+     glyph changes and it never reads as a "highlight box".
+     ============================================================ */
+  .nav-icon-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.55);
+    background: transparent;
+    cursor: pointer;
+    transition: color 0.18s ease, background 0.18s ease, transform 0.15s ease;
+  }
+
+  .nav-icon-btn svg { transition: filter 0.18s ease, transform 0.15s ease; }
+
+  .nav-icon-btn:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(var(--kravn-primary-rgb), 0.08);
+  }
+
+  .nav-icon-btn:active { transform: scale(0.9); }
+
+  .nav-icon-btn.active {
+    color: var(--kravn-primary);
+  }
+  .nav-icon-btn.active svg {
+    filter: drop-shadow(0 0 6px rgba(var(--kravn-primary-rgb), 0.55));
+    transform: translateY(-1px) scale(1.05);
+  }
+
+  .nav-icon-btn .badge-dot {
+    position: absolute;
+    top: 3px;
+    right: 4px;
+  }
+
+  /* ---- Desktop nav row ---- */
   .nav-links {
     display: flex;
     align-items: center;
-    gap: var(--space-4, 1.25rem);
+    gap: 0.5rem;
   }
 
-  .nav-links a {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    padding: 0.35rem 0.1rem 0.5rem;
-    color: rgba(255, 255, 255, 0.72);
-    transition: color 0.2s ease;
+  .nav-links-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(var(--kravn-primary-rgb), 0.16);
+    margin: 0 0.25rem;
+    flex-shrink: 0;
   }
 
-  .nav-links a::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, var(--kravn-primary), var(--kravn-primary-light));
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .nav-links a:hover { color: #fff; }
-  .nav-links a:hover::after,
-  .nav-links a.active::after { transform: scaleX(1); }
-  .nav-links a.active { color: var(--kravn-primary-light); font-weight: 600; }
-
-  /* icon-only links (notifications bell / logout) inside nav-links */
-  .nav-links a.tab,
-  .nav-links a[aria-label="Logout"] {
-    position: relative;
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 50%;
-    color: rgba(255, 255, 255, 0.6);
-    transition: all 0.18s ease;
-  }
-  .nav-links a.tab::after,
-  .nav-links a[aria-label="Logout"]::after { display: none; content: none; }
-  .nav-links a.tab:hover,
-  .nav-links a[aria-label="Logout"]:hover {
-    color: var(--kravn-primary-light);
-    background: rgba(var(--kravn-primary-rgb), 0.1);
-  }
-
-  /* ---- Theme toggle button ---- */
+  /* ---- Theme toggle button (kept visually distinct so it never
+         reads as an active nav item) ---- */
   .theme-toggle {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    border: 1px solid rgba(var(--kravn-primary-rgb), 0.22);
+    border: 1.5px solid rgba(var(--kravn-primary-rgb), 0.22);
     background: rgba(var(--kravn-primary-rgb), 0.05);
     color: var(--kravn-primary-light);
     cursor: pointer;
     transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+    flex-shrink: 0;
   }
   .theme-toggle:hover {
     border-color: rgba(var(--kravn-primary-rgb), 0.5);
     background: rgba(var(--kravn-primary-rgb), 0.1);
+    transform: translateY(-1px);
   }
-  .theme-toggle:active { transform: scale(0.93); }
+  .theme-toggle:active { transform: scale(0.92); }
 
   /* ---- Avatar ---- */
   .avatar-placeholder {
-    border: 1.5px solid rgba(var(--kravn-primary-rgb), 0.4);
-    box-shadow: 0 0 0 3px rgba(var(--kravn-primary-rgb), 0.08);
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    width: 34px;
+    height: 34px;
+    border: 1.5px solid rgba(var(--kravn-primary-rgb), 0.45);
+    box-shadow: 0 0 0 3px rgba(var(--kravn-primary-rgb), 0.1);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
     font-weight: 700;
   }
   .avatar-placeholder:hover {
-    border-color: rgba(var(--kravn-primary-rgb), 0.65);
-    box-shadow: 0 0 0 4px rgba(var(--kravn-primary-rgb), 0.16);
+    border-color: rgba(var(--kravn-primary-rgb), 0.7);
+    box-shadow: 0 0 0 4px rgba(var(--kravn-primary-rgb), 0.18);
+    transform: translateY(-1px);
   }
 
-  /* ---- Logout button (desktop pill) ---- */
-  .topbar .btn.secondary.sm {
-    border: 1px solid rgba(var(--kravn-primary-rgb), 0.3);
-    background: rgba(var(--kravn-primary-rgb), 0.05);
-    color: var(--kravn-primary-light);
-    transition: all 0.18s ease;
-  }
-  .topbar .btn.secondary.sm:hover {
-    border-color: rgba(var(--kravn-primary-rgb), 0.6);
-    background: rgba(var(--kravn-primary-rgb), 0.12);
-    color: #fff;
-    transform: translateY(-1px);
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-shrink: 0;
   }
 
   /* ---- Notification badge ---- */
   .badge-dot {
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-dark));
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4);
+    color: #fff;
     font-weight: 700;
+    font-size: 0.58rem;
+    line-height: 1;
   }
 
-  /* ---- Mobile bottom nav ---- */
+  .desktop-only { display: inline-flex; }
+  .mobile-only { display: none; }
+
+  /* ============================================================
+     MOBILE BOTTOM NAV — floating pill, fixed-size icon buttons
+     (this is the layout that actually renders all five icons —
+     letting a flex child stretch to width:100% previously
+     squashed/hid the others, so buttons keep an explicit size).
+     ============================================================ */
   .bottomnav {
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-top: 1px solid rgba(var(--kravn-primary-rgb), 0.14);
-  }
-
-  .bottomnav .tab {
+    position: fixed;
+    left: 50%;
+    bottom: max(14px, env(safe-area-inset-bottom, 14px));
+    transform: translateX(-50%);
     display: flex;
-    flex-direction: column;
     align-items: center;
     gap: 2px;
-    color: rgba(255, 255, 255, 0.55);
-    transition: color 0.2s ease, transform 0.15s ease;
+    padding: 6px;
+    border-radius: 26px;
+    background: rgba(12, 12, 14, 0.82);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid rgba(var(--kravn-primary-rgb), 0.18);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.05);
+    z-index: 500;
+    width: max-content;
+    max-width: calc(100vw - 24px);
   }
 
-  .bottomnav .tab svg {
-    transition: filter 0.2s ease, transform 0.2s ease;
+  .bottomnav .nav-icon-btn {
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
   }
-
-  .bottomnav .tab.active {
-    color: var(--kravn-primary-light);
-  }
-  .bottomnav .tab.active svg {
-    filter: drop-shadow(0 0 6px rgba(var(--kravn-primary-rgb), 0.5));
-    transform: translateY(-1px);
-  }
-
-  .bottomnav .tab:active { transform: scale(0.94); }
-
-  .mobile-only { display: none; }
 
   @media (max-width: 860px) {
     .nav-links { display: none; }
+    .desktop-only { display: none; }
     .mobile-only { display: inline-flex; }
+    body { padding-bottom: 82px; }
+  }
+
+  @media (min-width: 861px) {
+    .bottomnav { display: none; }
   }
 </style>
+
+<%
+  /* Match against a small set of aliases per tab so this bar stays in
+     sync no matter which exact currentPage string a given route passes
+     (e.g. the compose route passes 'createPost', not 'new'). */
+  const kravnPage = typeof currentPage !== 'undefined' ? currentPage : '';
+  const kravnIsActive = (aliases) => aliases.includes(kravnPage);
+%>
 
 <header class="topbar">
   <div class="topbar-inner">
     <a href="/feed" class="brand">Krav<span>N</span></a>
 
     <nav class="nav-links">
-      <a href="/feed" class="<%= currentPage === 'discover' ? 'active' : '' %>">Discover</a>
-      <a href="/dashboard" class="<%= currentPage === 'dashboard' ? 'active' : '' %>">Dashboard</a>
-      <a href="/posts/new" class="<%= currentPage === 'new' ? 'active' : '' %>">+ New</a>
-
-      <a href="/notifications" class="tab" title="Notifications">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
-        <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %><span class="badge-dot" style="top:0; right:8px;"><%= unreadCount %></span><% } %>
+      <a href="/feed" class="nav-icon-btn <%= kravnIsActive(['discover', 'feed', 'home']) ? 'active' : '' %>" title="Discover">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
       </a>
-      <a href="/about" class="<%= currentPage === 'about' ? 'active' : '' %>">About</a>
-      <a href="/logout" aria-label="Logout" title="Logout">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <a href="/dashboard" class="nav-icon-btn <%= kravnIsActive(['dashboard']) ? 'active' : '' %>" title="Dashboard">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      </a>
+      <a href="/posts/new" class="nav-icon-btn <%= kravnIsActive(['new', 'createPost', 'newPost']) ? 'active' : '' %>" title="New post">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </a>
+
+      <div class="nav-links-divider"></div>
+
+      <a href="/notifications" class="nav-icon-btn <%= kravnIsActive(['notifications', 'alerts']) ? 'active' : '' %>" title="Notifications">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+        <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %><span class="badge-dot"><%= unreadCount %></span><% } %>
+      </a>
+      <a href="/about" class="nav-icon-btn <%= kravnIsActive(['about']) ? 'active' : '' %>" title="About">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 16 0v2"/></svg>
+      </a>
+      <a href="/logout" class="nav-icon-btn" title="Logout">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>
         </svg>
       </a>
     </nav>
 
-    <div style="display:flex; align-items:center; gap: var(--space-3);">
+    <div class="topbar-right">
       <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark">
         <span id="theme-icon">☀</span>
       </button>
 
-      <a href="/logout" class="nav-bell mobile-only" aria-label="Logout" title="Logout">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <a href="/logout" class="nav-icon-btn mobile-only" aria-label="Logout" title="Logout">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>
         </svg>
       </a>
@@ -210,32 +265,26 @@
         <a href="/profile" title="<%= user.username %>">
           <div class="avatar-placeholder"><%= user.username.charAt(0).toUpperCase() %></div>
         </a>
-        <a href="/logout" class="btn secondary sm">Logout</a>
       <% } %>
     </div>
   </div>
 </header>
 
 <nav class="bottomnav">
-  <a href="/feed" class="tab <%= currentPage === 'discover' ? 'active' : '' %>">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
-    Discover
+  <a href="/feed" class="nav-icon-btn <%= kravnIsActive(['discover', 'feed', 'home']) ? 'active' : '' %>" title="Discover">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
   </a>
-  <a href="/dashboard" class="tab <%= currentPage === 'dashboard' ? 'active' : '' %>">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-    Dashboard
+  <a href="/dashboard" class="nav-icon-btn <%= kravnIsActive(['dashboard']) ? 'active' : '' %>" title="Dashboard">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
   </a>
-  <a href="/posts/new" class="tab <%= currentPage === 'new' ? 'active' : '' %>">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-    New
+  <a href="/posts/new" class="nav-icon-btn <%= kravnIsActive(['new', 'createPost', 'newPost']) ? 'active' : '' %>" title="New post">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
   </a>
-  <a href="/notifications" class="tab">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
-    Alerts
-    <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %><span class="badge-dot" style="top:0; right:8px;"><%= unreadCount %></span><% } %>
+  <a href="/notifications" class="nav-icon-btn <%= kravnIsActive(['notifications', 'alerts']) ? 'active' : '' %>" title="Notifications">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+    <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %><span class="badge-dot"><%= unreadCount %></span><% } %>
   </a>
-  <a href="/about" class="tab <%= currentPage === 'about' ? 'active' : '' %>">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 16 0v2"/></svg>
-    About Us
+  <a href="/about" class="nav-icon-btn <%= kravnIsActive(['about']) ? 'active' : '' %>" title="About">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 16 0v2"/></svg>
   </a>
 </nav>

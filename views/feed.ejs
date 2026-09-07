@@ -790,17 +790,76 @@ html[data-theme="light"] {
       mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 12%, rgba(0,0,0,0.9) 78%, transparent 100%),
                   linear-gradient(to right, transparent 0%, rgba(0,0,0,0.9) 8%, rgba(0,0,0,0.9) 92%, transparent 100%);
       mask-composite: intersect;
-      animation: kravn-hero-drift 26s ease-in-out infinite alternate;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: pan-y;
     }
-    @keyframes kravn-hero-drift {
-      0%   { transform: scale(1.02) translateX(0); }
-      100% { transform: scale(1.06) translateX(-1.5%); }
+    .hero-poster-strip.dragging { cursor: grabbing; }
+
+    .hero-poster-track {
+      display: flex;
+      align-items: stretch;
+      height: 100%;
+      will-change: transform;
+      user-select: none;
+    }
+
+    .hero-poster-tile {
+      position: relative;
+      flex: 0 0 auto;
+      width: clamp(110px, 13vw, 170px);
+      height: 100%;
+      margin-right: 10px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: linear-gradient(150deg, #1a1425, #060606 60%);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35), 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.12);
+    }
+    .hero-poster-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+      -webkit-user-drag: none;
+      filter: brightness(1.08) saturate(1.05);
+    }
+    .hero-poster-tile::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.82) 100%);
+      pointer-events: none;
+    }
+    .hero-poster-tile-label {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 8px 9px;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #fff;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+      z-index: 1;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.25;
+    }
+    @media (max-width: 640px) {
+      .hero-poster-tile { width: clamp(88px, 26vw, 120px); margin-right: 8px; }
+      .hero-poster-tile-label { font-size: 0.58rem; padding: 6px 7px; }
+    }
+    @media (min-width: 1100px) {
+      .hero-poster-tile { width: clamp(140px, 10vw, 190px); }
     }
 
     .hero-banner-overlay {
       background:
-        radial-gradient(ellipse 90% 70% at 50% 45%, rgba(0,0,0,0.15) 0%, transparent 60%),
-        linear-gradient(180deg, var(--bg, #0a0a0a) 0%, rgba(10,10,10,0.55) 18%, rgba(10,10,10,0.55) 65%, var(--bg, #0a0a0a) 100%) !important;
+        radial-gradient(ellipse 90% 70% at 50% 45%, rgba(0,0,0,0.06) 0%, transparent 60%),
+        linear-gradient(180deg, var(--bg, #0a0a0a) 0%, rgba(10,10,10,0.32) 20%, rgba(10,10,10,0.32) 62%, var(--bg, #0a0a0a) 100%) !important;
     }
 
     .hero-banner::after {
@@ -808,7 +867,7 @@ html[data-theme="light"] {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      box-shadow: inset 0 0 90px 40px var(--bg, #0a0a0a);
+      box-shadow: inset 0 0 60px 24px var(--bg, #0a0a0a);
     }
 
     .hero-banner-content {
@@ -896,16 +955,6 @@ html[data-theme="light"] {
       border: 1.5px solid rgba(var(--kravn-primary-rgb), 0.55);
       box-shadow: 0 4px 18px rgba(var(--kravn-primary-rgb), 0.14);
     }
-    .hero-actions-row .btn.kravn-theory-btn::before {
-      content: '';
-      position: absolute;
-      top: 0; left: -60%;
-      width: 45%; height: 100%;
-      background: linear-gradient(115deg, transparent, rgba(255,255,255,0.35), transparent);
-      transform: skewX(-20deg);
-      animation: kravn-btn-shine 5s ease-in-out infinite;
-      pointer-events: none;
-    }
     .hero-actions-row .btn.kravn-theory-btn:hover {
       color: #fff;
       background: rgba(var(--kravn-primary-rgb), 0.14);
@@ -917,7 +966,6 @@ html[data-theme="light"] {
     @media (max-width: 640px) {
       .hero-actions-row { flex-wrap: wrap; gap: 0.75rem; }
       .hero-poster-strip img { filter: saturate(0.9); }
-      .hero-poster-strip { animation-duration: 30s; }
     }
 
     .search-form {
@@ -1170,19 +1218,15 @@ html[data-theme="light"] {
   <div class="page">
     <div class="hero-banner">
       <% if (posts.length > 0) { %>
-        <div class="hero-poster-strip">
-          <% posts.slice(0, 8).forEach(p => { %>
-            <% if (p.poster_url && p.poster_url !== 'N/A') { %>
-              <img src="<%= p.poster_url %>" alt="" onerror="this.remove()">
-            <% } %>
-          <% }); %>
+        <div class="hero-poster-strip" id="hero-poster-strip">
+          <div class="hero-poster-track" id="hero-poster-track"></div>
         </div>
       <% } %>
       <div class="hero-banner-overlay"></div>
       <div class="hero-banner-content">
         <div>
           <span class="hero-eyebrow">Your Feed</span>
-          <h1 class="hero-greeting">Welcome,<br><%= username %> <span class="wave">👋</span></h1>
+          <h1 class="hero-greeting">Welcome,<br><%= username %> <span class="wave"></span></h1>
           <p class="hero-subline">Find your next favorite story.</p>
         </div>
         <div class="hero-actions-row">
@@ -2269,6 +2313,141 @@ function initKravnPageArrival(config) {
 })();
 
 /* ============================================================
+   HERO BANNER — poster carousel
+   Built from the top 30 posts ranked by IMDb rating (deduped by
+   movie), shuffled into a random order each page load/login,
+   auto-drifting, and fully drag/swipe-able.
+   ============================================================ */
+function initHeroCarousel(posts) {
+  const strip = document.getElementById('hero-poster-strip');
+  const track = document.getElementById('hero-poster-track');
+  if (!strip || !track || !posts || !posts.length) return;
+
+  const rated = posts.filter(p => p.posterUrl && p.imdbRating && !isNaN(parseFloat(p.imdbRating)));
+  const source = rated.length ? rated : posts.filter(p => p.posterUrl);
+  if (!source.length) { strip.remove(); return; }
+
+  const byMovie = new Map();
+  source.forEach(p => {
+    const key = (p.movieName || p.title || '').trim().toLowerCase();
+    if (!key) return;
+    const rating = parseFloat(p.imdbRating) || 0;
+    const existing = byMovie.get(key);
+    if (!existing || rating > existing.rating) {
+      byMovie.set(key, { movieName: p.movieName || p.title, posterUrl: p.posterUrl, rating });
+    }
+  });
+
+  let top30 = Array.from(byMovie.values())
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, 30);
+
+  // Shuffle into random order — reshuffles on every refresh/login.
+  for (let i = top30.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [top30[i], top30[j]] = [top30[j], top30[i]];
+  }
+
+  if (!top30.length) { strip.remove(); return; }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function tileEl(item) {
+    const el = document.createElement('div');
+    el.className = 'hero-poster-tile';
+    el.innerHTML = `
+      <img src="${item.posterUrl}" alt="" draggable="false" onerror="this.closest('.hero-poster-tile').remove()">
+      <div class="hero-poster-tile-label">${escapeHtml(item.movieName)}</div>`;
+    return el;
+  }
+
+  // Duplicate the shuffled set so the strip can loop seamlessly.
+  const renderSet = [...top30, ...top30];
+  renderSet.forEach(item => track.appendChild(tileEl(item)));
+
+  let offset = 0;
+  let singleSetWidth = 0;
+  let dragging = false;
+  let dragStartX = 0;
+  let dragStartOffset = 0;
+  let resumeTimer = null;
+  let paused = false;
+  let lastFrameT = null;
+  const DRIFT_SPEED = 22; // px/sec
+
+  function measure() {
+    const tiles = track.children;
+    if (!tiles.length) return;
+    const half = tiles.length / 2;
+    let w = 0;
+    for (let i = 0; i < half; i++) {
+      w += tiles[i].offsetWidth + 10; // + margin-right
+    }
+    singleSetWidth = w;
+  }
+
+  function applyOffset() {
+    if (singleSetWidth > 0) {
+      if (offset <= -singleSetWidth) offset += singleSetWidth;
+      if (offset > 0) offset -= singleSetWidth;
+    }
+    track.style.transform = `translateX(${offset}px)`;
+  }
+
+  function pauseDrift() {
+    paused = true;
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => { paused = false; lastFrameT = null; }, 2200);
+  }
+
+  function frame(t) {
+    if (!dragging && !paused && singleSetWidth > 0) {
+      if (lastFrameT !== null) {
+        const dt = (t - lastFrameT) / 1000;
+        offset -= DRIFT_SPEED * dt;
+        applyOffset();
+      }
+      lastFrameT = t;
+    } else {
+      lastFrameT = null;
+    }
+    requestAnimationFrame(frame);
+  }
+
+  strip.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    dragStartX = e.clientX;
+    dragStartOffset = offset;
+    strip.classList.add('dragging');
+    pauseDrift();
+    try { strip.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  strip.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    offset = dragStartOffset + (e.clientX - dragStartX);
+    applyOffset();
+  });
+  function endDrag() {
+    if (!dragging) return;
+    dragging = false;
+    strip.classList.remove('dragging');
+    pauseDrift();
+  }
+  strip.addEventListener('pointerup', endDrag);
+  strip.addEventListener('pointercancel', endDrag);
+  strip.addEventListener('pointerleave', () => { if (dragging) endDrag(); });
+  strip.addEventListener('wheel', () => pauseDrift(), { passive: true });
+
+  window.addEventListener('resize', measure);
+  requestAnimationFrame(() => {
+    measure();
+    requestAnimationFrame(frame);
+  });
+}
+
+/* ============================================================
    KRAVN TOP PICKS
    ============================================================ */
 function initKravnTopPicks(posts) {
@@ -2448,6 +2627,7 @@ function initKravnTopPicks(posts) {
 
     document.addEventListener('DOMContentLoaded', () => {
       initKravnCards({ posts: KRAVN_FEED_POSTS, hintKey: 'kravnHintSeen_feed', circular: true });
+      initHeroCarousel(KRAVN_FEED_POSTS);
       initKravnTopPicks(KRAVN_FEED_POSTS);
       initKravnPageArrival();
     });
