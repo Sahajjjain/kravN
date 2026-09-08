@@ -5,6 +5,219 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New Discussion - KravN</title>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+:root {
+  --kravn-primary: #8b5cf6;
+  --kravn-primary-rgb: 139, 92, 246;
+  --kravn-primary-dark: #6d28d9;
+  --kravn-primary-light: #c4b5fd;
+}
+html[data-theme="light"] {
+  --kravn-primary: #d4a017;
+  --kravn-primary-rgb: 212, 160, 23;
+  --kravn-primary-dark: #a9790a;
+  --kravn-primary-light: #f0cf6f;
+}
+
+.kravn-wordmark-n {
+  background: linear-gradient(115deg, var(--kravn-primary-light) 0%, #fff 18%, var(--kravn-primary) 45%, var(--kravn-primary-light) 70%, var(--kravn-primary) 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--kravn-primary-light);
+  -webkit-text-fill-color: transparent;
+  animation: kravn-n-shimmer 3.2s linear infinite;
+  display: inline-block;
+}
+@keyframes kravn-n-shimmer {
+  0%   { background-position: 0% center; }
+  100% { background-position: 250% center; }
+}
+
+.page-narrow { padding-top: var(--space-6, 2.5rem); padding-bottom: var(--space-6, 2.5rem); }
+
+/* ---- Card shell ---- */
+.create-post-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.22);
+  background: #0a0a0c;
+  box-shadow: 0 30px 70px rgba(0,0,0,0.5), 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.06);
+}
+.create-post-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 20%;
+  opacity: 0;
+  filter: blur(28px) saturate(1.3) brightness(0.55);
+  transform: scale(1.15);
+  transition: opacity 0.6s ease;
+}
+.create-post-bg.visible { opacity: 1; }
+.create-post-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 0%, rgba(var(--kravn-primary-rgb), 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(10,10,12,0.75) 0%, rgba(10,10,12,0.94) 40%, #0a0a0c 100%);
+}
+.create-post-inner {
+  position: relative;
+  z-index: 2;
+  padding: clamp(1.75rem, 5vw, 3rem);
+}
+
+.auth-eyebrow {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--kravn-primary-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.auth-eyebrow::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--kravn-primary-light);
+  box-shadow: 0 0 8px var(--kravn-primary);
+}
+
+.create-post-title {
+  font-size: clamp(1.5rem, 4vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0.5rem 0 0.4rem;
+  line-height: 1.2;
+}
+.auth-subtitle {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.94rem;
+  margin-bottom: var(--space-6, 2rem);
+}
+
+/* ---- Form ---- */
+.create-post-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.auth-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.1rem 0 0.5rem;
+}
+.create-post-form label:first-of-type { margin-top: 0; }
+
+.char-hint {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--kravn-primary-light);
+  opacity: 0.85;
+  font-weight: 600;
+}
+
+.create-post-form input[type="text"],
+.create-post-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.25);
+  background: rgba(var(--kravn-primary-rgb), 0.035);
+  color: inherit;
+  font-family: inherit;
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.create-post-form input[type="text"]:hover,
+.create-post-form textarea:hover {
+  border-color: rgba(var(--kravn-primary-rgb), 0.4);
+}
+.create-post-form input[type="text"]:focus,
+.create-post-form textarea:focus {
+  outline: none;
+  border-color: rgba(var(--kravn-primary-rgb), 0.65);
+  background: rgba(var(--kravn-primary-rgb), 0.06);
+  box-shadow: 0 0 0 3px rgba(var(--kravn-primary-rgb), 0.14);
+}
+.create-post-form textarea {
+  min-height: 190px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.movie-autocomplete { position: relative; }
+
+/* ---- Submit button ---- */
+.create-post-form button[type="submit"] {
+  position: relative;
+  margin-top: 1.6rem;
+  height: 50px;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.4);
+  background:
+    linear-gradient(#0a0a0c, #0a0a0c) padding-box,
+    linear-gradient(120deg, rgba(var(--kravn-primary-rgb), 0.9), var(--kravn-primary-light), rgba(var(--kravn-primary-rgb), 0.9)) border-box;
+  color: var(--kravn-primary-light);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: 0 10px 26px rgba(var(--kravn-primary-rgb), 0.16);
+  transition: box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+.create-post-form button[type="submit"]::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -60%;
+  width: 45%; height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255,255,255,0.5), transparent);
+  transform: skewX(-20deg);
+  animation: kravn-btn-shine 4.5s ease-in-out infinite;
+}
+@keyframes kravn-btn-shine {
+  0%   { left: -60%; }
+  35%  { left: 130%; }
+  100% { left: 130%; }
+}
+.create-post-form button[type="submit"]:hover {
+  color: #fff;
+  border-color: rgba(var(--kravn-primary-rgb), 0.7);
+  box-shadow: 0 14px 34px rgba(var(--kravn-primary-rgb), 0.28);
+  transform: translateY(-1px);
+}
+.create-post-form button[type="submit"]:disabled {
+  cursor: default;
+  opacity: 0.7;
+  transform: none;
+}
+
+.suggestions-dropdown {
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.25) !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.06) !important;
+}
+
+@media (max-width: 480px) {
+  .create-post-inner { padding: 1.5rem 1.25rem; }
+}
+  </style>
   <script src="/js/theme.js"></script>
 </head>
 <body>
@@ -16,7 +229,7 @@
       <div class="create-post-bg-overlay"></div>
 
       <div class="create-post-inner">
-        <span class="auth-eyebrow">New Post</span>
+        <span class="auth-eyebrow">New Post · Krav<span class="kravn-wordmark-n">N</span></span>
         <h1 class="create-post-title">Start a discussion or post a review</h1>
         <p class="auth-subtitle">Got a theory or want to review? Lay it out below.</p>
 
@@ -39,7 +252,7 @@
           <input type="text" name="title" id="title-input" placeholder="What's your theory or take?" required>
 
           <label class="auth-label">
-            Your take
+            <span>Your take</span>
             <span class="char-hint" id="char-hint">start typing...</span>
           </label>
           <textarea name="content" id="content-input" placeholder="Lay it all out here..." required></textarea>
