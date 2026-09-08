@@ -439,6 +439,306 @@ html[data-theme="light"] {
   font-size: 1.1rem;
 }
 
+/* ============================================================
+   BIG NAME HEADER (no avatar, no hero banner)
+   ============================================================ */
+.kravn-name-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: var(--space-5, 1.4rem);
+}
+.kravn-big-name {
+  font-size: clamp(1.9rem, 5.5vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  line-height: 1.05;
+  margin: 0;
+}
+.hero-you-pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--kravn-primary-light);
+  background: rgba(var(--kravn-primary-rgb), 0.12);
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.4);
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-left: 0.6rem;
+  vertical-align: middle;
+}
+.kravn-name-sub {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted, #888);
+  margin-top: 0.4rem;
+}
+.hero-stat-card {
+  backdrop-filter: blur(6px);
+  border-radius: 12px;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.22);
+  background: rgba(var(--kravn-primary-rgb), 0.045);
+  padding: 0.7rem 1.15rem;
+  flex-shrink: 0;
+}
+.hero-stat-number {
+  background: linear-gradient(135deg, var(--accent, #d4ff3f), #eaffb0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 20px rgba(212,255,63,0.18);
+}
+
+.kravn-discussions-heading {
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+/* ---- Genre filter pills (same as feed.ejs) ---- */
+.kravn-genre-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding: 0.15rem 0.1rem 1rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  position: relative;
+  scroll-snap-type: x proximity;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+}
+.kravn-genre-pills::-webkit-scrollbar { display: none; }
+
+.kravn-genre-pill {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.5rem 1.05rem;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.28);
+  background: rgba(var(--kravn-primary-rgb), 0.04);
+  backdrop-filter: blur(4px);
+  color: rgba(255,255,255,0.62);
+  cursor: pointer;
+  white-space: nowrap;
+  transform: translateZ(0);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s ease;
+}
+.kravn-genre-pill:hover {
+  border-color: rgba(var(--kravn-primary-rgb), 0.55);
+  color: var(--kravn-primary-light);
+  background: rgba(var(--kravn-primary-rgb), 0.1);
+  transform: translateY(-1px);
+}
+.kravn-genre-pill:active { transform: scale(0.94); }
+.kravn-genre-pill.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-dark));
+  border-color: transparent;
+  box-shadow: 0 6px 18px rgba(var(--kravn-primary-rgb), 0.38), 0 0 0 1px rgba(255,255,255,0.06) inset;
+  transform: translateY(-1px) scale(1.03);
+}
+@media (max-width: 480px) {
+  .kravn-genre-pill { font-size: 0.64rem; padding: 0.44rem 0.85rem; }
+  .kravn-genre-pills {
+    gap: 0.42rem;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  }
+}
+
+/* ---- Toolbar: sort dropdown + view toggle (same as feed.ejs) ---- */
+.kravn-feed-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+  gap: 0.75rem;
+}
+.kravn-toolbar-controls {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.kravn-sort-dropdown {
+  position: relative;
+  display: inline-flex;
+  height: 46px;
+}
+.kravn-sort-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  height: 100%;
+  padding: 0 1.1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.4);
+  background:
+    linear-gradient(#0a0a0c, #0a0a0c) padding-box,
+    linear-gradient(120deg, rgba(var(--kravn-primary-rgb), 0.9), var(--kravn-primary-light), rgba(var(--kravn-primary-rgb), 0.9)) border-box;
+  color: var(--kravn-primary-light);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: 0 8px 22px rgba(var(--kravn-primary-rgb), 0.14);
+  transition: box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+.kravn-sort-trigger.open {
+  color: #fff;
+  border-color: rgba(var(--kravn-primary-rgb), 0.7);
+  box-shadow: 0 0 0 3px rgba(var(--kravn-primary-rgb), 0.2), 0 8px 22px rgba(var(--kravn-primary-rgb), 0.16);
+}
+.kravn-sort-icon { font-size: 0.85rem; line-height: 1; flex-shrink: 0; }
+.kravn-sort-label { flex: 1; text-align: left; }
+.kravn-sort-caret {
+  font-size: 0.6rem;
+  color: var(--kravn-primary-light);
+  transition: transform 0.22s cubic-bezier(0.22,1,0.36,1);
+  flex-shrink: 0;
+}
+.kravn-sort-trigger.open .kravn-sort-caret { transform: rotate(180deg); }
+.kravn-sort-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 176px;
+  background: #0a0a0c;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.35);
+  border-radius: 12px;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.55), 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.08);
+  padding: 6px;
+  z-index: 20;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.22,1,0.36,1);
+}
+.kravn-sort-menu.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.kravn-sort-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  margin: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted, #888);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.kravn-sort-option + .kravn-sort-option { margin-top: 2px; }
+.kravn-sort-option:hover {
+  color: var(--kravn-primary-light);
+  background: rgba(var(--kravn-primary-rgb), 0.1);
+}
+.kravn-sort-option.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-dark));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+}
+.kravn-sort-option .kravn-sort-check {
+  opacity: 0;
+  font-size: 0.7rem;
+  transition: opacity 0.15s ease;
+}
+.kravn-sort-option.active .kravn-sort-check { opacity: 1; }
+
+.kravn-toolbar-controls .view-toggle {
+  display: inline-flex !important;
+  align-items: stretch !important;
+  height: 46px !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.28);
+  border-radius: 10px;
+  padding: 3px;
+  background: rgba(var(--kravn-primary-rgb), 0.04);
+  gap: 2px;
+}
+.kravn-toolbar-controls .view-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100% !important;
+  box-sizing: border-box;
+  min-width: 40px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.kravn-toolbar-controls .view-btn:hover {
+  color: var(--kravn-primary-light);
+  background: rgba(var(--kravn-primary-rgb), 0.1);
+}
+.kravn-toolbar-controls .view-btn.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-dark));
+  box-shadow: 0 4px 14px rgba(var(--kravn-primary-rgb), 0.3);
+}
+@media (max-width: 480px) {
+  .kravn-feed-toolbar { gap: 0.6rem; }
+  .kravn-toolbar-controls { width: 100%; gap: 0.5rem; }
+  .kravn-sort-dropdown { flex: 1 1 auto; height: 42px; }
+  .kravn-sort-trigger { width: 100%; height: 42px; padding: 0 0.85rem; font-size: 0.66rem; }
+  .kravn-sort-menu { left: 0; right: 0; min-width: 0; }
+  .kravn-toolbar-controls .view-toggle { flex: 0 0 auto; height: 42px !important; }
+}
+
+.post-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--kravn-primary-light);
+  transition: gap 0.2s ease, color 0.2s ease;
+}
+.post-card:hover .post-card-cta {
+  gap: 0.55rem;
+  color: #fff;
+}
+
 </style>
   <script src="/js/theme.js"></script>
 
@@ -455,51 +755,22 @@ html[data-theme="light"] {
       <button type="button" class="kravn-icon-btn" id="kravn-back-btn" title="Back to Feed">←</button>
     </div>
 
-    <!-- Dashboard Header -->
-    <div class="profile-header" id="kravn-page-drag-handle"
-         style="border-bottom: none; padding-bottom: 0; margin-bottom: var(--space-6);">
-
-      <div class="avatar-placeholder lg">
-        <%= username[0].toUpperCase() %>
-      </div>
-
+    <!-- Big Name Header -->
+    <div class="kravn-name-header" id="kravn-page-drag-handle">
       <div>
-
-        <h1 style="font-size: 1.6rem; margin-bottom: 0.25rem;">
-
-          <%= username %>
-
-          <span style="
-            font-size: 0.9rem;
-            color: var(--accent);
-            font-family: 'Inter', sans-serif;
-            font-weight: 400;
-          ">
-            · you
-          </span>
-
-        </h1>
-
-        <p class="post-meta">
-          Your KravN</span> discussions:
-        </p>
-
-        <p class="post-meta">
-          <%= posts.length %> discussion<%= posts.length !== 1 ? 's' : '' %>
-        </p>
-
+        <h1 class="kravn-big-name"><%= username %><span class="hero-you-pill">You</span></h1>
+        <p class="kravn-name-sub">Your KravN discussions</p>
       </div>
-
+      <div class="hero-stat-card">
+        <div class="hero-stat">
+          <div class="hero-stat-number"><%= posts.length %></div>
+          <div class="hero-stat-label">Discussion<%= posts.length !== 1 ? 's' : '' %></div>
+        </div>
+      </div>
     </div>
 
-
-    <!-- Divider -->
     <div class="sprocket-divider" style="margin-top: 0;">
-      <div class="holes">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
+      <div class="holes"><span></span><span></span><span></span></div>
     </div>
 
 
@@ -530,16 +801,80 @@ html[data-theme="light"] {
 
       </div>
 
+    <% } else { %>
+
+      <!-- Genre filter pills -->
+      <div class="kravn-genre-pills" id="kravn-genre-pills">
+        <button type="button" class="kravn-genre-pill active" data-genre="">All</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Action">Action</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Comedy">Comedy</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Drama">Drama</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Thriller">Thriller</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Adventure">Adventure</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Sci-Fi">Sci-Fi</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Horror">Horror</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Romance">Romance</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Crime">Crime</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Fantasy">Fantasy</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Animation">Animation</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Family">Family</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Mystery">Mystery</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Biography">Biography</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Documentary">Documentary</button>
+        <button type="button" class="kravn-genre-pill" data-genre="History">History</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Music">Music</button>
+        <button type="button" class="kravn-genre-pill" data-genre="War">War</button>
+        <button type="button" class="kravn-genre-pill" data-genre="Sport">Sport</button>
+      </div>
+
+      <div class="kravn-feed-toolbar">
+        <h2 class="kravn-discussions-heading">Your Krav<span class="kravn-wordmark-n">N</span> discussions :</h2>
+        <div class="kravn-toolbar-controls">
+          <div class="kravn-sort-dropdown" id="kravn-sort-dropdown">
+            <button type="button" class="kravn-sort-trigger" id="kravn-sort-trigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="kravn-sort-icon">⇅</span>
+              <span class="kravn-sort-label" id="kravn-sort-label">Latest</span>
+              <span class="kravn-sort-caret">▾</span>
+            </button>
+            <div class="kravn-sort-menu" id="kravn-sort-menu" role="listbox">
+              <button type="button" class="kravn-sort-option active" data-sort="latest" role="option" aria-selected="true">
+                <span>Latest</span><span class="kravn-sort-check">✓</span>
+              </button>
+              <button type="button" class="kravn-sort-option" data-sort="oldest" role="option" aria-selected="false">
+                <span>Oldest</span><span class="kravn-sort-check">✓</span>
+              </button>
+              <button type="button" class="kravn-sort-option" data-sort="rating" role="option" aria-selected="false">
+                <span>Highest Rated</span><span class="kravn-sort-check">✓</span>
+              </button>
+              <button type="button" class="kravn-sort-option" data-sort="likes" role="option" aria-selected="false">
+                <span>Most Liked</span><span class="kravn-sort-check">✓</span>
+              </button>
+              <button type="button" class="kravn-sort-option" data-sort="random" role="option" aria-selected="false">
+                <span>Random</span><span class="kravn-sort-check">✓</span>
+              </button>
+            </div>
+          </div>
+          <div class="view-toggle">
+            <button class="view-btn active" id="btn-list" onclick="setView('list')" title="List view">☰</button>
+            <button class="view-btn" id="btn-grid" onclick="setView('grid')" title="Grid view">⊞</button>
+          </div>
+        </div>
+      </div>
+
     <% } %>
 
 
     <!-- Discussions -->
-    <div class="feed-grid">
+    <div class="feed-grid" id="feed-container">
 
       <% posts.forEach(post => { %>
 
         <div
           class="post-card"
+          data-created="<%= post.created_at %>"
+          data-rating="<%= (post.imdb_rating && post.imdb_rating !== 'N/A') ? parseFloat(post.imdb_rating) : 0 %>"
+          data-likes="<%= post.like_count || 0 %>"
+          data-genre="<%= post.genre || '' %>"
           onclick="window.location.href='/posts/<%= post.id %>'"
         >
 
@@ -1401,6 +1736,7 @@ function initKravnPageTransition(config) {
     const COMMIT_DIST = 130;
 
     dragHandle.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.hero-back-btn')) return;
       dragging = true;
       startY = e.clientY;
       dy = 0;
@@ -1442,9 +1778,6 @@ function initKravnPageTransition(config) {
 
 /* ============================================================
    KRAVN BACK-BUTTON GUARD
-   While the Kravn Cards overlay is open on this page, pressing
-   the browser/mobile back button closes it and sends the person
-   to the Feed (home) instead of wherever normal history would go.
    ============================================================ */
 (function initKravnBackGuard() {
   const registered = [];
@@ -1477,6 +1810,120 @@ function initKravnPageTransition(config) {
     }
   });
 })();
+
+/* ============================================================
+   VIEW TOGGLE (list / grid)
+   ============================================================ */
+function setView(view) {
+  const container = document.getElementById('feed-container');
+  const btnList   = document.getElementById('btn-list');
+  const btnGrid   = document.getElementById('btn-grid');
+  if (!container) return;
+  if (view === 'grid') {
+    container.classList.add('poster-grid-view');
+    if (btnGrid) btnGrid.classList.add('active');
+    if (btnList) btnList.classList.remove('active');
+  } else {
+    container.classList.remove('poster-grid-view');
+    if (btnList) btnList.classList.add('active');
+    if (btnGrid) btnGrid.classList.remove('active');
+  }
+  localStorage.setItem('kravn-view', view);
+}
+
+/* ============================================================
+   SORT DROPDOWN (Latest / Oldest / Highest Rated / Most Liked / Random)
+   ============================================================ */
+function initSortDropdown() {
+  const container = document.getElementById('feed-container');
+  const dropdown  = document.getElementById('kravn-sort-dropdown');
+  const trigger   = document.getElementById('kravn-sort-trigger');
+  const menu      = document.getElementById('kravn-sort-menu');
+  const label     = document.getElementById('kravn-sort-label');
+  const options   = menu ? menu.querySelectorAll('.kravn-sort-option') : [];
+  if (!container || !trigger || !menu) return;
+
+  function openMenu() {
+    menu.classList.add('open');
+    trigger.classList.add('open');
+    trigger.setAttribute('aria-expanded', 'true');
+  }
+  function closeMenu() {
+    menu.classList.remove('open');
+    trigger.classList.remove('open');
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+  function toggleMenu() {
+    if (menu.classList.contains('open')) closeMenu(); else openMenu();
+  }
+
+  function applySort(mode) {
+    const cards = Array.from(container.children);
+    if (mode === 'latest') {
+      cards.sort((a, b) => new Date(b.dataset.created) - new Date(a.dataset.created));
+    } else if (mode === 'oldest') {
+      cards.sort((a, b) => new Date(a.dataset.created) - new Date(b.dataset.created));
+    } else if (mode === 'rating') {
+      cards.sort((a, b) => parseFloat(b.dataset.rating || 0) - parseFloat(a.dataset.rating || 0));
+    } else if (mode === 'likes') {
+      cards.sort((a, b) => parseFloat(b.dataset.likes || 0) - parseFloat(a.dataset.likes || 0));
+    } else {
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+    }
+    cards.forEach(c => container.appendChild(c));
+  }
+
+  trigger.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(); });
+
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      options.forEach(o => { o.classList.remove('active'); o.setAttribute('aria-selected', 'false'); });
+      opt.classList.add('active');
+      opt.setAttribute('aria-selected', 'true');
+      label.textContent = opt.dataset.sort.charAt(0).toUpperCase() + opt.dataset.sort.slice(1);
+      applySort(opt.dataset.sort);
+      closeMenu();
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target)) closeMenu();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMenu();
+  });
+}
+
+/* ============================================================
+   GENRE PILL FILTER
+   ============================================================ */
+function initGenrePills() {
+  const pillsWrap = document.getElementById('kravn-genre-pills');
+  const container = document.getElementById('feed-container');
+  if (!pillsWrap || !container) return;
+
+  const pills = Array.from(pillsWrap.querySelectorAll('.kravn-genre-pill'));
+
+  function applyFilter(genre) {
+    const cards = Array.from(container.children);
+    cards.forEach(card => {
+      const cardGenre = card.dataset.genre || '';
+      const match = !genre || cardGenre.toLowerCase().includes(genre.toLowerCase());
+      card.style.display = match ? '' : 'none';
+    });
+  }
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      applyFilter(pill.dataset.genre);
+    });
+  });
+}
 </script>
   <script>
     const KRAVN_DASHBOARD_USERNAME = <%- JSON.stringify(username || '') %>;
@@ -1493,6 +1940,10 @@ function initKravnPageTransition(config) {
     document.addEventListener('DOMContentLoaded', () => {
       initKravnCards({ posts: KRAVN_DASHBOARD_POSTS, hintKey: 'kravnHintSeen_dashboard', circular: false });
       initKravnPageTransition({ backHref: '/feed' });
+      initSortDropdown();
+      initGenrePills();
+      const savedView = localStorage.getItem('kravn-view');
+      if (savedView === 'grid') setView('grid');
     });
   </script>
 

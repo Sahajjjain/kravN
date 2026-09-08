@@ -1384,17 +1384,29 @@ html[data-theme="light"] {
 
     <% if (posts.length > 0) { %>
     <div class="kravn-genre-pills" id="kravn-genre-pills">
-      <button type="button" class="kravn-genre-pill active" data-genre="">All</button>
-      <button type="button" class="kravn-genre-pill" data-genre="Action">Action</button>
-      <button type="button" class="kravn-genre-pill" data-genre="Drama">Drama</button>
-      <button type="button" class="kravn-genre-pill" data-genre="Comedy">Comedy</button>
-      <button type="button" class="kravn-genre-pill" data-genre="Thriller">Thriller</button>
-      <button type="button" class="kravn-genre-pill" data-genre="Horror">Horror</button>
-      <button type="button" class="kravn-genre-pill" data-genre="Romance">Romance</button>
-      <button type="button" class="kravn-genre-pill" data-genre="Sci-Fi">Sci-Fi</button>
-      <button type="button" class="kravn-genre-pill" data-genre="Crime">Crime</button>
-      <button type="button" class="kravn-genre-pill" data-genre="Animation">Animation</button>
-    </div>
+  <button type="button" class="kravn-genre-pill active" data-genre="">All</button>
+
+  <button type="button" class="kravn-genre-pill" data-genre="Action">Action</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Comedy">Comedy</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Drama">Drama</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Thriller">Thriller</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Adventure">Adventure</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Sci-Fi">Sci-Fi</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Horror">Horror</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Romance">Romance</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Crime">Crime</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Fantasy">Fantasy</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Animation">Animation</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Family">Family</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Mystery">Mystery</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Biography">Biography</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Documentary">Documentary</button>
+  <button type="button" class="kravn-genre-pill" data-genre="History">History</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Music">Music</button>
+  <button type="button" class="kravn-genre-pill" data-genre="War">War</button>
+  <button type="button" class="kravn-genre-pill" data-genre="Sport">Sport</button>
+  
+</div>
     <% } %>
 
     <div class="kravn-feed-toolbar">
@@ -1617,31 +1629,54 @@ html[data-theme="light"] {
   })();
 
   /* ---- Genre pill filter — client-side, instant, no reload.
-     Matches against the comma-separated genre string OMDb gives us
-     (e.g. "Action, Crime, Drama") stored in data-genre on each card. */
-  (function initGenrePills() {
-    const pillsWrap = document.getElementById('kravn-genre-pills');
-    const container = document.getElementById('feed-container');
-    if (!pillsWrap || !container) return;
+   Matches against the comma-separated genre string OMDb gives us
+   (e.g. "Action, Crime, Drama") stored in data-genre on each card.
+   Also respects a ?genre= query param on page load, so links from
+   elsewhere on the site (e.g. a post's genre tag) land pre-filtered. */
+(function initGenrePills() {
+  const pillsWrap = document.getElementById('kravn-genre-pills');
+  const container = document.getElementById('feed-container');
+  if (!pillsWrap || !container) return;
 
-    const pills = Array.from(pillsWrap.querySelectorAll('.kravn-genre-pill'));
+  const pills = Array.from(pillsWrap.querySelectorAll('.kravn-genre-pill'));
 
-    pills.forEach(pill => {
-      pill.addEventListener('click', () => {
-        pills.forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        const genre = pill.dataset.genre;
-        const cards = Array.from(container.children);
-        let visibleCount = 0;
-        cards.forEach(card => {
-          const cardGenre = card.dataset.genre || '';
-          const match = !genre || cardGenre.toLowerCase().includes(genre.toLowerCase());
-          card.style.display = match ? '' : 'none';
-          if (match) visibleCount++;
-        });
-      });
+  function applyFilter(genre) {
+    const cards = Array.from(container.children);
+    let visibleCount = 0;
+    cards.forEach(card => {
+      const cardGenre = card.dataset.genre || '';
+      const match = !genre || cardGenre.toLowerCase().includes(genre.toLowerCase());
+      card.style.display = match ? '' : 'none';
+      if (match) visibleCount++;
     });
-  })();
+    return visibleCount;
+  }
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      applyFilter(pill.dataset.genre);
+    });
+  });
+
+  // On load: if the URL has ?genre=, filter to it immediately.
+  const urlGenre = new URLSearchParams(window.location.search).get('genre');
+  if (urlGenre) {
+    const matchingPill = pills.find(
+      p => p.dataset.genre && p.dataset.genre.toLowerCase() === urlGenre.toLowerCase()
+    );
+    pills.forEach(p => p.classList.remove('active'));
+    if (matchingPill) {
+      // Genre exists as one of the hardcoded pills (Action, Drama, etc.) — use it.
+      matchingPill.classList.add('active');
+    }
+    // Filter regardless of whether a pill matched, so genres not in the
+    // hardcoded list (e.g. "Documentary", "Fantasy") still work correctly
+    // when linked from a post's genre tag.
+    applyFilter(urlGenre);
+  }
+})();
   </script>
 
   <script>
