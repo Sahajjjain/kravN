@@ -17,14 +17,15 @@ router.post('/posts', requireLogin, async (req, res) => {
     const movieInfo = await getMovieInfo(movie_name);
 
     await pool.query(
-      'INSERT INTO posts (user_id, movie_name, title, content, poster_url, imdb_rating) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO posts (user_id, movie_name, title, content, poster_url, imdb_rating, genre) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [
         userId,
         movie_name,
         title,
         content,
         movieInfo ? movieInfo.poster : null,
-        movieInfo ? movieInfo.rating : null
+        movieInfo ? movieInfo.rating : null,
+        movieInfo ? movieInfo.genre : null
       ]
     );
     res.redirect('/feed');
@@ -78,6 +79,35 @@ router.get('/api/movie-check', requireLogin, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.json({ exists: false });
+  }
+});
+
+// Feed — supports optional ?genre= filter (server-side, matches against
+// the comma-separated genre string stored on each post, e.g. "Action, Drama")
+router.get('/feed', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const { genre } = req.query;
+
+  try {
+    let query = `SELECT posts.*, users.username FROM posts JOIN users ON posts.user_id = users.id`;
+    const params = [];
+
+    if (genre) {
+      query += ' WHERE posts.genre LIKE ?';
+      params.push(`%${genre}%`);
+    }
+    query += ' ORDER BY posts.created_at DESC';
+
+    const [posts] = await pool.query(query, params);
+
+    res.render('feed', {
+      posts,
+      username: req.session.username,
+      selectedGenre: genre || null
+    });
+  } catch (err) {
+    console.error(err);
+    res.send('Something went wrong: ' + err.message);
   }
 });
 

@@ -699,10 +699,6 @@ html[data-theme="light"] {
   box-sizing: border-box;
 }
 .kravn2-movie-hero-fg img {
-  /* Sized off the hero's HEIGHT, not its width — a fixed-height
-     poster reads correctly whether the overlay is a narrow phone
-     screen or a wide laptop window; width-based sizing left it
-     looking like a tiny stamp on desktop. */
   height: 100%;
   width: auto;
   max-width: min(60%, 320px);
@@ -822,7 +818,7 @@ html[data-theme="light"] {
       display: block;
       pointer-events: none;
       -webkit-user-drag: none;
-      filter: brightness(1.08) saturate(1.05);
+      filter: brightness(1.28) saturate(1.15) contrast(1.05);
     }
     .hero-poster-tile::after {
       content: '';
@@ -859,7 +855,7 @@ html[data-theme="light"] {
     .hero-banner-overlay {
       background:
         radial-gradient(ellipse 90% 70% at 50% 45%, rgba(0,0,0,0.06) 0%, transparent 60%),
-        linear-gradient(180deg, var(--bg, #0a0a0a) 0%, rgba(10,10,10,0.32) 20%, rgba(10,10,10,0.32) 62%, var(--bg, #0a0a0a) 100%) !important;
+        linear-gradient(180deg, var(--bg, #0a0a0a) 0%, rgba(10,10,10,0.15) 20%, rgba(10,10,10,0.15) 62%, var(--bg, #0a0a0a) 100%) !important;
     }
 
     .hero-banner::after {
@@ -946,8 +942,6 @@ html[data-theme="light"] {
       border-color: rgba(212,255,63,0.6);
     }
 
-    /* Have a Theory? — hollow, Kravn-purple, on-brand instead of the
-       lime "default button" look above. */
     .hero-actions-row .btn.kravn-theory-btn {
       background: rgba(var(--kravn-primary-rgb), 0.05);
       color: var(--kravn-primary-light);
@@ -1032,6 +1026,82 @@ html[data-theme="light"] {
       letter-spacing: 0.01em;
     }
 
+    /* ---- Genre filter pills — sticky, edge-faded, tactile.
+       Reads instantly as "filter what's below"; horizontally
+       scrollable strip with edge fade so it never looks cut off,
+       snaps crisply on mobile, and sits sticky on wider screens
+       so filtering stays reachable while scrolling the feed. ---- */
+    .kravn-genre-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      overflow-x: auto;
+      padding: 0.15rem 0.1rem 1rem;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      position: relative;
+      scroll-snap-type: x proximity;
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+    }
+    .kravn-genre-pills::-webkit-scrollbar { display: none; }
+
+    .kravn-genre-pill {
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.5rem 1.05rem;
+      border-radius: 20px;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.28);
+      background: rgba(var(--kravn-primary-rgb), 0.04);
+      backdrop-filter: blur(4px);
+      color: rgba(255,255,255,0.62);
+      cursor: pointer;
+      white-space: nowrap;
+      transform: translateZ(0);
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s ease;
+    }
+    .kravn-genre-pill:hover {
+      border-color: rgba(var(--kravn-primary-rgb), 0.55);
+      color: var(--kravn-primary-light);
+      background: rgba(var(--kravn-primary-rgb), 0.1);
+      transform: translateY(-1px);
+    }
+    .kravn-genre-pill:active { transform: scale(0.94); }
+    .kravn-genre-pill.active {
+      color: #fff;
+      background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-dark));
+      border-color: transparent;
+      box-shadow: 0 6px 18px rgba(var(--kravn-primary-rgb), 0.38), 0 0 0 1px rgba(255,255,255,0.06) inset;
+      transform: translateY(-1px) scale(1.03);
+    }
+
+    @media (min-width: 768px) {
+      .kravn-genre-pills {
+        position: sticky;
+        top: 8px;
+        z-index: 5;
+        padding-top: 0.5rem;
+        padding-bottom: 1.1rem;
+        background: linear-gradient(to bottom, var(--bg, #0a0a0a) 65%, transparent 100%);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .kravn-genre-pill { font-size: 0.64rem; padding: 0.44rem 0.85rem; }
+      .kravn-genre-pills {
+        gap: 0.42rem;
+        -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+      }
+    }
+
     .kravn-feed-toolbar {
       display: flex;
       align-items: center;
@@ -1078,7 +1148,12 @@ html[data-theme="light"] {
       box-sizing: border-box;
       white-space: nowrap;
     }
-   
+    .kravn-sort-trigger.open {
+      color: #fff;
+      border-color: rgba(var(--kravn-primary-rgb), 0.7);
+      box-shadow: 0 0 0 3px rgba(var(--kravn-primary-rgb), 0.2), 0 8px 22px rgba(var(--kravn-primary-rgb), 0.16);
+    }
+
     .kravn-sort-icon { font-size: 0.85rem; line-height: 1; flex-shrink: 0; }
     .kravn-sort-label { flex: 1; text-align: left; }
     .kravn-sort-caret {
@@ -1093,7 +1168,7 @@ html[data-theme="light"] {
       position: absolute;
       top: calc(100% + 8px);
       left: 0;
-      min-width: 168px;
+      min-width: 176px;
       background: #0a0a0c;
       border: 1px solid rgba(var(--kravn-primary-rgb), 0.35);
       border-radius: 12px;
@@ -1191,8 +1266,6 @@ html[data-theme="light"] {
       .kravn-toolbar-controls .view-toggle { flex: 0 0 auto; height: 42px !important; }
     }
 
-    /* ---- "View discussion →" card CTA — small pill with a
-       sliding arrow, matching the rest of the Kravn button family. */
     .post-card-cta {
       display: inline-flex;
       align-items: center;
@@ -1309,6 +1382,21 @@ html[data-theme="light"] {
     </div>
     <% } %>
 
+    <% if (posts.length > 0) { %>
+    <div class="kravn-genre-pills" id="kravn-genre-pills">
+      <button type="button" class="kravn-genre-pill active" data-genre="">All</button>
+      <button type="button" class="kravn-genre-pill" data-genre="Action">Action</button>
+      <button type="button" class="kravn-genre-pill" data-genre="Drama">Drama</button>
+      <button type="button" class="kravn-genre-pill" data-genre="Comedy">Comedy</button>
+      <button type="button" class="kravn-genre-pill" data-genre="Thriller">Thriller</button>
+      <button type="button" class="kravn-genre-pill" data-genre="Horror">Horror</button>
+      <button type="button" class="kravn-genre-pill" data-genre="Romance">Romance</button>
+      <button type="button" class="kravn-genre-pill" data-genre="Sci-Fi">Sci-Fi</button>
+      <button type="button" class="kravn-genre-pill" data-genre="Crime">Crime</button>
+      <button type="button" class="kravn-genre-pill" data-genre="Animation">Animation</button>
+    </div>
+    <% } %>
+
     <div class="kravn-feed-toolbar">
       <h2 class="kravn-discussions-heading">Krav<span class="kravn-wordmark-n">N</span> discussions :</h2>
       <div class="kravn-toolbar-controls">
@@ -1324,6 +1412,9 @@ html[data-theme="light"] {
             </button>
             <button type="button" class="kravn-sort-option" data-sort="oldest" role="option" aria-selected="false">
               <span>Oldest</span><span class="kravn-sort-check">✓</span>
+            </button>
+            <button type="button" class="kravn-sort-option" data-sort="rating" role="option" aria-selected="false">
+              <span>Highest Rated</span><span class="kravn-sort-check">✓</span>
             </button>
             <button type="button" class="kravn-sort-option" data-sort="random" role="option" aria-selected="false">
               <span>Random</span><span class="kravn-sort-check">✓</span>
@@ -1347,6 +1438,7 @@ html[data-theme="light"] {
              data-created="<%= post.created_at %>"
              data-rating="<%= (post.imdb_rating && post.imdb_rating !== 'N/A') ? parseFloat(post.imdb_rating) : 0 %>"
              data-username="<%= post.username %>"
+             data-genre="<%= post.genre || '' %>"
              onclick="window.location.href='/posts/<%= post.id %>'">
           <% if (post.poster_url && post.poster_url !== 'N/A') { %>
             <img class="post-poster" src="<%= post.poster_url %>" alt="<%= post.movie_name %>">
@@ -1492,6 +1584,8 @@ html[data-theme="light"] {
         cards.sort((a, b) => new Date(b.dataset.created) - new Date(a.dataset.created));
       } else if (mode === 'oldest') {
         cards.sort((a, b) => new Date(a.dataset.created) - new Date(b.dataset.created));
+      } else if (mode === 'rating') {
+        cards.sort((a, b) => parseFloat(b.dataset.rating || 0) - parseFloat(a.dataset.rating || 0));
       } else {
         for (let i = cards.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -1519,6 +1613,33 @@ html[data-theme="light"] {
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeMenu();
+    });
+  })();
+
+  /* ---- Genre pill filter — client-side, instant, no reload.
+     Matches against the comma-separated genre string OMDb gives us
+     (e.g. "Action, Crime, Drama") stored in data-genre on each card. */
+  (function initGenrePills() {
+    const pillsWrap = document.getElementById('kravn-genre-pills');
+    const container = document.getElementById('feed-container');
+    if (!pillsWrap || !container) return;
+
+    const pills = Array.from(pillsWrap.querySelectorAll('.kravn-genre-pill'));
+
+    pills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        pills.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        const genre = pill.dataset.genre;
+        const cards = Array.from(container.children);
+        let visibleCount = 0;
+        cards.forEach(card => {
+          const cardGenre = card.dataset.genre || '';
+          const match = !genre || cardGenre.toLowerCase().includes(genre.toLowerCase());
+          card.style.display = match ? '' : 'none';
+          if (match) visibleCount++;
+        });
+      });
     });
   })();
   </script>
@@ -2269,14 +2390,6 @@ function initKravnPageArrival(config) {
 
 /* ============================================================
    KRAVN BACK-BUTTON GUARD
-   Any time a Kravn overlay (Cards, Top Picks list, or a Top
-   Pick's movie discussions) is open, pressing the browser/mobile
-   back button should just take the person back to the Feed
-   (home) instead of leaving the app or landing somewhere
-   unexpected. We push one history entry per "layer" of overlay
-   that opens, and unwind them on popstate — closing overlays
-   first, and only actually navigating to /feed once every
-   overlay is closed (a no-op here since Feed IS home).
    ============================================================ */
 (function initKravnBackGuard() {
   const registered = [];
@@ -2314,9 +2427,6 @@ function initKravnPageArrival(config) {
 
 /* ============================================================
    HERO BANNER — poster carousel
-   Built from the top 30 posts ranked by IMDb rating (deduped by
-   movie), shuffled into a random order each page load/login,
-   auto-drifting, and fully drag/swipe-able.
    ============================================================ */
 function initHeroCarousel(posts) {
   const strip = document.getElementById('hero-poster-strip');
@@ -2342,7 +2452,6 @@ function initHeroCarousel(posts) {
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 30);
 
-  // Shuffle into random order — reshuffles on every refresh/login.
   for (let i = top30.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [top30[i], top30[j]] = [top30[j], top30[i]];
@@ -2363,7 +2472,6 @@ function initHeroCarousel(posts) {
     return el;
   }
 
-  // Duplicate the shuffled set so the strip can loop seamlessly.
   const renderSet = [...top30, ...top30];
   renderSet.forEach(item => track.appendChild(tileEl(item)));
 
@@ -2375,7 +2483,7 @@ function initHeroCarousel(posts) {
   let resumeTimer = null;
   let paused = false;
   let lastFrameT = null;
-  const DRIFT_SPEED = 22; // px/sec
+  const DRIFT_SPEED = 22;
 
   function measure() {
     const tiles = track.children;
@@ -2383,7 +2491,7 @@ function initHeroCarousel(posts) {
     const half = tiles.length / 2;
     let w = 0;
     for (let i = 0; i < half; i++) {
-      w += tiles[i].offsetWidth + 10; // + margin-right
+      w += tiles[i].offsetWidth + 10;
     }
     singleSetWidth = w;
   }
