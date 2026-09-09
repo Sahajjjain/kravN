@@ -5,26 +5,237 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>About - KravN</title>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+:root {
+  --kravn-primary: #8b5cf6;
+  --kravn-primary-rgb: 139, 92, 246;
+  --kravn-primary-dark: #6d28d9;
+  --kravn-primary-light: #c4b5fd;
+}
+html[data-theme="light"] {
+  --kravn-primary: #d4a017;
+  --kravn-primary-rgb: 212, 160, 23;
+  --kravn-primary-dark: #a9790a;
+  --kravn-primary-light: #f0cf6f;
+}
+
+.kravn-wordmark-n {
+  background: linear-gradient(115deg, var(--kravn-primary-light) 0%, #fff 18%, var(--kravn-primary) 45%, var(--kravn-primary-light) 70%, var(--kravn-primary) 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--kravn-primary-light);
+  -webkit-text-fill-color: transparent;
+  animation: kravn-n-shimmer 3.2s linear infinite;
+  filter: drop-shadow(0 0 10px rgba(var(--kravn-primary-rgb), 0.45));
+  display: inline-block;
+}
+@keyframes kravn-n-shimmer {
+  0%   { background-position: 0% center; }
+  100% { background-position: 250% center; }
+}
+
+/* ============================================================
+   ABOUT HERO — poster marquee, gradient overlay, glowing title
+   ============================================================ */
+.about-hero {
+  position: relative;
+  height: clamp(260px, 42vh, 460px);
+  overflow: hidden;
+  background: linear-gradient(150deg, #1a1425, #060606 60%);
+}
+
+.about-hero-poster-strip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.9) 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.9) 80%, transparent 100%);
+}
+.about-hero-poster-track {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  will-change: transform;
+  user-select: none;
+}
+.about-hero-poster-strip img {
+  flex: 0 0 auto;
+  width: clamp(120px, 13vw, 180px);
+  height: 100%;
+  object-fit: cover;
+  margin-right: 10px;
+  border-radius: 10px;
+  display: block;
+  filter: brightness(1.25) saturate(1.15) contrast(1.05);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35), 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.12);
+}
+
+.about-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(var(--kravn-primary-rgb), 0.1) 0%, transparent 60%),
+    linear-gradient(180deg, rgba(5,5,7,0.55) 0%, rgba(5,5,7,0.25) 35%, rgba(5,5,7,0.35) 55%, rgba(5,5,7,0.92) 100%),
+    linear-gradient(90deg, rgba(5,5,7,0.9) 0%, transparent 15%, transparent 85%, rgba(5,5,7,0.9) 100%);
+}
+
+.about-hero-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 1.5rem;
+}
+.about-eyebrow {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--kravn-primary-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.about-eyebrow::before,
+.about-eyebrow::after {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--kravn-primary-light);
+  box-shadow: 0 0 8px var(--kravn-primary);
+}
+.about-hero-content h1 {
+  font-size: clamp(2.1rem, 6vw, 3.4rem);
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin: 0.5rem 0 0.4rem;
+  text-shadow: 0 6px 30px rgba(0,0,0,0.5);
+}
+.accent-n {
+  background: linear-gradient(115deg, var(--kravn-primary-light) 0%, #fff 18%, var(--kravn-primary) 45%, var(--kravn-primary-light) 70%, var(--kravn-primary) 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--kravn-primary-light);
+  -webkit-text-fill-color: transparent;
+  animation: kravn-n-shimmer 3.2s linear infinite;
+}
+.about-tagline {
+  color: rgba(255,255,255,0.65);
+  font-size: clamp(0.95rem, 2vw, 1.15rem);
+  letter-spacing: 0.01em;
+  max-width: 420px;
+}
+
+/* ============================================================
+   BODY SECTIONS
+   ============================================================ */
+.page-narrow { padding-bottom: var(--space-6, 2.5rem); }
+
+.about-section {
+  padding: var(--space-6, 2.5rem) 0;
+  font-size: 1.02rem;
+  line-height: 1.75;
+  color: rgba(255,255,255,0.78);
+}
+.about-section p { margin: 0 0 1rem; }
+.about-section p:last-child { margin-bottom: 0; }
+
+.highlight {
+  color: var(--kravn-primary-light);
+  font-weight: 700;
+}
+
+.about-section-eyebrow {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--kravn-primary-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.about-section-eyebrow::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--kravn-primary-light);
+  box-shadow: 0 0 8px var(--kravn-primary);
+}
+.about-section h2 {
+  font-size: clamp(1.3rem, 3.2vw, 1.7rem);
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  margin: 0 0 1rem;
+}
+
+.about-section-closing {
+  text-align: center;
+}
+.about-section-closing h2 {
+  margin: 0 auto 1.4rem;
+  max-width: 480px;
+}
+
+.contact-links {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.2rem;
+}
+.contact-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 30px;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.4);
+  background:
+    linear-gradient(#0a0a0c, #0a0a0c) padding-box,
+    linear-gradient(120deg, rgba(var(--kravn-primary-rgb), 0.9), var(--kravn-primary-light), rgba(var(--kravn-primary-rgb), 0.9)) border-box;
+  color: var(--kravn-primary-light);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: box-shadow 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+.contact-pill:hover {
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(var(--kravn-primary-rgb), 0.28);
+  transform: translateY(-1px);
+}
+
+.closing-line {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.01em;
+}
+  </style>
   <script src="/js/theme.js"></script>
 </head>
 <body>
   <%- include('partials/navbar', { currentPage: 'about' }) %>
 
- <div class="about-hero">
-  <div class="about-hero-poster-strip">
-    <% if (typeof posters !== 'undefined' && posters.length) { %>
-      <% posters.slice(0, 12).forEach(url => { %>
-        <img src="<%= url %>" alt="" onerror="this.remove()">
-      <% }); %>
-    <% } %>
+  <div class="about-hero">
+    <div class="about-hero-poster-strip" id="about-hero-strip">
+      <div class="about-hero-poster-track" id="about-hero-track"></div>
+    </div>
+    <div class="about-hero-overlay"></div>
+    <div class="about-hero-content">
+      <span class="about-eyebrow">The Story</span>
+      <h1>Welcome to Krav<span class="accent-n">N</span></h1>
+      <p class="about-tagline">Where movie theories become discussions.</p>
+    </div>
   </div>
-  <div class="about-hero-overlay"></div>
-  <div class="about-hero-content">
-    <span class="about-eyebrow">The Story</span>
-    <h1>Welcome to Krav<span class="accent-n">N</span></h1>
-    <p class="about-tagline">Where movie theories become discussions.</p>
-  </div>
-</div>
 
   <div class="page-narrow">
     <div class="about-section">
@@ -33,13 +244,13 @@
         <span class="highlight">"Wait... did anyone else notice that?"</span>
       </p>
       <p>
-        Or spent way too much time explaining why your theory is actually better than the writer's?
+        Or spent way too much time explaining why your theory is actually better than the writer's original ending?
       </p>
       <p>
-        That's exactly why <strong>KravN</strong> exists.
+        That's exactly why <strong>KravN</strong> exists — a space built for the moment the credits roll and the real conversation starts.
       </p>
       <p>
-        A place for movie lovers, binge-watchers, and people who simply have too many opinions about films and web series.
+        A place for movie lovers, binge-watchers, plot-hole hunters, and people who simply have too many opinions about films and web series.
       </p>
     </div>
 
@@ -50,14 +261,15 @@
     <div class="about-section">
       <span class="about-section-eyebrow">Behind the code</span>
       <h2>The story behind KravN</h2>
-      <p>Hey! I'm <span class="highlight">Sahaj Jain</span>.</p>
-      <p>I'm a Computer Science student who enjoys building things and watching way too many movies.</p>
+
+      <p>Hey! I'm <span class="highlight">Sahaj Jain</span>, founder of KravN.</p>
+      <p>I'm a Computer Science student who enjoys building things almost as much as watching way too many movies.</p>
       <p>
-        KravN started as a learning project and somehow turned into my first deployed web application.
-        Along the way I learned databases, authentication, deployment, debugging, and how one tiny bug
-        can ruin an otherwise peaceful evening.
+        KravN started as a small learning project and somehow turned into my first fully deployed web application.
+        Along the way I picked up databases, authentication, deployment, late-night debugging, and the important
+        lesson that one tiny bug can ruin an otherwise peaceful evening.
       </p>
-      <p>This is only the beginning. More features, better discussions, and a lot more movie debates are coming soon.</p>
+      <p>This is only the beginning — more features, better discussions, and a lot more movie debates are on the way.</p>
     </div>
 
     <div class="sprocket-divider">
@@ -65,7 +277,7 @@
     </div>
 
     <div class="about-section about-section-closing">
-      <h2>Hope y'all have fun posting movie theories and reviews...</h2>
+      <h2>Hope y'all have fun posting movie theories and reviews.</h2>
 
       <div class="contact-links">
         <a href="mailto:jainsahaj167@gmail.com" class="contact-pill">
@@ -76,5 +288,94 @@
       <p class="closing-line">Alright, now go post your hottest movie take. →</p>
     </div>
   </div>
+
+  <script>
+    (function initAboutHero() {
+      const posters = <%- JSON.stringify((typeof posters !== 'undefined' && posters) ? posters : []) %>;
+      const strip = document.getElementById('about-hero-strip');
+      const track = document.getElementById('about-hero-track');
+
+      console.log('[AboutHero] posters received from server:', posters.length, posters);
+
+      if (!strip || !track) return;
+
+      if (!posters.length) {
+        console.warn('[AboutHero] No posters were passed from the server — check that req.render("about", { posters }) is actually receiving a non-empty array (log posters.length in your /about route).');
+        strip.remove();
+        return;
+      }
+
+      const renderSet = posters.length > 1 ? [...posters, ...posters] : posters;
+      let loaded = 0;
+      renderSet.forEach(url => {
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = '';
+        img.onload = function () { loaded++; };
+        img.onerror = function () {
+          console.warn('[AboutHero] poster failed to load:', url);
+          this.remove();
+        };
+        track.appendChild(img);
+      });
+
+      let offset = 0;
+      let singleSetWidth = 0;
+      let paused = false;
+      let lastFrameT = null;
+      const DRIFT_SPEED = 26;
+
+      function measure() {
+        const tiles = track.children;
+        if (!tiles.length) return;
+        const half = posters.length > 1 ? tiles.length / 2 : tiles.length;
+        let w = 0;
+        for (let i = 0; i < half; i++) {
+          w += tiles[i].offsetWidth + 10;
+        }
+        singleSetWidth = w;
+      }
+
+      function applyOffset() {
+        if (singleSetWidth > 0 && posters.length > 1) {
+          if (offset <= -singleSetWidth) offset += singleSetWidth;
+        }
+        track.style.transform = `translateX(${offset}px)`;
+      }
+
+      function frame(t) {
+        if (!paused && singleSetWidth > 0 && posters.length > 1) {
+          if (lastFrameT !== null) {
+            const dt = (t - lastFrameT) / 1000;
+            offset -= DRIFT_SPEED * dt;
+            applyOffset();
+          }
+          lastFrameT = t;
+        } else {
+          lastFrameT = null;
+        }
+        requestAnimationFrame(frame);
+      }
+
+      strip.addEventListener('mouseenter', () => { paused = true; });
+      strip.addEventListener('mouseleave', () => { paused = false; lastFrameT = null; });
+
+      window.addEventListener('resize', measure);
+      window.addEventListener('load', measure);
+      // Re-measure repeatedly for the first couple seconds too, since
+      // images arriving asynchronously change the track's real width.
+      let remeasures = 0;
+      const remeasureTimer = setInterval(() => {
+        measure();
+        remeasures++;
+        if (remeasures > 20) clearInterval(remeasureTimer);
+      }, 100);
+
+      requestAnimationFrame(() => {
+        measure();
+        requestAnimationFrame(frame);
+      });
+    })();
+  </script>
 </body>
 </html>

@@ -1,18 +1,162 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notifications - KravN</title>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+:root {
+  --kravn-primary: #8b5cf6;
+  --kravn-primary-rgb: 139, 92, 246;
+  --kravn-primary-dark: #6d28d9;
+  --kravn-primary-light: #c4b5fd;
+  --kravn-heart-red: #ef4444;
+}
+html[data-theme="light"] {
+  --kravn-primary: #d4a017;
+  --kravn-primary-rgb: 212, 160, 23;
+  --kravn-primary-dark: #a9790a;
+  --kravn-primary-light: #f0cf6f;
+  --kravn-heart-red: #e0703a;
+}
+
+.kravn-wordmark-n {
+  background: linear-gradient(115deg, var(--kravn-primary-light) 0%, #fff 18%, var(--kravn-primary) 45%, var(--kravn-primary-light) 70%, var(--kravn-primary) 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--kravn-primary-light);
+  -webkit-text-fill-color: transparent;
+  animation: kravn-n-shimmer 3.2s linear infinite;
+  display: inline-block;
+}
+@keyframes kravn-n-shimmer {
+  0%   { background-position: 0% center; }
+  100% { background-position: 250% center; }
+}
+
+.notif-header {
+  margin-top: var(--space-6, 2.5rem);
+  margin-bottom: var(--space-5, 1.5rem);
+}
+.notif-eyebrow {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--kravn-primary-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.notif-eyebrow::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--kravn-primary-light);
+  box-shadow: 0 0 8px var(--kravn-primary);
+}
+.notif-title {
+  font-size: clamp(1.4rem, 4vw, 1.8rem);
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  margin: 0.45rem 0 0.25rem;
+}
+.notif-subtitle {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.92rem;
+}
+
+/* ---- Notification cards ---- */
+.notification-card {
+  position: relative;
+  display: flex;
+  gap: 0.95rem;
+  padding: 1.05rem 1.15rem;
+  margin-bottom: 0.7rem;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.18);
+  background: rgba(var(--kravn-primary-rgb), 0.025);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+.notification-card:hover {
+  border-color: rgba(var(--kravn-primary-rgb), 0.4);
+  background: rgba(var(--kravn-primary-rgb), 0.05);
+  transform: translateY(-1px);
+}
+.notification-card.unread {
+  border-color: rgba(var(--kravn-primary-rgb), 0.5);
+  background: rgba(var(--kravn-primary-rgb), 0.07);
+  box-shadow: 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.12), 0 8px 22px rgba(var(--kravn-primary-rgb), 0.08);
+}
+.notification-card.unread::before {
+  content: '';
+  position: absolute;
+  top: 14px; left: -1px;
+  width: 3px; height: calc(100% - 28px);
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--kravn-primary), var(--kravn-primary-dark));
+  box-shadow: 0 0 10px rgba(var(--kravn-primary-rgb), 0.6);
+}
+
+.notification-icon {
+  flex-shrink: 0;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  background: rgba(var(--kravn-primary-rgb), 0.1);
+  border: 1px solid rgba(var(--kravn-primary-rgb), 0.35);
+  color: var(--kravn-primary-light);
+}
+.notification-card:has(.notification-icon:not(:empty)) .notification-icon:first-line {}
+.notification-icon:empty { display: none; }
+
+.notification-body { flex: 1; min-width: 0; }
+.notification-text {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 0;
+}
+.notification-text a {
+  color: var(--kravn-primary-light);
+  text-decoration: none;
+}
+.notification-text a:hover { text-decoration: underline; }
+
+.notification-quote {
+  margin: 0.55rem 0 0.15rem;
+  padding: 0.6rem 0.85rem;
+  border-left: 2px solid rgba(var(--kravn-primary-rgb), 0.5);
+  background: rgba(var(--kravn-primary-rgb), 0.04);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: rgba(255,255,255,0.7);
+}
+
+.notification-time {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+  color: var(--text-muted, #888);
+  margin: 0.5rem 0 0;
+}
+  </style>
   <script src="/js/theme.js"></script>
 </head>
 <body>
   <%- include('partials/navbar', { currentPage: 'notifications' }) %>
 
   <div class="page-narrow">
-    <h1 style="font-size: 1.5rem; margin-top: var(--space-6); margin-bottom: var(--space-1);">Notifications</h1>
-    <p class="auth-subtitle" style="margin-bottom: var(--space-6);">Who's been engaging with your posts.</p>
+    <div class="notif-header">
+      <span class="notif-eyebrow">KravN Activity</span>
+      <h1 class="notif-title">Notifications</h1>
+      <p class="notif-subtitle">Who's been engaging with your posts.</p>
+    </div>
 
     <% if (notifications.length === 0) { %>
       <div class="empty-state">
