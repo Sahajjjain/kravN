@@ -700,7 +700,12 @@
             <span class="movie-name"><%= post.movie_name %></span>
             <% if (post.imdb_rating && post.imdb_rating !== 'N/A') { %>
               <span class="imdb-chip">★ <%= post.imdb_rating %></span>
+
             <% } %>
+            <% if (post.release_date) { %>
+    <span class="kravn-byline-dot">·</span>
+    <span><%= post.release_date %></span>
+  <% } %>
           </div>
 
           <h1 class="kravn-detail-title"><%= post.title %></h1>
@@ -716,7 +721,7 @@
           <div class="kravn-byline">
             <span class="byline-label">Posted by</span>
             <a href="/users/<%= post.username %>"><%= post.username %></a>
-            <span class="kravn-byline-dot">·</span>
+            <span class="kravn-byline-dot">on</span>
             <%= new Date(post.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) %>
           </div>
 

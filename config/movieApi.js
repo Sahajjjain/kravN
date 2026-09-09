@@ -16,7 +16,8 @@ async function getMovieInfo(movieName) {
       poster: data.Poster,
       year: data.Year,
       rating: data.imdbRating,
-      genre: data.Genre || null // e.g. "Action, Crime, Drama"
+      genre: data.Genre || null, // e.g. "Action, Crime, Drama"
+      releaseDate: (data.Released && data.Released !== 'N/A') ? data.Released : (data.Year || null)
     };
   } catch (err) {
     console.error('OMDb fetch failed:', err);
