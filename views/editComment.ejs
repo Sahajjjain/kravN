@@ -1,31 +1,329 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edit Comment - KravN</title>
+
+  <title>Edit Comment · <%= comment.movie_name %> — KravN</title>
+
   <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/theme.js" defer></script>
+
+  <style>
+    /* ================================
+       KRAVN EDIT COMMENT — "ticket stub" layout, matching likes page
+       Same torn-ticket header (poster info + perforation), but the
+       stub area becomes an editable margin note instead of a tally —
+       you're marking up your own stub, not reading someone else's reel.
+
+       Built on the site's real tokens (--accent, --surface-1/2,
+       --text/--text-muted, --space-*, --radius-*, --dur-*,
+       --font-display/--font-body) so it follows the purple/gold
+       data-theme toggle automatically.
+       ================================ */
+
+    .edit-page {
+      min-height: calc(100vh - 70px);
+      padding: var(--space-8) var(--space-4) var(--space-16);
+    }
+
+    .edit-container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    /* ---- Back link -------------------------------------------------- */
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: var(--space-5);
+
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .back-link:hover,
+    .back-link:focus-visible {
+      color: var(--accent);
+    }
+
+    .back-link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: var(--radius-sm);
+    }
+
+    .back-link svg {
+      width: 16px;
+      height: 16px;
+      flex: none;
+      transition: transform var(--dur-fast) var(--ease-out);
+    }
+
+    .back-link:hover svg {
+      transform: translateX(-2px);
+    }
+
+    /* ---- Ticket header ------------------------------------------------ */
+    /* Same shape as the likes page: squared body, dashed tear, stub strip.
+       Here the stub strip holds the edit form instead of a tally, so the
+       whole ticket reads as "this is the stub you're marking up". */
+
+    .ticket {
+      position: relative;
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin-bottom: var(--space-7, 1.75rem);
+    }
+
+    .ticket-body {
+      padding: var(--space-6) var(--space-6) var(--space-5);
+    }
+
+    .marquee-title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-size: clamp(1.6rem, 5vw, 2.15rem);
+      line-height: 1.15;
+      color: var(--text);
+    }
+
+    .ticket-sub {
+      margin: var(--space-2) 0 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      max-width: 46ch;
+    }
+
+    .ticket-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: var(--space-2);
+
+      color: var(--accent);
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .ticket-kicker svg {
+      width: 14px;
+      height: 14px;
+      flex: none;
+    }
+
+    /* Perforated tear between the poster info and the stub */
+    .tear {
+      height: 0;
+      border-top: 2px dashed var(--border-mid);
+      position: relative;
+    }
+
+    .tear::before,
+    .tear::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 20px;
+      height: 20px;
+      background: var(--bg);
+      border-radius: 50%;
+      transform: translateY(-50%);
+    }
+
+    .tear::before { left: -10px; }
+    .tear::after { right: -10px; }
+
+    /* ---- Stub form ------------------------------------------------------ */
+
+    .stub-form {
+      padding: var(--space-5) var(--space-6) var(--space-6);
+    }
+
+    .stub-form-label {
+      display: block;
+      margin-bottom: var(--space-2);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .stub-textarea {
+      width: 100%;
+      min-height: 140px;
+      resize: vertical;
+
+      padding: var(--space-4);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.98rem;
+      line-height: 1.55;
+
+      transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+    }
+
+    .stub-textarea:hover {
+      border-color: var(--accent-dim);
+    }
+
+    .stub-textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    .stub-form-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--space-3);
+      margin-top: var(--space-4);
+    }
+
+    .btn-ghost {
+      padding: var(--space-2) var(--space-4);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+
+      transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+    }
+
+    .btn-ghost:hover,
+    .btn-ghost:focus-visible {
+      border-color: var(--accent-dim);
+      color: var(--text);
+    }
+
+    .btn-ghost:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .btn-stamp {
+      /* The "punched" submit button — reads like a ticket stamp,
+         not a generic form button. */
+      position: relative;
+      padding: var(--space-2) var(--space-5);
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+
+      transition: transform var(--dur-fast) var(--ease-out), filter var(--dur-fast) var(--ease-out);
+    }
+
+    .btn-stamp:hover {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    .btn-stamp:active {
+      transform: translateY(0);
+    }
+
+    .btn-stamp:focus-visible {
+      outline: 2px solid var(--text);
+      outline-offset: 2px;
+    }
+
+    /* Mobile */
+    @media (max-width: 600px) {
+      .edit-page { padding: var(--space-4) var(--space-3) var(--space-12); }
+      .ticket-body { padding: var(--space-5) var(--space-5) var(--space-4); }
+      .stub-form { padding: var(--space-4) var(--space-5) var(--space-5); }
+      .stub-form-actions { flex-wrap: wrap; }
+      .btn-ghost, .btn-stamp { flex: 1; text-align: center; }
+    }
+  </style>
 </head>
+
 <body>
-  <div class="topbar">
-    <div class="topbar-inner">
-      <div class="brand">Krav<span>N</span></div>
-      <div class="nav-links">
-        <a class="muted" href="/posts/<%= comment.post_id %>">← Cancel</a>
-      </div>
+
+  <%- include('partials/navbar', { currentPage: 'editComment' }) %>
+
+  <main class="edit-page">
+    <div class="edit-container">
+
+      <!--
+        Cancel just goes back to the post — no history.back() trickery
+        here since there's nothing to preserve scroll-wise, and an
+        explicit href keeps "Cancel" predictable even from a direct link.
+      -->
+      <a class="back-link" href="/posts/<%= comment.post_id %>">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+        Cancel
+      </a>
+
+      <!-- Ticket -->
+      <section class="ticket">
+        <div class="ticket-body">
+          <span class="ticket-kicker">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+            </svg>
+            Editing your stub
+          </span>
+          <h1 class="marquee-title"><%= comment.movie_name %></h1>
+          <p class="ticket-sub"><%= comment.post_title %></p>
+        </div>
+
+        <div class="tear" role="presentation"></div>
+
+        <form class="stub-form" action="/comments/<%= comment.id %>/edit" method="POST">
+          <label class="stub-form-label" for="content">Your comment</label>
+          <textarea
+            id="content"
+            class="stub-textarea"
+            name="content"
+            required
+          ><%= comment.content %></textarea>
+
+          <div class="stub-form-actions">
+            <a class="btn-ghost" href="/posts/<%= comment.post_id %>">Discard</a>
+            <button type="submit" class="btn-stamp">Save changes</button>
+          </div>
+        </form>
+      </section>
+
     </div>
-  </div>
+  </main>
 
-  <div class="page-narrow">
-    <h1 style="font-size: 1.4rem; margin-bottom: 0.25rem;">Edit comment</h1>
-    <p class="auth-subtitle" style="margin-bottom: 1.5rem;">
-      On: <%= comment.movie_name %> — <%= comment.post_title %>
-    </p>
-
-    <form action="/comments/<%= comment.id %>/edit" method="POST">
-      <textarea name="content" required><%= comment.content %></textarea>
-      <button type="submit">Save changes</button>
-    </form>
-  </div>
 </body>
 </html>

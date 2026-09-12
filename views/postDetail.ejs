@@ -54,6 +54,12 @@
       padding: 0.5rem 1.25rem 4rem;
     }
 
+    /* Mobile-first order that actually reads well:
+       1. header/backdrop (outside grid)
+       2. like row + plot summary + discussion body
+       3. share card
+       4. comments
+       On laptop+, the share card becomes a sticky right rail. */
     .kravn-detail-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -61,21 +67,21 @@
         "top"
         "card"
         "comments";
-      gap: 1.75rem;
+      gap: 1.5rem;
     }
 
     .kd-top      { grid-area: top; }
     .kd-card     { grid-area: card; }
     .kd-comments { grid-area: comments; }
 
-    @media (min-width: 980px) {
+    @media (min-width: 900px) {
       .kravn-detail-grid {
-        grid-template-columns: minmax(0, 1fr) 300px;
+        grid-template-columns: minmax(0, 1fr) 280px;
         grid-template-areas:
           "top      card"
           "comments card";
-        column-gap: 2.75rem;
-        row-gap: 2.25rem;
+        column-gap: 2.5rem;
+        row-gap: 2rem;
         align-items: start;
       }
       .kd-card { position: sticky; top: 1.5rem; }
@@ -91,19 +97,22 @@
       background-position: center 22%;
     }
 
-    /* Taller backdrop on larger screens only — mobile keeps the
-       original proportions. */
     @media (min-width: 641px) {
-      .detail-backdrop { min-height: 420px; }
+      .detail-backdrop { min-height: 380px; }
       .detail-backdrop::before { background-size: 100% auto; }
     }
+
+    .detail-backdrop { padding-bottom: 4px !important; }
+    .detail-title-block,
+    .detail-header { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+    .detail-backdrop-inner { padding-bottom: 0 !important; }
 
     .kravn-movie-eyebrow {
       display: flex;
       align-items: center;
-      gap: 0.65rem;
+      gap: 0.6rem;
       flex-wrap: wrap;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: rgba(255,255,255,0.55);
     }
 
@@ -116,7 +125,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 800;
       color: #0a0a0a;
       background: #f5c518;
@@ -125,31 +134,36 @@
       letter-spacing: 0.02em;
     }
 
+    .kravn-byline-dot {
+      color: rgba(255,255,255,0.22);
+      margin: 0 0.3rem;
+    }
+
     .kravn-detail-title {
-      margin: 0.4rem 0 0.65rem;
-      font-size: clamp(1.6rem, 3.6vw, 2.5rem);
+      margin: 0.4rem 0 0.6rem;
+      font-size: clamp(1.5rem, 3.4vw, 2.4rem);
       font-weight: 800;
       letter-spacing: -0.7px;
       line-height: 1.14;
     }
 
-    /* Genre — directly under the title, quiet and structural */
+    /* Genre — quiet, compact chips directly under the title */
     .kravn-genre-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.45rem;
-      margin: 0 0 0.85rem;
+      gap: 0.4rem;
+      margin: 0 0 0.8rem;
     }
 
     .kravn-genre-tag {
       display: inline-flex;
       align-items: center;
       font-family: var(--font-mono, monospace);
-      font-size: 0.62rem;
+      font-size: 0.6rem;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      padding: 0.32rem 0.7rem;
+      padding: 0.3rem 0.65rem;
       border-radius: 20px;
       border: 1px solid rgba(var(--kravn-primary-rgb), 0.3);
       background: rgba(var(--kravn-primary-rgb), 0.06);
@@ -165,30 +179,18 @@
       transform: translateY(-1px);
     }
 
-    /* Byline — small, quiet, single line, no avatar circle */
+    /* Byline — small, quiet, single line */
     .kravn-byline {
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       line-height: 1.4;
       color: rgba(255,255,255,0.4);
-      margin: 0;
+      margin: 0 0 0.7rem;
     }
-
-    /* Kill the default bottom spacing the shared header/backdrop
-       partial adds after the byline, so the like row sits right
-       under the poster with no dead strip in between. The real
-       offender is .detail-backdrop's own bottom padding
-       (var(--space-8) = 32px) defined in style.css — override it
-       here since this page needs a tighter finish than the rest
-       of the site. */
-    .detail-backdrop { padding-bottom: 4px !important; }
-    .detail-title-block,
-    .detail-header { margin-bottom: 0 !important; padding-bottom: 0 !important; }
-    .detail-backdrop-inner { padding-bottom: 0 !important; }
 
     .kravn-byline .byline-label {
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      font-size: 0.68rem;
+      font-size: 0.66rem;
       color: rgba(255,255,255,0.32);
     }
 
@@ -199,22 +201,37 @@
     }
     .kravn-byline a:hover { color: var(--kravn-primary-light); }
 
-    .kravn-byline-dot {
-      color: rgba(255,255,255,0.22);
-      margin: 0 0.3rem;
+    /* Compact movie meta chips (director/cast/runtime) — collapse
+       to a single quiet line instead of competing with the plot */
+    .kravn-movie-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 1.2rem;
+      margin: 0.7rem 0 0;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .kravn-meta-item .meta-label {
+      font-family: var(--font-mono, monospace);
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--kravn-primary-light);
+      margin-right: 0.35rem;
     }
 
 
     /* =========================================================
-       LIKE ROW — sits directly above the discussion body, tight
-       to the title block, no boxy border/padding around it.
+       LIKE ROW
        ========================================================= */
 
     .kravn-like-row {
       display: flex;
       align-items: center;
       gap: 0.7rem;
-      margin: 0 0 0.75rem;
+      margin: 0 0 1.25rem;
     }
 
     .kravn-like-row form { margin: 0; line-height: 0; }
@@ -242,8 +259,6 @@
       transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.18s ease, fill 0.18s ease;
     }
 
-    /* Only the heart itself turns red + fills when liked — nothing
-       else in the row changes color. */
     .kravn-like-btn.is-liked .kravn-heart-icon {
       stroke: var(--kravn-heart-red);
       fill: var(--kravn-heart-red);
@@ -265,29 +280,76 @@
 
 
     /* =========================================================
-       POST BODY
+       CONTENT SECTIONS — plot vs discussion are now clearly
+       labeled, separate blocks so it's obvious which text is
+       the movie's synopsis and which is the poster's own words.
        ========================================================= */
+
+    .kravn-section-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--kravn-primary-light);
+      margin: 0 0 0.55rem;
+      opacity: 0.85;
+    }
+    .kravn-section-label svg {
+      width: 13px; height: 13px;
+      stroke: currentColor;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    /* Plot — lives in the header block with the rest of the movie
+       info. No box, just a thin left rule; italic and quieter than
+       the title/meta above it and the discussion further down. */
+    .kravn-plot-block {
+      margin: 0.75rem 0 0;
+      padding-left: 1.05rem;
+      border-left: 2px solid rgba(255,255,255,0.1);
+    }
+
+    .kravn-movie-plot {
+      font-size: 0.88rem;
+      line-height: 1.65;
+      font-style: italic;
+      color: rgba(255,255,255,0.5);
+      margin: 0;
+      max-width: 62ch;
+    }
+
+    /* Discussion block — the actual post; visually the primary
+       reading content on the page, unboxed, just a clean accent
+       rule to separate it from the plot above */
+    .kravn-discussion-block { margin: 0 0 0.5rem; }
 
     .detail-content {
       font-size: 1.02rem;
       line-height: 1.75;
       letter-spacing: 0.1px;
-      color: rgba(255, 255, 255, 0.88);
+      color: rgba(255, 255, 255, 0.9);
       padding-left: 1.1rem;
-      border-left: 2px solid rgba(var(--kravn-primary-rgb), 0.32);
-      margin: 0 0 1.1rem;
+      border-left: 2px solid rgba(var(--kravn-primary-rgb), 0.4);
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
 
     /* =========================================================
-       DELETE POST — a single quiet red icon, right-aligned under
-       the post body, always visible, confirms before deleting.
+       DELETE POST
        ========================================================= */
 
     .kravn-post-footer-row {
       display: flex;
       justify-content: flex-end;
-      padding-top: 0.6rem;
+      padding-top: 1rem;
+      margin-top: 0.75rem;
       margin-bottom: 0.5rem;
       border-top: 1px solid rgba(255,255,255,0.06);
     }
@@ -322,8 +384,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1.1rem;
-      padding: 1.5rem 1.25rem 1.75rem;
+      gap: 1rem;
+      padding: 1.4rem 1.1rem 1.6rem;
       border-radius: 24px;
       border: 1px solid rgba(var(--kravn-primary-rgb), 0.16);
       background:
@@ -337,7 +399,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.62rem;
+      font-size: 0.6rem;
       font-weight: 700;
       letter-spacing: 0.18em;
       text-transform: uppercase;
@@ -356,8 +418,8 @@
     }
 
     .kravn-share-heading h3 {
-      margin: 0.35rem 0 0;
-      font-size: 1.1rem;
+      margin: 0.3rem 0 0;
+      font-size: 1.05rem;
       font-weight: 800;
       letter-spacing: -0.3px;
       background: linear-gradient(135deg, #fff 30%, var(--kravn-primary-light) 100%);
@@ -370,7 +432,7 @@
 
     .kravn-post-card {
       position: relative;
-      width: 250px;
+      width: 230px;
       max-width: 100%;
       aspect-ratio: 9 / 16;
       overflow: hidden;
@@ -416,7 +478,7 @@
     .kravn-card-bottom { width: 100%; }
     .kravn-card-movie { margin-bottom: 7px; color: var(--kravn-primary-light); font-size: 9px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; text-shadow: 0 2px 10px rgba(0,0,0,0.65); }
     .kravn-card-title {
-      margin: 0 0 9px; color: #fff; font-size: clamp(0.98rem, 4vw, 1.4rem); line-height: 1.15; letter-spacing: -0.7px; font-weight: 800;
+      margin: 0 0 9px; color: #fff; font-size: clamp(0.95rem, 3.8vw, 1.35rem); line-height: 1.15; letter-spacing: -0.7px; font-weight: 800;
       text-shadow: 0 3px 14px rgba(0,0,0,0.75); overflow-wrap: anywhere;
       display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
     }
@@ -449,8 +511,7 @@
 
 
     /* =========================================================
-       COMMENTS — quiet dividers, generous whitespace, owner
-       actions permanently visible (edit pencil + red trash).
+       COMMENTS
        ========================================================= */
 
     .kravn-comments-section { margin-top: 0; }
@@ -459,13 +520,13 @@
       display: flex;
       align-items: center;
       gap: 0.55rem;
-      margin-bottom: 1.4rem;
+      margin-bottom: 1.3rem;
     }
 
     .kravn-comments-header svg { width: 19px; height: 19px; color: var(--kravn-primary-light); flex-shrink: 0; }
 
     .kravn-comments-header h2 {
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       margin: 0;
       letter-spacing: -0.2px;
       font-weight: 800;
@@ -479,7 +540,7 @@
 
     .comment-form {
       display: flex;
-      margin: 0 0 2.2rem;
+      margin: 0 0 2rem;
       align-items: flex-start;
     }
 
@@ -546,7 +607,7 @@
       background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-darker));
     }
 
-    .kravn-comment-body { flex: 1; min-width: 0; padding-right: 8.5rem; }
+    .kravn-comment-body { flex: 1; min-width: 0; padding-right: 8rem; }
 
     .kravn-comment-top {
       display: flex;
@@ -576,9 +637,6 @@
       word-break: break-word;
     }
 
-    /* Owner actions — labeled pills (icon + text), always visible,
-       tucked top-right of the comment. No ambiguity about which
-       one deletes. */
     .kravn-comment-owner-actions {
       position: absolute;
       top: 1rem;
@@ -646,7 +704,7 @@
     .kravn-section-rule {
       border: none;
       height: 1px;
-      margin: 0 0 1.6rem;
+      margin: 0 0 1.5rem;
       background: linear-gradient(90deg, rgba(var(--kravn-primary-rgb), 0.28), transparent 70%);
     }
 
@@ -656,13 +714,25 @@
        ========================================================= */
 
     @media (max-width: 640px) {
-      .kravn-post-card { width: 230px; border-radius: 18px; padding: 8px; }
+      .detail-header { flex-direction: column; }
+      .detail-header .detail-poster { max-height: 260px; width: auto; margin: 0 auto; }
+      .kravn-post-card { width: 220px; border-radius: 18px; padding: 8px; }
       .kravn-post-card-frame { inset: 8px; border-radius: 11px; }
       .kravn-post-card-content { padding: 15px; }
-      .kd-card { padding: 1.35rem 1rem 1.5rem; border-radius: 20px; }
+      .kd-card { padding: 1.25rem 1rem 1.4rem; border-radius: 20px; }
+      .kravn-plot-block { padding-left: 0.85rem; margin-top: 0.6rem; }
+      .kravn-movie-plot { font-size: 0.85rem; max-width: none; }
+      .kravn-movie-meta-row { gap: 0.3rem 0.9rem; }
       .kravn-comment-body { padding-right: 0.25rem; }
       .kravn-comment-owner-actions { position: static; margin-top: 0.6rem; }
       .comment { flex-wrap: wrap; }
+      .kravn-post-footer-row { justify-content: stretch; }
+      .kravn-delete-post-btn { width: 100%; justify-content: center; }
+    }
+
+    /* Small laptops: keep the sidebar from feeling cramped */
+    @media (min-width: 900px) and (max-width: 1100px) {
+      .kravn-detail-grid { grid-template-columns: minmax(0, 1fr) 250px; }
     }
 
   </style>
@@ -700,12 +770,11 @@
             <span class="movie-name"><%= post.movie_name %></span>
             <% if (post.imdb_rating && post.imdb_rating !== 'N/A') { %>
               <span class="imdb-chip">★ <%= post.imdb_rating %></span>
-
             <% } %>
             <% if (post.release_date) { %>
-    <span class="kravn-byline-dot">·</span>
-    <span><%= post.release_date %></span>
-  <% } %>
+              <span class="kravn-byline-dot">·</span>
+              <span><%= post.release_date %></span>
+            <% } %>
           </div>
 
           <h1 class="kravn-detail-title"><%= post.title %></h1>
@@ -725,6 +794,26 @@
             <%= new Date(post.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) %>
           </div>
 
+          <% if (post.director || post.actors || post.runtime) { %>
+            <div class="kravn-movie-meta-row">
+              <% if (post.director) { %>
+                <span class="kravn-meta-item"><span class="meta-label">Director</span> <%= post.director %></span>
+              <% } %>
+              <% if (post.actors) { %>
+                <span class="kravn-meta-item"><span class="meta-label">Cast</span> <%= post.actors %></span>
+              <% } %>
+              <% if (post.runtime) { %>
+                <span class="kravn-meta-item"><span class="meta-label">Runtime</span> <%= post.runtime %></span>
+              <% } %>
+            </div>
+          <% } %>
+
+          <% if (post.plot) { %>
+            <div class="kravn-plot-block">
+              <p class="kravn-movie-plot"><%= post.plot %></p>
+            </div>
+          <% } %>
+
         </div>
       </div>
     </div>
@@ -736,7 +825,7 @@
   <div class="kravn-detail-shell">
     <div class="kravn-detail-grid">
 
-      <!-- TOP: like row + discussion body -->
+      <!-- TOP: like row + plot summary + user discussion -->
       <div class="kd-top">
 
         <div class="kravn-like-row">
@@ -757,7 +846,16 @@
           <% } %>
         </div>
 
-        <p class="detail-content"><%= post.content %></p>
+        <!-- Discussion: what the poster actually wrote -->
+        <div class="kravn-discussion-block">
+          <div class="kravn-section-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <%= post.username %>'s take
+          </div>
+          <p class="detail-content"><%= post.content %></p>
+        </div>
 
         <% if (post.user_id === currentUserId) { %>
           <div class="kravn-post-footer-row">
@@ -830,7 +928,7 @@
       </div>
 
 
-      <!-- COMMENTS (always last in document order) -->
+      <!-- COMMENTS -->
       <div class="kd-comments">
 
         <hr class="kravn-section-rule">

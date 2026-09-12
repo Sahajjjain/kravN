@@ -11,12 +11,18 @@
 
   <style>
     /* ================================
-       KRAVN LIKES PAGE — "ticket stub" layout
+       KRAVN LIKES PAGE — "ticket stub" layout, cinema-pass
        A KravN post is a screening. Liking it is leaving your
-       name on the stub. The page reads like a torn ticket,
-       followed by a reel of the people who showed up.
+       name on the stub. The page reads like a torn ticket under
+       marquee lights, followed by a reel of who showed up.
 
-       Built entirely on the site's real tokens (--accent,
+       This pass leans further into the cinema metaphor on top of
+       the original ticket shape: a "NOW SHOWING" stamp, marquee
+       bulbs that chase around the ticket edge, subtle film-grain
+       texture, and true sprocket holes on the tear line instead of
+       plain notches.
+
+       Still built entirely on the site's real tokens (--accent,
        --surface-1/2, --text/--text-muted, --space-*, --radius-*,
        --dur-*, --font-display/--font-body) so it follows the
        purple/gold data-theme toggle automatically.
@@ -25,11 +31,13 @@
     .likes-page {
       min-height: calc(100vh - 70px);
       padding: var(--space-8) var(--space-4) var(--space-16);
+      position: relative;
     }
 
     .likes-container {
       max-width: 640px;
       margin: 0 auto;
+      position: relative;
     }
 
     /* ---- Back link -------------------------------------------------- */
@@ -69,9 +77,9 @@
     }
 
     /* ---- Ticket header ------------------------------------------------ */
-    /* Shaped like a torn stub: squared body, a perforated tear line,
-       and a stub strip carrying the tally. Deliberately not the same
-       card shape as the list below it. */
+    /* Shaped like a torn stub, now with a marquee-bulb border chasing
+       around the frame and a subtle grain overlay so it reads as a
+       physical object under theatre lights, not a flat card. */
 
     .ticket {
       position: relative;
@@ -80,10 +88,87 @@
       border-radius: var(--radius-sm);
       overflow: hidden;
       margin-bottom: var(--space-7, 1.75rem);
+      isolation: isolate;
+    }
+
+    /* Film grain texture, dialed in low so it reads as paper stock */
+    .ticket::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.05;
+      mix-blend-mode: overlay;
+      background-image:
+        radial-gradient(circle at 20% 30%, #fff 0.5px, transparent 0.6px),
+        radial-gradient(circle at 70% 60%, #fff 0.5px, transparent 0.6px),
+        radial-gradient(circle at 40% 80%, #fff 0.5px, transparent 0.6px),
+        radial-gradient(circle at 90% 20%, #fff 0.5px, transparent 0.6px);
+      background-size: 5px 5px, 7px 7px, 6px 6px, 8px 8px;
+    }
+
+    /* Marquee bulbs chasing the top edge */
+    .marquee-lights {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 14px 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .marquee-lights span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.25;
+      animation: bulbChase 1.6s ease-in-out infinite;
+    }
+
+    .marquee-lights span:nth-child(odd) { animation-delay: 0s; }
+    .marquee-lights span:nth-child(even) { animation-delay: 0.4s; }
+
+    @keyframes bulbChase {
+      0%, 100% { opacity: 0.2; box-shadow: none; }
+      50% { opacity: 1; box-shadow: 0 0 6px var(--accent); }
     }
 
     .ticket-body {
-      padding: var(--space-6) var(--space-6) var(--space-5);
+      position: relative;
+      z-index: 2;
+      padding: var(--space-5) var(--space-6) var(--space-5);
+    }
+
+    .now-showing {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: var(--space-2);
+      padding: 3px 9px;
+      border-radius: 999px;
+
+      background: color-mix(in srgb, var(--accent) 16%, transparent);
+      color: var(--accent);
+      font-family: var(--font-display);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .now-showing::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.75); }
     }
 
     .marquee-title {
@@ -104,29 +189,43 @@
       max-width: 46ch;
     }
 
-    /* Perforated tear between the poster info and the stub */
+    /* Perforated tear — now with actual sprocket holes rather than
+       two big notches, closer to real 35mm stock. */
     .tear {
-      height: 0;
-      border-top: 2px dashed var(--border-mid);
       position: relative;
-    }
-
-    .tear::before,
-    .tear::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      width: 20px;
+      z-index: 2;
       height: 20px;
-      background: var(--bg);
-      border-radius: 50%;
-      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+      background-image: repeating-linear-gradient(
+        to right,
+        var(--border-mid) 0,
+        var(--border-mid) 6px,
+        transparent 6px,
+        transparent 12px
+      );
+      background-position: center;
+      background-size: 100% 2px;
+      background-repeat: no-repeat;
     }
 
-    .tear::before { left: -10px; }
-    .tear::after { right: -10px; }
+    .tear span {
+      flex: none;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1px solid var(--border-mid);
+    }
+
+    .tear span:first-child { margin-left: -20px; }
+    .tear span:last-child { margin-right: -20px; margin-left: auto; }
 
     .stub {
+      position: relative;
+      z-index: 2;
       display: flex;
       align-items: baseline;
       gap: var(--space-3);
@@ -250,6 +349,14 @@
       color: var(--accent);
     }
 
+    /* First-row gets a small gold "front row" flourish since being
+       first to like a screening is worth a nod. */
+    .frame:first-child .frame-number::after {
+      content: "★";
+      margin-left: 3px;
+      color: var(--accent);
+    }
+
     /* ---- Empty state --------------------------------------------------- */
 
     .empty-state {
@@ -283,10 +390,11 @@
     /* Mobile */
     @media (max-width: 600px) {
       .likes-page { padding: var(--space-4) var(--space-3) var(--space-12); }
-      .ticket-body { padding: var(--space-5) var(--space-5) var(--space-4); }
+      .ticket-body { padding: var(--space-4) var(--space-5) var(--space-4); }
       .stub { padding: var(--space-3) var(--space-5); }
       .frame-link { padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2); gap: var(--space-2); }
       .frame-avatar { width: 36px; height: 36px; }
+      .marquee-lights { padding: 6px 10px 0; }
     }
 
     /* Accessibility / performance */
@@ -297,7 +405,13 @@
         transform: none;
         transition: none;
       }
-      .back-link svg { transition: none; }
+      .back-link svg,
+      .marquee-lights span,
+      .now-showing::before {
+        animation: none;
+        transition: none;
+      }
+      .marquee-lights span { opacity: 0.6; }
     }
   </style>
 </head>
@@ -326,12 +440,23 @@
 
       <!-- Ticket header -->
       <section class="ticket">
+
+        <div class="marquee-lights" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+        </div>
+
         <div class="ticket-body">
+          <span class="now-showing">Now showing</span>
           <h1 class="marquee-title"><%= post.movie_name %></h1>
           <p class="ticket-sub"><%= post.title %></p>
         </div>
 
-        <div class="tear" role="presentation"></div>
+        <div class="tear" role="presentation">
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span>
+          <span></span><span></span>
+        </div>
 
         <div class="stub">
           <span class="stub-count"><%= likers.length %></span>

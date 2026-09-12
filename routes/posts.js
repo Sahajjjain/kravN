@@ -15,10 +15,10 @@ router.post('/posts', requireLogin, async (req, res) => {
 
   try {
     const movieInfo = await getMovieInfo(movie_name);
-console.log('DEBUG movieInfo:', movieInfo);
+    console.log('DEBUG movieInfo:', movieInfo);
 
     await pool.query(
-      'INSERT INTO posts (user_id, movie_name, title, content, poster_url, imdb_rating, genre, release_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO posts (user_id, movie_name, title, content, poster_url, imdb_rating, genre, release_date, director, actors, runtime, plot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         userId,
         movie_name,
@@ -27,7 +27,11 @@ console.log('DEBUG movieInfo:', movieInfo);
         movieInfo ? movieInfo.poster : null,
         movieInfo ? movieInfo.rating : null,
         movieInfo ? movieInfo.genre : null,
-        movieInfo ? movieInfo.releaseDate : null
+        movieInfo ? movieInfo.releaseDate : null,
+        movieInfo ? movieInfo.director : null,
+        movieInfo ? movieInfo.actors : null,
+        movieInfo ? movieInfo.runtime : null,
+        movieInfo ? movieInfo.plot : null
       ]
     );
     res.redirect('/feed');
