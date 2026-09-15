@@ -281,10 +281,15 @@
      wash, layered border glow, and an inline leading icon inside
      the field. Submits a normal GET to /search, identical to the
      feed's own search form (?q=...), so results match exactly.
+     This is the SINGLE source of search for the whole app — no
+     other page should render its own search input/form.
      ============================================================ */
   .kravn-nav-search-bar {
     display: grid;
     grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
     position: sticky;
     top: 0;
     z-index: 499;
@@ -298,31 +303,32 @@
        visually, it doesn't stop the box from taking up layout height). */
     transition:
       grid-template-rows 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.18s ease,
+      visibility 0s linear 0.36s,
       border-color 0.25s ease,
       box-shadow 0.25s ease;
   }
   .kravn-nav-search-bar.open {
     grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      grid-template-rows 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.18s ease,
+      visibility 0s linear 0s,
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
     border-bottom-color: rgba(var(--kravn-primary-rgb), 0.2);
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
   }
   .kravn-nav-search-bar-clip {
-    /* Required by the grid-row collapse trick: the row track can
-       shrink below this element's content height only if this child
-       has min-height: 0 and clips its own overflow. Also carries the
-       circular reveal, anchored at the search button's live position
-       (--search-origin-x/y set via JS), so opening still visibly
-       grows out of the icon rather than just sliding down uniformly. */
-    overflow: hidden;
+    /* Clean search reveal — no circular/radial arc.
+       The outer search bar controls the open/close animation. */
+    overflow: visible;
     min-height: 0;
-    --search-origin-x: 100%;
-    --search-origin-y: 0px;
-    clip-path: circle(0px at var(--search-origin-x) var(--search-origin-y));
-    transition: clip-path 0.36s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .kravn-nav-search-bar.open .kravn-nav-search-bar-clip {
-    clip-path: circle(150% at var(--search-origin-x) var(--search-origin-y));
-  }
+
   .kravn-nav-search-bar-inner {
     display: flex;
     align-items: center;
@@ -418,15 +424,25 @@
      spacing, hover state, a subtle divider, and a scroll cap so a
      long result set doesn't run off the screen. Selectors are kept
      generic (element + common class names) so this degrades safely
-     if the autocomplete script uses slightly different markup. */
+     if the autocomplete script uses slightly different markup.
+
+     position:absolute + z-index here matters a lot now that the
+     parent clip container switches to overflow:visible on open —
+     this dropdown needs to sit above the rest of the page (feed
+     cards, hero banner, etc.), not just above its own bar. */
   .kravn-nav-search-bar .suggestions-dropdown {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 8px);
+    z-index: 600;
     border: 1px solid rgba(var(--kravn-primary-rgb), 0.28) !important;
     border-radius: 16px !important;
     box-shadow:
       0 20px 46px rgba(0, 0, 0, 0.5),
       0 0 0 1px rgba(var(--kravn-primary-rgb), 0.08) !important;
     background: var(--bg-elevated, #141414) !important;
-    margin-top: 8px !important;
+    margin-top: 0 !important;
     padding: 6px !important;
     max-height: 320px;
     overflow-y: auto;
@@ -461,6 +477,14 @@
     color: #fff;
   }
   .kravn-nav-search-bar .suggestions-dropdown:empty { display: none; }
+
+  @media (max-width: 480px) {
+    .kravn-nav-search-bar .suggestions-dropdown {
+      left: 1.25rem;
+      right: 1.25rem;
+      max-height: 60vh;
+    }
+  }
 </style>
 
 <%
@@ -545,6 +569,11 @@
   </div>
 </div>
 
+<!-- movieAutocomplete.js is loaded ONCE, here, for the whole app.
+     Do NOT add a second <script src="/js/movieAutocomplete.js">
+     tag on any page that includes this navbar partial — a duplicate
+     load can cause the autocomplete's internal debounce/listener
+     state to conflict and suggestions to silently stop appearing. -->
 <script src="/js/movieAutocomplete.js"></script>
 <script>
   /* Back button — always returns to whichever page the user was
@@ -568,11 +597,12 @@
   })();
 
   /* Search icon toggles a slide-down bar instead of navigating away.
-     Same autocomplete behavior as the feed page's search form: pick
-     a suggestion and it either opens that movie's existing discussion
-     (/search?q=...) or the "start a post" flow if none exists yet.
-     Plain Enter with no suggestion picked also hits /search?q=...,
-     identical to the feed page's bare "Search" button. */
+     Same autocomplete behavior as before: pick a suggestion and it
+     either opens that movie's existing discussion (/search?q=...) or
+     the "start a post" flow if none exists yet. Plain Enter with no
+     suggestion picked also hits /search?q=..., identical to the old
+     feed page's bare "Search" button — this bar now IS that button,
+     for every page on the site. */
   (function initKravnNavSearch() {
     const btn   = document.getElementById('kravn-nav-search-btn');
     const bar   = document.getElementById('kravn-nav-search-bar');
@@ -581,17 +611,7 @@
     const close = document.getElementById('kravn-nav-search-close');
     if (!btn || !bar || !clip || !input) return;
 
-    function positionOrigin() {
-      const btnRect = btn.getBoundingClientRect();
-      const barRect = bar.getBoundingClientRect();
-      // Origin relative to the bar's own box, centered on the button.
-      const originX = (btnRect.left + btnRect.width / 2) - barRect.left;
-      clip.style.setProperty('--search-origin-x', `${originX}px`);
-      clip.style.setProperty('--search-origin-y', '0px');
-    }
-
     function openBar() {
-      positionOrigin();
       bar.classList.add('open');
       btn.classList.add('active');
       btn.setAttribute('aria-expanded', 'true');
@@ -610,9 +630,7 @@
     btn.addEventListener('click', toggleBar);
     if (close) close.addEventListener('click', closeBar);
 
-    window.addEventListener('resize', () => {
-      if (bar.classList.contains('open')) positionOrigin();
-    });
+
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && bar.classList.contains('open')) closeBar();
@@ -622,6 +640,17 @@
       if (!bar.classList.contains('open')) return;
       if (bar.contains(e.target) || btn.contains(e.target)) return;
       closeBar();
+    });
+
+    /* Global Cmd/Ctrl+K shortcut — opens this bar from anywhere on
+       the page, so pages that used to have their own inline search
+       (and their own Cmd/Ctrl+K binding) still feel familiar. */
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (!bar.classList.contains('open')) openBar();
+        else input.focus();
+      }
     });
 
     input.addEventListener('keydown', (e) => {
@@ -650,6 +679,8 @@
           }
         }
       });
+    } else {
+      console.warn('[KravnNavSearch] attachMovieAutocomplete is not defined — check that /js/movieAutocomplete.js loaded successfully before this script runs.');
     }
   })();
 </script>
