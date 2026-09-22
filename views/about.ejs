@@ -187,6 +187,9 @@ html[data-theme="light"] {
 .contact-links {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
   margin-bottom: 1.2rem;
 }
 .contact-pill {
@@ -211,6 +214,30 @@ html[data-theme="light"] {
   color: #fff;
   box-shadow: 0 10px 26px rgba(var(--kravn-primary-rgb), 0.28);
   transform: translateY(-1px);
+}
+
+/* Instagram pill — real IG gradient border + glyph, sits next to the email pill */
+.contact-pill--instagram {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background:
+    linear-gradient(#0a0a0c, #0a0a0c) padding-box,
+    linear-gradient(135deg, #feda75 0%, #fa7e1e 22%, #d62976 45%, #962fbf 70%, #4f5bd5 100%) border-box;
+  color: #fff;
+}
+.contact-pill--instagram:hover {
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(214, 41, 118, 0.35);
+  transform: translateY(-1px);
+}
+.contact-pill--instagram .ig-glyph {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+.contact-pill--instagram .ig-glyph rect,
+.contact-pill--instagram .ig-glyph circle,
+.contact-pill--instagram .ig-glyph path {
+  stroke: url(#ig-gradient);
 }
 
 .closing-line {
@@ -286,6 +313,23 @@ html[data-theme="light"] {
       <div class="contact-links">
         <a href="mailto:jainsahaj167@gmail.com" class="contact-pill">
           📧 jainsahaj167@gmail.com
+        </a>
+        <a href="https://www.instagram.com/kravn.in/" target="_blank" rel="noopener noreferrer" class="contact-pill contact-pill--instagram" aria-label="KravN on Instagram">
+          <svg class="ig-glyph" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ig-gradient" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#feda75"/>
+                <stop offset="22%" stop-color="#fa7e1e"/>
+                <stop offset="45%" stop-color="#d62976"/>
+                <stop offset="70%" stop-color="#962fbf"/>
+                <stop offset="100%" stop-color="#4f5bd5"/>
+              </linearGradient>
+            </defs>
+            <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="url(#ig-gradient)" stroke-width="2"/>
+            <circle cx="12" cy="12" r="4.6" stroke="url(#ig-gradient)" stroke-width="2"/>
+            <circle cx="17.6" cy="6.4" r="1.15" fill="url(#ig-gradient)"/>
+          </svg>
+          @kravn.in
         </a>
       </div>
 
