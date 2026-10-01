@@ -734,7 +734,46 @@
     @media (min-width: 900px) and (max-width: 1100px) {
       .kravn-detail-grid { grid-template-columns: minmax(0, 1fr) 250px; }
     }
+/* ---- Poster lightbox ---- */
+.detail-poster { cursor: zoom-in; }
 
+.kravn-lightbox {
+  position: fixed; inset: 0; z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  background: rgba(5, 5, 7, 0.92);
+  backdrop-filter: blur(8px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.kravn-lightbox.open { opacity: 1; pointer-events: auto; }
+
+.kravn-lightbox img {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.35);
+  transform: scale(0.94);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.kravn-lightbox.open img { transform: scale(1); }
+
+.kravn-lightbox-close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 14px); right: 16px;
+  width: 32px; height: 32px;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.4rem;
+  line-height: 1;
+  font-weight: 300;
+  cursor: pointer;
+  padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.18s ease;
+}
+.kravn-lightbox-close:hover { color: #fff; }
   </style>
 <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a0a0a">
@@ -1009,7 +1048,10 @@
 
   <div class="kravn-toast" id="kravn-toast"></div>
 
-
+<div class="kravn-lightbox" id="kravn-lightbox" aria-hidden="true">
+  <button type="button" class="kravn-lightbox-close" id="kravn-lightbox-close" aria-label="Close poster">✕</button>
+  <img id="kravn-lightbox-img" src="" alt="">
+</div>
   <!-- SHARING JAVASCRIPT -->
 
   <script>
@@ -1400,7 +1442,39 @@
     document.getElementById('share-card-btn').addEventListener('click', sharePostCard);
 
   </script>
+<script>
+(function initPosterLightbox() {
+  const poster   = document.querySelector('.detail-poster');
+  const lightbox = document.getElementById('kravn-lightbox');
+  const lbImg    = document.getElementById('kravn-lightbox-img');
+  const closeBtn = document.getElementById('kravn-lightbox-close');
+  if (!poster || !lightbox || !lbImg) return;
 
+  function open() {
+    const original = poster.currentSrc || poster.src;
+    // Try the hi-res version first, fall back to the original if it fails
+    lbImg.onerror = () => { lbImg.onerror = null; lbImg.src = original; };
+    lbImg.src = (typeof getHiResPosterUrl === 'function') ? getHiResPosterUrl(original) : original;
+    lbImg.alt = poster.alt || '';
+    lightbox.classList.add('open');
+    lightbox.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function close() {
+    lightbox.classList.remove('open');
+    lightbox.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  poster.addEventListener('click', open);
+  closeBtn.addEventListener('click', (e) => { e.stopPropagation(); close(); });
+  lightbox.addEventListener('click', (e) => { if (e.target !== lbImg) close(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && lightbox.classList.contains('open')) close();
+  });
+})();
+</script>
 </body>
 
 </html>

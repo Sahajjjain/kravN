@@ -1938,3 +1938,18 @@ button.sm, .btn.sm { padding: 5px var(--space-3); font-size: 0.8rem; border-radi
   .about-hero-content h1 { font-size: 1.9rem; }
   .about-section { margin-left: var(--space-3); margin-right: var(--space-3); padding: var(--space-4); }
 }
+/* Mobile grid view: show the full poster, no cropping */
+@media (max-width: 640px) {
+  .poster-grid-view .post-card {
+    height: auto !important;
+    aspect-ratio: auto !important;
+  }
+  .poster-grid-view .post-poster,
+  .poster-grid-view .post-poster-placeholder {
+    width: 100%;
+    height: auto !important;
+    aspect-ratio: 2 / 3;
+    object-fit: contain !important;
+    background: #0a0a0c;
+  }
+}

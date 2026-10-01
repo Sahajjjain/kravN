@@ -1282,6 +1282,89 @@ html[data-theme="light"] {
       gap: 0.55rem;
       color: #fff;
     }
+
+    /* ============================================================
+       MOBILE GRID VIEW — show the complete poster, no cropping
+       ============================================================ */
+    @media (max-width: 640px) {
+      .poster-grid-view .post-card {
+        height: auto !important;
+        aspect-ratio: auto !important;
+      }
+      .poster-grid-view .post-poster,
+      .poster-grid-view .post-poster-placeholder {
+        width: 100%;
+        height: auto !important;
+        aspect-ratio: 2 / 3;
+        object-fit: contain !important;
+        background: #0a0a0c;
+      }
+    }
+
+    /* ============================================================
+       LONG-PRESS QUICK ACTIONS
+       ============================================================ */
+    .post-card {
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .post-card .post-poster { -webkit-user-drag: none; }
+    .post-card.lp-pressing {
+      transform: scale(0.97);
+      -webkit-user-select: none; user-select: none;
+    }
+
+    .kravn-lp {
+      position: fixed; inset: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+      background: rgba(5, 5, 7, 0.72);
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+    .kravn-lp.active { opacity: 1; pointer-events: auto; }
+
+    .kravn-lp-inner {
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      transform: scale(0.88) translateY(12px);
+      transition: transform 0.38s cubic-bezier(0.34, 1.4, 0.64, 1);
+    }
+    .kravn-lp.active .kravn-lp-inner { transform: scale(1) translateY(0); }
+
+    .kravn-lp-card {
+      position: relative;
+      width: min(62vw, 230px, calc((100vh - 210px) * 9 / 16));
+      aspect-ratio: 9 / 16;
+      border-radius: 22px;
+      background: #050507;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.3);
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.65);
+      padding: 8px; box-sizing: border-box;
+      cursor: pointer;
+    }
+
+    .kravn-lp-actions { display: flex; gap: 0.7rem; }
+    .kravn-lp-btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      height: 44px; padding: 0 1.3rem;
+      border-radius: 999px;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.4);
+      background: rgba(10, 10, 12, 0.85);
+      color: var(--kravn-primary-light);
+      font-family: var(--font-mono, monospace);
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+    }
+    .kravn-lp-btn:hover { background: rgba(var(--kravn-primary-rgb), 0.18); color: #fff; }
+    .kravn-lp-btn:active { transform: scale(0.94); }
+    .kravn-lp-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .kravn-lp-btn.liked { color: #fff; border-color: var(--kravn-heart-red); }
+    .kravn-lp-btn.liked svg { stroke: var(--kravn-heart-red); fill: var(--kravn-heart-red); }
+    .kravn-lp-btn.pop svg { animation: kravn-lp-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes kravn-lp-pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.35); } 100% { transform: scale(1); } }
   </style>
     <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0a0a0a">
@@ -1451,6 +1534,7 @@ html[data-theme="light"] {
     <div class="feed-grid" id="feed-container">
       <% posts.forEach(post => { %>
         <div class="post-card"
+             data-id="<%= post.id %>"
              data-created="<%= post.created_at %>"
              data-rating="<%= (post.imdb_rating && post.imdb_rating !== 'N/A') ? parseFloat(post.imdb_rating) : 0 %>"
              data-username="<%= post.username %>"
@@ -1549,6 +1633,20 @@ html[data-theme="light"] {
 
   <div class="kravn-toast" id="kravn-toast"></div>
   <canvas id="kravn-render-canvas" style="display:none;"></canvas>
+
+  <!-- ================= LONG-PRESS QUICK ACTIONS ================= -->
+  <div class="kravn-lp" id="kravn-lp" aria-hidden="true">
+    <div class="kravn-lp-inner">
+      <div class="kravn-lp-card" id="kravn-lp-preview"></div>
+      <div class="kravn-lp-actions">
+        <button type="button" class="kravn-lp-btn" id="kravn-lp-like">
+          <svg viewBox="0 0 24 24"><path d="M12 21s-6.5-4.35-9.5-8.5C.5 9 2 5 5.5 5c2 0 3.5 1.2 4.5 2.7C11 6.2 12.5 5 14.5 5 18 5 19.5 9 17.5 12.5 14.5 16.65 12 21 12 21z"/></svg>
+          <span id="kravn-lp-like-label">Like</span>
+        </button>
+        <button type="button" class="kravn-lp-btn" id="kravn-lp-share">↗ <span>Share</span></button>
+      </div>
+    </div>
+  </div>
 
   <script>
   function setView(view) {
@@ -2406,6 +2504,9 @@ function initKravnCards(config) {
   });
 
   if (window.kravnRegisterOverlay) window.kravnRegisterOverlay(overlay, closeOverlay);
+
+  // Expose share/download so the long-press menu reuses the same card renderer
+  window.kravnCardActions = { share: shareCard, download: downloadCard };
 }
 
 function initKravnPageArrival(config) {
@@ -2778,6 +2879,185 @@ function initKravnTopPicks(posts) {
       initKravnTopPicks(KRAVN_FEED_POSTS);
       initKravnPageArrival();
     });
+  </script>
+
+  <!-- ================= LONG-PRESS QUICK ACTIONS (Like / Share) ================= -->
+  <script>
+  (function initPostLongPress() {
+    const container = document.getElementById('feed-container');
+    const overlay   = document.getElementById('kravn-lp');
+    const preview   = document.getElementById('kravn-lp-preview');
+    const likeBtn   = document.getElementById('kravn-lp-like');
+    const likeLabel = document.getElementById('kravn-lp-like-label');
+    const shareBtn  = document.getElementById('kravn-lp-share');
+    const toastEl   = document.getElementById('kravn-toast');
+    if (!container || !overlay) return;
+
+    const HOLD_MS = 420;   // how long to hold
+    const SLOP    = 8;     // px of movement allowed before it counts as a scroll
+    const LIKE_KEY = 'kravnLongPressLiked';
+
+    let holdTimer = null, visualTimer = null;
+    let pressCard = null, startX = 0, startY = 0;
+    let lastPointerType = 'mouse';
+    let pressOpened = false, suppressUntil = 0;
+    let openedAt = 0, currentPost = null;
+
+    let liked = new Set();
+    try { liked = new Set(JSON.parse(sessionStorage.getItem(LIKE_KEY) || '[]')); } catch (e) {}
+    function saveLiked() {
+      try { sessionStorage.setItem(LIKE_KEY, JSON.stringify([...liked])); } catch (e) {}
+    }
+
+    const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    function toast(msg) {
+      if (!toastEl) return;
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastEl._t);
+      toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 1800);
+    }
+
+    function cancelPress() {
+      clearTimeout(holdTimer);
+      clearTimeout(visualTimer);
+      if (pressCard) pressCard.classList.remove('lp-pressing');
+      pressCard = null;
+    }
+
+    function buildPreview(p) {
+      const bg = p.posterUrl
+        ? `<img class="kravn-card-bg" src="${esc(p.posterUrl)}" alt="" onerror="this.style.display='none'">`
+        : `<div class="kravn-card-fallback">🎬</div>`;
+      preview.innerHTML = `
+        <div class="kravn-card-frame">
+          ${bg}
+          <div class="kravn-card-overlay"></div>
+          <div class="kravn-card-content">
+            <div class="kravn-card-header">
+              <span class="kravn-card-logo">Krav<span class="kravn-wordmark-n">N</span></span>
+              <span class="kravn-card-badge">${p.imdbRating ? 'IMDb ' + esc(p.imdbRating) : 'Kravn'}</span>
+            </div>
+            <div>
+              <div class="kravn-card-movie">${esc(p.movieName)}</div>
+              <div class="kravn-card-title">${esc(p.title)}</div>
+              <div class="kravn-card-author">@${esc(p.username)}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function syncLikeBtn() {
+      const isLiked = currentPost && liked.has(String(currentPost.id));
+      likeBtn.classList.toggle('liked', !!isLiked);
+      likeBtn.classList.remove('pop');
+      likeLabel.textContent = isLiked ? 'Liked' : 'Like';
+    }
+
+    function openMenu(card) {
+      const id = card.dataset.id;
+      const all = (typeof KRAVN_FEED_POSTS !== 'undefined') ? KRAVN_FEED_POSTS : [];
+      const post = all.find(p => String(p.id) === String(id));
+      if (!post) return;
+
+      currentPost = post;
+      pressOpened = true;
+      openedAt = performance.now();
+      card.classList.remove('lp-pressing');
+
+      buildPreview(post);
+      syncLikeBtn();
+      if (navigator.vibrate) navigator.vibrate(12);
+
+      overlay.classList.add('active');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      if (window.kravnPushOverlayState) window.kravnPushOverlayState();
+    }
+
+    function closeMenu() {
+      overlay.classList.remove('active');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    // ---- Press detection ----
+    container.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      const card = e.target.closest('.post-card');
+      if (!card) return;
+      cancelPress();
+      pressOpened = false;
+      lastPointerType = e.pointerType;
+      pressCard = card;
+      startX = e.clientX; startY = e.clientY;
+      visualTimer = setTimeout(() => card.classList.add('lp-pressing'), 140);
+      holdTimer = setTimeout(() => { const c = pressCard; cancelPress(); if (c) openMenu(c); }, HOLD_MS);
+    });
+
+    container.addEventListener('pointermove', (e) => {
+      if (!pressCard) return;
+      if (Math.hypot(e.clientX - startX, e.clientY - startY) > SLOP) cancelPress();
+    });
+
+    function endPress() {
+      cancelPress();
+      // Swallow the click that follows releasing a long-press so it doesn't navigate
+      if (pressOpened) suppressUntil = performance.now() + 400;
+    }
+    document.addEventListener('pointerup', endPress);
+    document.addEventListener('pointercancel', endPress);
+
+    container.addEventListener('click', (e) => {
+      if (performance.now() < suppressUntil) { e.preventDefault(); e.stopPropagation(); }
+    }, true); // capture: runs before the card's inline onclick
+
+    // Block the native image/link menu on touch long-press (right-click on desktop is untouched)
+    container.addEventListener('contextmenu', (e) => {
+      if (lastPointerType !== 'mouse' || pressOpened) e.preventDefault();
+    });
+
+    // ---- Menu interactions ----
+    overlay.addEventListener('click', (e) => {
+      if (performance.now() - openedAt < 350) return;   // ignore the finger-release
+      if (e.target.closest('#kravn-lp-preview')) {
+        if (currentPost) window.location.href = '/posts/' + currentPost.id;
+        return;
+      }
+      if (!e.target.closest('.kravn-lp-btn')) closeMenu();
+    });
+
+    likeBtn.addEventListener('click', async () => {
+      if (!currentPost) return;
+      const id = String(currentPost.id);
+      if (liked.has(id)) { toast('Already liked'); closeMenu(); return; }
+      liked.add(id); saveLiked();
+      syncLikeBtn();
+      void likeBtn.offsetWidth;
+      likeBtn.classList.add('pop');
+      toast('Liked');
+      try { await fetch('/posts/' + id + '/like', { method: 'POST' }); } catch (err) {}
+      setTimeout(closeMenu, 450);
+    });
+
+    shareBtn.addEventListener('click', () => {
+      if (!currentPost) return;
+      const post = currentPost;
+      closeMenu();
+      if (window.kravnCardActions) {
+        window.kravnCardActions.share(post);
+      } else if (navigator.share) {
+        navigator.share({ title: post.title, text: post.title + ' — on Kravn', url: location.origin + '/posts/' + post.id }).catch(() => {});
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && overlay.classList.contains('active')) closeMenu();
+    });
+
+    if (window.kravnRegisterOverlay) window.kravnRegisterOverlay(overlay, closeMenu);
+  })();
   </script>
 </body>
 </html>
