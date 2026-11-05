@@ -1,75 +1,98 @@
 // backfillMovieData.js
 //
-// One-off script to fix old posts that are missing release_date, director,
-// actors, runtime, or plot (and possibly poster_url / imdb_rating / genre)
-// because they were created before that data was being fetched and stored.
+// One-off script that fills in movie data for OLD posts:
+//   - imdb_id and box_office (new columns, run migration.sql first)
+//   - any missing poster / rating / genre / release date / director /
+//     actors / runtime / plot
 //
-// Usage:
+// It only FILLS EMPTY FIELDS. Values already stored on a post are kept.
+//
+// Usage (from the project root, same place you run `node app.js`):
 //   node backfillMovieData.js
 //
-// Run this once from your project root (same place you'd run `node app.js`),
-// since it reuses your existing db pool and movieApi config.
+// Safe to re-run: a post is skipped once it has both imdb_id and box_office
+// ('' in box_office means "checked, OMDb has no figure"). Posts where OMDb
+// returned nothing stay untouched and are retried on the next run.
 
 const pool = require('./config/db');
 const { getMovieInfo } = require('./config/movieApi');
 
+const DELAY_MS = 300; // pause between real API lookups to stay under rate limits
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// "07 Nov 2026" / "2026" / "2026-11-07" -> "2026"
+function yearFrom(releaseDate) {
+  const m = String(releaseDate || '').match(/(?:19|20)\d{2}/);
+  return m ? m[0] : null;
+}
+
 async function backfill() {
-  // Grab every post missing any of the newer fields.
   const [posts] = await pool.query(
-    `SELECT id, movie_name, poster_url, imdb_rating, genre, release_date,
-            director, actors, runtime, plot
+    `SELECT id, movie_name, release_date, imdb_id
      FROM posts
-     WHERE release_date IS NULL OR release_date = ''
-        OR director IS NULL OR director = ''
-        OR actors IS NULL OR actors = ''
-        OR runtime IS NULL OR runtime = ''
-        OR plot IS NULL OR plot = ''`
+     WHERE imdb_id IS NULL OR box_office IS NULL
+     ORDER BY id`
   );
 
-  console.log(`Found ${posts.length} post(s) missing movie data.`);
+  console.log(`Found ${posts.length} post(s) to update.\n`);
 
+  // Many posts share the same movie, so look each one up only once per run.
+  const lookups = new Map();
   let updated = 0;
   let skipped = 0;
 
   for (const post of posts) {
     try {
-      const movieInfo = await getMovieInfo(post.movie_name);
+      const year = yearFrom(post.release_date);
+      const key = post.imdb_id || `${String(post.movie_name).trim().toLowerCase()}|${year || ''}`;
 
-      if (!movieInfo) {
-        console.warn(`  [skip] "${post.movie_name}" (post #${post.id}) — no data returned`);
+      let info = lookups.get(key);
+      if (info === undefined) {
+        // Exact imdb_id when we have it, otherwise name + year from the post
+        info = await getMovieInfo(post.imdb_id || post.movie_name, { year });
+        lookups.set(key, info || null);
+        await sleep(DELAY_MS);
+      }
+
+      if (!info) {
+        console.warn(`  [skip] "${post.movie_name}" (post #${post.id}): no data returned`);
         skipped++;
         continue;
       }
 
       await pool.query(
         `UPDATE posts
-         SET poster_url = COALESCE(?, poster_url),
-             imdb_rating = COALESCE(?, imdb_rating),
-             genre = COALESCE(?, genre),
-             release_date = COALESCE(?, release_date),
-             director = COALESCE(?, director),
-             actors = COALESCE(?, actors),
-             runtime = COALESCE(?, runtime),
-             plot = COALESCE(?, plot)
+         SET imdb_id      = COALESCE(imdb_id, ?),
+             poster_url   = COALESCE(NULLIF(NULLIF(poster_url, ''), 'N/A'), ?),
+             imdb_rating  = COALESCE(NULLIF(NULLIF(imdb_rating, ''), 'N/A'), ?),
+             genre        = COALESCE(NULLIF(genre, ''), ?),
+             release_date = COALESCE(NULLIF(release_date, ''), ?),
+             director     = COALESCE(NULLIF(director, ''), ?),
+             actors       = COALESCE(NULLIF(actors, ''), ?),
+             runtime      = COALESCE(NULLIF(runtime, ''), ?),
+             plot         = COALESCE(NULLIF(plot, ''), ?),
+             box_office   = ?
          WHERE id = ?`,
         [
-          movieInfo.poster || null,
-          movieInfo.rating || null,
-          movieInfo.genre || null,
-          movieInfo.releaseDate || null,
-          movieInfo.director || null,
-          movieInfo.actors || null,
-          movieInfo.runtime || null,
-          movieInfo.plot || null,
-          post.id
+          info.imdbID || null,
+          info.poster || null,
+          info.rating || null,
+          info.genre || null,
+          info.releaseDate || null,
+          info.director || null,
+          info.actors || null,
+          info.runtime || null,
+          info.plot || null,
+          info.boxOffice || '', // '' = looked up, no box office listed
+          post.id,
         ]
       );
 
-      console.log(`  [ok] "${post.movie_name}" (post #${post.id}) -> director: ${movieInfo.director || 'n/a'}, runtime: ${movieInfo.runtime || 'n/a'}`);
+      console.log(
+        `  [ok] #${post.id} "${post.movie_name}" -> "${info.title}" (${info.year}) ${info.imdbID}` +
+          ` | box office: ${info.boxOffice || 'n/a'}`
+      );
       updated++;
-
-      // Be polite to the movie API — small delay between calls to avoid rate limits.
-      await new Promise(r => setTimeout(r, 300));
     } catch (err) {
       console.error(`  [error] post #${post.id} (${post.movie_name}): ${err.message}`);
       skipped++;
@@ -77,10 +100,11 @@ async function backfill() {
   }
 
   console.log(`\nDone. Updated: ${updated}, Skipped: ${skipped}`);
+  console.log('Tip: check the "->" matches above. If an old post matched the wrong film, fix its imdb_id by hand.');
   process.exit(0);
 }
 
-backfill().catch(err => {
+backfill().catch((err) => {
   console.error('Backfill failed:', err);
   process.exit(1);
 });

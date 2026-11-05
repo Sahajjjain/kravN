@@ -835,19 +835,22 @@
             <%= new Date(post.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }) %>
           </div>
 
-          <% if (post.director || post.actors || post.runtime) { %>
-            <div class="kravn-movie-meta-row">
-              <% if (post.director) { %>
-                <span class="kravn-meta-item"><span class="meta-label">Director</span> <%= post.director %></span>
-              <% } %>
-              <% if (post.actors) { %>
-                <span class="kravn-meta-item"><span class="meta-label">Cast</span> <%= post.actors %></span>
-              <% } %>
-              <% if (post.runtime) { %>
-                <span class="kravn-meta-item"><span class="meta-label">Runtime</span> <%= post.runtime %></span>
-              <% } %>
-            </div>
-          <% } %>
+          <% if (post.director || post.actors || post.runtime || post.box_office) { %>
+  <div class="kravn-movie-meta-row">
+    <% if (post.director) { %>
+      <span class="kravn-meta-item"><span class="meta-label">Director</span> <%= post.director %></span>
+    <% } %>
+    <% if (post.actors) { %>
+      <span class="kravn-meta-item"><span class="meta-label">Cast</span> <%= post.actors %></span>
+    <% } %>
+    <% if (post.runtime) { %>
+      <span class="kravn-meta-item"><span class="meta-label">Runtime</span> <%= post.runtime %></span>
+    <% } %>
+    <% if (post.box_office) { %>
+      <span class="kravn-meta-item"><span class="meta-label">Box Office</span> <%= post.box_office %></span>
+    <% } %>
+  </div>
+<% } %>
 
           <% if (post.plot) { %>
             <div class="kravn-plot-block">

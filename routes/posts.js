@@ -10,15 +10,19 @@ router.get('/posts/new', requireLogin, (req, res) => {
 });
 
 router.post('/posts', requireLogin, async (req, res) => {
-  const { movie_name, title, content } = req.body;
+  const { movie_name, title, content, imdb_id } = req.body;
   const userId = req.session.userId;
 
   try {
-    const movieInfo = await getMovieInfo(movie_name);
-    console.log('DEBUG movieInfo:', movieInfo);
+    // Exact film if the search sent an IMDb ID, otherwise best match by name
+    const lookup = /^tt\d{6,}$/i.test(imdb_id || '') ? imdb_id : movie_name;
+    const movieInfo = await getMovieInfo(lookup);
 
     await pool.query(
-      'INSERT INTO posts (user_id, movie_name, title, content, poster_url, imdb_rating, genre, release_date, director, actors, runtime, plot) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      `INSERT INTO posts
+         (user_id, movie_name, title, content, poster_url, imdb_rating, genre,
+          release_date, director, actors, runtime, plot, imdb_id, box_office)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         movie_name,
@@ -31,7 +35,9 @@ router.post('/posts', requireLogin, async (req, res) => {
         movieInfo ? movieInfo.director : null,
         movieInfo ? movieInfo.actors : null,
         movieInfo ? movieInfo.runtime : null,
-        movieInfo ? movieInfo.plot : null
+        movieInfo ? movieInfo.plot : null,
+        movieInfo ? movieInfo.imdbID : null,
+        movieInfo ? (movieInfo.boxOffice || '') : null // '' = checked, none listed
       ]
     );
     res.redirect('/feed');
