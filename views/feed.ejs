@@ -1021,6 +1021,80 @@ html[data-theme="light"] {
       box-shadow: 0 16px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.06) !important;
     }
 
+    /* ---- Kravn Suggests popup ---- */
+    .ks-popup {
+      position: fixed; inset: 0; z-index: 1100;
+      display: flex; align-items: center; justify-content: center;
+      padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+      background: rgba(5, 5, 7, 0.75);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .ks-popup.active { opacity: 1; pointer-events: auto; }
+
+    .ks-popup-box {
+      position: relative;
+      width: min(92vw, 380px);
+      padding: 2rem 1.6rem 1.6rem;
+      text-align: center;
+      border-radius: 18px;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.45);
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(var(--kravn-primary-rgb), 0.22), transparent 65%),
+        #0a0a0c;
+      box-shadow: 0 30px 70px rgba(0,0,0,0.65), 0 0 0 1px rgba(var(--kravn-primary-rgb), 0.1);
+      transform: scale(0.9) translateY(14px);
+      transition: transform 0.38s cubic-bezier(0.34, 1.4, 0.64, 1);
+    }
+    .ks-popup.active .ks-popup-box { transform: scale(1) translateY(0); }
+
+    .ks-popup-close {
+      position: absolute; top: 12px; right: 12px;
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 1px solid rgba(var(--kravn-primary-rgb), 0.35);
+      background: rgba(var(--kravn-primary-rgb), 0.08);
+      color: #ddd; font-size: 0.95rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s ease;
+    }
+    .ks-popup-close:hover {
+      border-color: var(--kravn-primary);
+      color: var(--kravn-primary-light);
+      background: rgba(var(--kravn-primary-rgb), 0.18);
+    }
+
+    .ks-popup-eyebrow {
+      font-family: var(--font-mono, monospace);
+      font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--kravn-primary-light);
+    }
+    .ks-popup-title {
+      margin: 0.5rem 0 0.6rem;
+      font-size: 1.5rem; font-weight: 800; letter-spacing: -0.4px; line-height: 1.2;
+      color: #fff;
+    }
+    .ks-popup-text {
+      margin: 0 0 1.4rem;
+      font-size: 0.88rem; line-height: 1.5;
+      color: rgba(255,255,255,0.65);
+    }
+    .ks-popup-cta {
+      position: relative; overflow: hidden; isolation: isolate;
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      width: 100%; padding: 0.85rem 1.2rem;
+      border-radius: 10px; border: none;
+      background: linear-gradient(135deg, var(--kravn-primary), var(--kravn-primary-dark));
+      color: #fff; text-decoration: none;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      box-shadow: 0 10px 26px rgba(var(--kravn-primary-rgb), 0.35);
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+      box-sizing: border-box;
+    }
+    .ks-popup-cta:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(var(--kravn-primary-rgb), 0.5); }
+    .ks-popup-cta:active { transform: scale(0.97); }
+
     .kravn-discussions-heading {
       font-size: 1.05rem;
       letter-spacing: 0.01em;
@@ -1628,6 +1702,19 @@ html[data-theme="light"] {
     </div>
     <div class="kravn2-overlay-body">
       <div class="kravn2-movie-list" id="kravn2-movie-list"></div>
+    </div>
+  </div>
+
+  <!-- ================= KRAVN SUGGESTS POPUP ================= -->
+  <div class="ks-popup" id="ks-popup" aria-hidden="true">
+    <div class="ks-popup-box" role="dialog" aria-modal="true" aria-labelledby="ks-popup-title">
+      <button type="button" class="ks-popup-close" id="ks-popup-close" title="Close" aria-label="Close">✕</button>
+      <div class="ks-popup-eyebrow">Loved Krav<span class="kravn-wordmark-n">N</span>?</div>
+      <h2 class="ks-popup-title" id="ks-popup-title">Try Krav<span class="kravn-wordmark-n">N</span> Suggests</h2>
+      <p class="ks-popup-text">Get personalized movie and show suggestions picked just for you.</p>
+      <a class="ks-popup-cta" id="ks-popup-cta" href="https://kravn-suggests.onrender.com/#/" target="_blank" rel="noopener noreferrer">
+        Try Kravn Suggests →
+      </a>
     </div>
   </div>
 
@@ -3059,6 +3146,40 @@ function initKravnTopPicks(posts) {
     });
 
     if (window.kravnRegisterOverlay) window.kravnRegisterOverlay(overlay, closeMenu);
+  })();
+  </script>
+
+  <!-- ================= KRAVN SUGGESTS POPUP (shows on load, closable) ================= -->
+  <script>
+  (function initKravnSuggestsPopup() {
+    var popup = document.getElementById('ks-popup');
+    var closeBtn = document.getElementById('ks-popup-close');
+    var cta = document.getElementById('ks-popup-cta');
+    if (!popup) return;
+
+    var KEY = 'kravnSuggestsPopupSeen';
+    try { if (sessionStorage.getItem(KEY)) return; } catch (e) {}
+
+    function open() {
+      popup.classList.add('active');
+      popup.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+    function close() {
+      popup.classList.remove('active');
+      popup.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+    }
+
+    closeBtn.addEventListener('click', close);
+    cta.addEventListener('click', close);
+    popup.addEventListener('click', function (e) { if (e.target === popup) close(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && popup.classList.contains('active')) close();
+    });
+
+    setTimeout(open, 500);
   })();
   </script>
 </body>
