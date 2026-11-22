@@ -1,11 +1,99 @@
+<%
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+%>
 <%- include('partials/head', { title: 'Notifications' }) %>
 <%- include('partials/nav') %>
 
+<style>
+  /* =====================================================================
+     NOTIFICATIONS: compact head -> clean activity rows
+     ===================================================================== */
+  .page .shell--narrow.kv-notifs { max-width: min(720px, 100% - 32px); }
+
+  /* ---------- header ---------- */
+  .kv-notifs .page-head { display: grid; gap: 6px; justify-items: start; margin: 0 0 14px; padding: 0; }
+  .kv-notifs .page-head h1 { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0; font-size: clamp(24px, 3.4vw, 32px); font-weight: 700; letter-spacing: -.03em; line-height: 1.1; }
+  .kv-notifs .new-pill {
+    display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px;
+    font: 600 11px/1 var(--font); letter-spacing: .04em; color: #fff; background: var(--accent);
+  }
+
+  /* ---------- list ---------- */
+  .kv-notifs .notif-list { display: grid; gap: 8px; }
+  .kv-notifs .notif {
+    position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; min-width: 0;
+    padding: 12px 14px; margin: 0; border-radius: 16px; text-decoration: none; color: var(--text);
+    background: color-mix(in srgb, var(--text) 3%, var(--surface)); border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+    transition: transform .2s ease, border-color .2s ease, background .2s ease;
+  }
+  .kv-notifs .notif:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: color-mix(in srgb, var(--text) 5%, var(--surface)); }
+  .kv-notifs .notif:active { transform: scale(.995); }
+
+  /* unread: soft accent tint + dot */
+  .kv-notifs .notif.unread {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), color-mix(in srgb, var(--text) 3%, var(--surface)) 70%);
+    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  .kv-notifs .notif.unread::before {
+    content: ''; position: absolute; top: 14px; right: 14px; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  .kv-notifs .notif.unread:has(.notif-poster)::before { right: auto; left: 8px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; box-shadow: none; }
+
+  /* avatar + type badge */
+  .kv-notifs .notif-av { position: relative; flex: none; display: block; }
+  .kv-notifs .notif-av .avatar { width: 42px; height: 42px; font-size: 17px; }
+  .kv-notifs .notif-badge {
+    position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%;
+    color: #fff; border: 2px solid var(--surface); background: var(--accent);
+  }
+  .kv-notifs .notif-badge--like { background: #e5484d; }
+  .kv-notifs .notif-badge svg { width: 10px; height: 10px; display: block; fill: currentColor; }
+
+  /* text */
+  .kv-notifs .notif-text { display: grid; gap: 4px; min-width: 0; font-size: 14px; line-height: 1.45; }
+  .kv-notifs .notif-text > span { color: color-mix(in srgb, var(--text) 74%, transparent); overflow-wrap: anywhere; }
+  .kv-notifs .notif-text strong { font-weight: 650; color: var(--text); }
+  .kv-notifs .notif-text em { font-style: normal; font-weight: 600; color: var(--text); }
+  .kv-notifs .notif-text q {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; quotes: none; margin: 2px 0 0; padding: 2px 0 2px 10px;
+    font-size: 13px; line-height: 1.45; color: color-mix(in srgb, var(--text) 62%, transparent); border-left: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  .kv-notifs .notif-text time { font-size: 11.5px; letter-spacing: .02em; color: color-mix(in srgb, var(--text) 48%, transparent); }
+
+  /* poster thumb */
+  .kv-notifs .notif-poster { flex: none; width: 42px; height: 62px; object-fit: cover; object-position: center top; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--text) 12%, transparent); background: var(--surface-2); }
+
+  /* ---------- empty state ---------- */
+  .kv-notifs .empty { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 48px 20px; border-radius: 20px; border: 1px dashed color-mix(in srgb, var(--text) 16%, transparent); }
+  .kv-notifs .empty p { margin: 0; max-width: 34ch; font-size: 14px; line-height: 1.55; color: color-mix(in srgb, var(--text) 62%, transparent); text-wrap: balance; }
+  .kv-notifs .empty svg { opacity: .55; }
+  .kv-notifs .empty .btn {
+    display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 22px; margin-top: 4px; border-radius: 999px;
+    font: 500 12.5px/1 var(--font); letter-spacing: .03em; color: #fff; text-decoration: none; background: transparent; box-shadow: none;
+    border: 1px solid color-mix(in srgb, var(--accent) 85%, #fff 10%); transition: transform .2s ease, background .2s ease, border-color .2s ease;
+  }
+  .kv-notifs .empty .btn:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+
+  /* ---------- phone ---------- */
+  @media (max-width: 640px) {
+    .kv-notifs .page-head { margin-bottom: 12px; }
+    .kv-notifs .notif-list { gap: 6px; }
+    .kv-notifs .notif { gap: 11px; padding: 11px 12px; border-radius: 14px; }
+    .kv-notifs .notif-av .avatar { width: 38px; height: 38px; font-size: 15px; }
+    .kv-notifs .notif-badge { width: 18px; height: 18px; right: -3px; bottom: -3px; }
+    .kv-notifs .notif-text { font-size: 13.5px; gap: 3px; }
+    .kv-notifs .notif-text q { font-size: 12.5px; }
+    .kv-notifs .notif-poster { width: 38px; height: 56px; border-radius: 7px; }
+    .kv-notifs .notif.unread::before { top: 12px; right: 12px; }
+  }
+</style>
+
 <main class="page">
-  <div class="shell shell--narrow">
+  <div class="shell shell--narrow kv-notifs">
     <header class="page-head">
       <span class="eyebrow"><span class="dot"></span> Activity</span>
-      <h1>Notifications</h1>
+      <h1>Notifications<% if (unreadCount) { %><span class="new-pill"><%= unreadCount %> new</span><% } %></h1>
     </header>
 
     <% if (!notifications.length) { %>
@@ -19,7 +107,14 @@
     <div class="notif-list">
       <% notifications.forEach((n) => { const actor = n.actor_username || 'Someone'; %>
         <a class="notif<%= n.is_read ? '' : ' unread' %>" href="/posts/<%= n.post_id %><%= n.type === 'comment' ? '#comments' : '' %>">
-          <span class="avatar" style="--h:<%= hue(actor) %>"><%= actor.charAt(0).toUpperCase() %></span>
+          <span class="notif-av">
+            <span class="avatar" style="--h:<%= hue(actor) %>"><%= actor.charAt(0).toUpperCase() %></span>
+            <% if (n.type === 'like') { %>
+              <span class="notif-badge notif-badge--like" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.3 2.7 4.5 6.4 4.5c2 0 3.7 1.1 4.6 2.7h2c.9-1.6 2.6-2.7 4.6-2.7 3.7 0 5.6 3.8 4 7.3C19.5 16.4 12 21 12 21z"/></svg></span>
+            <% } else { %>
+              <span class="notif-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg></span>
+            <% } %>
+          </span>
           <span class="notif-text">
             <span><strong><%= actor %></strong> <%= n.type === 'like' ? 'liked' : 'commented on' %> your discussion <em><%= n.post_title || n.movie_name || '(deleted)' %></em></span>
             <% if (n.type === 'comment' && n.comment_content) { %><q><%= n.comment_content.length > 140 ? n.comment_content.slice(0, 140) + '…' : n.comment_content %></q><% } %>

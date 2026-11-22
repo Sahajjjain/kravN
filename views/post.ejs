@@ -5,11 +5,208 @@
   const movieUrl = movie ? movie.url : movieLink(post);
   const backdrop = movie && movie.backdrop;
   const others = Math.max(0, d.likes - likers.length);
+  const mins = Math.max(1, Math.round(String(post.content || '').trim().split(/\s+/).length / 200));
 %>
 <%- include('partials/head', { title: post.title, description: post.content.slice(0, 160) }) %>
 <%- include('partials/nav') %>
 
-<main class="page page--flush">
+<style>
+  /* =====================================================================
+     THREAD PAGE — compact + a little cinematic
+     ticket-stub movie chip · pull-quote post · chat-bubble comments ·
+     avatar-stack likes · swipeable "more on this movie" rail
+     (scoped to .kv-th so nothing else on the site is affected)
+     ===================================================================== */
+  .kv-th .shell--narrow { max-width: min(760px, 100% - 28px); }
+
+  /* ---------- hero: short backdrop strip + a cinema-ticket movie chip ---------- */
+  .kv-th .thread-hero {
+    position: relative; overflow: hidden; isolation: isolate; min-height: 0;
+    margin-top: calc(var(--nav-h) * -1); padding-top: var(--nav-h);
+    background: color-mix(in srgb, var(--bg-2) 90%, #000);
+  }
+  .kv-th .thread-hero-img { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; opacity: .5; filter: saturate(.9); }
+  .kv-th .thread-hero-img--poster { filter: blur(26px) saturate(.9); transform: scale(1.25); opacity: .45; }
+  .kv-th .thread-hero-shade {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      linear-gradient(0deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 55%, transparent) 55%, transparent 100%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg) 70%, transparent) 0%, transparent 45%);
+  }
+  .kv-th .thread-hero-inner { position: relative; z-index: 2; padding-block: 62px 22px; }
+
+  /* the ticket: poster stub | dashed tear line | details; round notches punched top and bottom */
+  .kv-th .movie-mini {
+    --tear: 58px;
+    display: inline-flex; align-items: center; max-width: 100%; min-width: 0; padding: 8px 14px 8px 8px;
+    border-radius: 12px; color: var(--text); position: relative;
+    background: rgba(14, 14, 18, .62); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, .13);
+    -webkit-mask: radial-gradient(circle 7px at var(--tear) 0, #0000 97%, #000) top / 100% 51% no-repeat,
+                  radial-gradient(circle 7px at var(--tear) 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+            mask: radial-gradient(circle 7px at var(--tear) 0, #0000 97%, #000) top / 100% 51% no-repeat,
+                  radial-gradient(circle 7px at var(--tear) 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+    transition: transform .2s;
+  }
+  .kv-th .movie-mini:hover { transform: translateY(-1px); }
+  .kv-th .movie-mini > img, .kv-th .movie-mini-none {
+    width: 40px; height: 60px; flex: none; border-radius: 6px; object-fit: cover; display: grid; place-items: center;
+    background: var(--surface-2); margin-right: 10px;
+  }
+  .kv-th .movie-mini > span:not(.movie-mini-none) {
+    display: grid; gap: 1px; min-width: 0; padding-left: 14px; border-left: 2px dashed rgba(255, 255, 255, .22);
+  }
+  .kv-th .movie-mini small { font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-2); font-weight: 700; }
+  .kv-th .movie-mini strong { font-size: 15px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kv-th .movie-mini em { display: flex; flex-wrap: wrap; gap: 2px 10px; font-style: normal; font-size: 11.5px; color: color-mix(in srgb, var(--text) 62%, transparent); }
+  .kv-th .movie-mini em .rate { display: inline-flex; align-items: center; gap: 3px; color: #f5c518; font-weight: 600; }
+  .kv-th .movie-mini em .rate svg { width: 11px; height: 11px; fill: currentColor; }
+  .kv-th .movie-mini > svg { width: 15px; height: 15px; flex: none; opacity: .55; margin-left: 12px; }
+
+  /* ---------- rhythm + entrance ---------- */
+  .kv-th .thread { display: grid; gap: 12px; margin-top: -6px; padding-bottom: 36px; position: relative; z-index: 3; }
+  @keyframes kvUp { from { opacity: 0; transform: translateY(10px); } }
+  .kv-th .thread > * { animation: kvUp .5s cubic-bezier(.2, .7, .2, 1) both; }
+  .kv-th .thread > :nth-child(2) { animation-delay: .06s; }
+  .kv-th .thread > :nth-child(3) { animation-delay: .12s; }
+  .kv-th .thread > :nth-child(4) { animation-delay: .18s; }
+
+  .kv-th .section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 8px; }
+  .kv-th .section-head h2 { margin: 0; font-size: 15.5px; font-weight: 700; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; }
+  .kv-th .section-head h2::before { content: ''; width: 3px; height: .95em; border-radius: 3px; background: linear-gradient(180deg, var(--accent-2), var(--accent)); flex: none; }
+  .kv-th .section-head .count { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; line-height: 1.4; background: color-mix(in srgb, var(--text) 8%, transparent); color: color-mix(in srgb, var(--text) 75%, transparent); }
+  .kv-th .section-head .more { font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px; }
+  .kv-th .section-head .more svg { width: 13px; height: 13px; }
+
+  /* ---------- the post ---------- */
+  .kv-th .thread-main {
+    padding: 16px 18px 14px; border-radius: 16px; position: relative; overflow: hidden;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--text) 6%, var(--surface)), var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+  }
+  /* oversized quote mark as a quiet watermark */
+  .kv-th .thread-main::before {
+    content: '\201C'; position: absolute; top: -6px; right: 14px; font: 800 120px/1 Georgia, 'Times New Roman', serif;
+    color: color-mix(in srgb, var(--accent) 14%, transparent); pointer-events: none; user-select: none;
+  }
+  .kv-th .thread-title { position: relative; margin: 0 0 8px; padding-right: 36px; font-size: clamp(20px, 3.4vw, 27px); font-weight: 750; line-height: 1.2; letter-spacing: -.02em; overflow-wrap: anywhere; }
+
+  .kv-th .thread-by { position: relative; display: flex; align-items: center; gap: 8px 10px; margin: 0 0 10px; font-size: 12.5px; flex-wrap: wrap; }
+  .kv-th .thread-by .pcard-author { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+  .kv-th .thread-by .avatar { width: 28px; height: 28px; font-size: 12px; flex: none; }
+  .kv-th .thread-by strong { font-size: 13.5px; font-weight: 600; }
+  .kv-th .thread-by time { font-size: 12px; }
+  .kv-th .thread-by .stats { display: inline-flex; gap: 6px; margin-left: auto; }
+  .kv-th .thread-by .stat {
+    display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 11.5px; font-weight: 500; white-space: nowrap;
+    color: color-mix(in srgb, var(--text) 75%, transparent); background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  }
+  .kv-th .thread-by .stat svg { width: 12px; height: 12px; }
+  .kv-th .thread-by a.stat:hover { color: #fff; border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+
+  .kv-th .thread-main > .chips {
+    position: relative; display: flex; flex-wrap: nowrap; gap: 6px; margin: 0 0 12px; padding: 0; overflow-x: auto; scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+  }
+  .kv-th .thread-main > .chips::-webkit-scrollbar { display: none; }
+  .kv-th .thread-main > .chips .chip {
+    flex: none; display: inline-flex; align-items: center; height: 26px; padding: 0 11px; margin: 0; border-radius: 999px;
+    font: 500 12px/1 var(--font); white-space: nowrap; color: color-mix(in srgb, var(--text) 82%, transparent);
+    background: color-mix(in srgb, var(--text) 5%, transparent); border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); box-shadow: none;
+  }
+  .kv-th .thread-main > .chips .chip:hover { color: #fff; border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+
+  /* pull-quote body: accent rule on the left, first line set a touch bolder as a lead-in */
+  .kv-th .thread-content {
+    position: relative; margin: 0 0 14px; padding-left: 13px; border-left: 2px solid var(--accent);
+    font-size: 15px; line-height: 1.65; color: color-mix(in srgb, var(--text) 88%, transparent); white-space: pre-line; overflow-wrap: anywhere;
+  }
+  .kv-th .thread-content::first-line { font-weight: 600; color: var(--text); }
+
+  .kv-th .thread-actions { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; }
+  .kv-th .thread-actions form { margin: 0; display: contents; }
+  .kv-th .thread-actions .btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 600; min-height: 0; }
+  .kv-th .thread-actions .btn svg { width: 15px; height: 15px; }
+  .kv-th .like-big.on { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+  /* liked-by: overlapping avatar stack */
+  .kv-th .likes-line {
+    position: relative; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin: 12px 0 0; padding-top: 10px; font-size: 12.5px; line-height: 1.4;
+    border-top: 1px dashed color-mix(in srgb, var(--text) 14%, transparent);
+  }
+  .kv-th .likes-av { display: inline-flex; padding-left: 7px; }
+  .kv-th .likes-av .avatar { width: 22px; height: 22px; font-size: 10px; margin-left: -7px; box-shadow: 0 0 0 2px var(--surface); flex: none; }
+
+  /* ---------- KravN card block ---------- */
+  .kv-th .thread-card { margin: 0; padding: 12px 14px 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); background: color-mix(in srgb, var(--text) 3%, var(--surface)); }
+  .kv-th .thread-card .section-head { margin-bottom: 10px; }
+
+  /* ---------- comments: chat bubbles ---------- */
+  .kv-th .comments { margin: 0; padding: 12px 14px 8px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); background: color-mix(in srgb, var(--text) 3%, var(--surface)); }
+  .kv-th .comment-form { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: 8px 10px; margin: 0 0 10px; }
+  .kv-th .comment-form .avatar { width: 30px; height: 30px; font-size: 12px; margin-bottom: 4px; }
+  .kv-th .comment-form textarea { width: 100%; min-height: 40px; padding: 9px 12px; font-size: 14px; line-height: 1.4; resize: vertical; border-radius: 14px; }
+  .kv-th .comment-form .btn { height: 34px; padding: 0 16px; border-radius: 999px; margin-bottom: 3px; }
+  .kv-th .comments .compose-teaser { margin: 0 0 10px; padding: 10px 12px; }
+  .kv-th .empty-line { margin: 6px 0 10px; font-size: 13px; }
+
+  .kv-th .comment-list { display: grid; gap: 10px; }
+  .kv-th .comment { display: flex; align-items: flex-start; gap: 9px; padding: 0; border: 0; position: relative; }
+  .kv-th .comment > .avatar { width: 30px; height: 30px; font-size: 12px; flex: none; margin-top: 2px; }
+  .kv-th .comment-body {
+    flex: 0 1 auto; min-width: 0; max-width: 100%; padding: 7px 12px 9px; border-radius: 4px 14px 14px 14px;
+    background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+  }
+  .kv-th .comment--author .comment-body { background: color-mix(in srgb, var(--accent) 13%, transparent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+  .kv-th .comment-top { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 2px; font-size: 12.5px; }
+  .kv-th .comment-top strong { font-weight: 600; }
+  .kv-th .comment-top time { font-size: 11px; }
+  .kv-th .comment-top .pill { font-size: 9.5px; padding: 1px 7px; border-radius: 999px; line-height: 1.5; letter-spacing: .04em; text-transform: uppercase; }
+  .kv-th .comment-body p { margin: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-line; }
+  .kv-th .comment-owner { display: flex; gap: 0; flex: none; align-self: center; margin-left: 0; opacity: .75; }
+  .kv-th .comment-owner form { margin: 0; }
+  .kv-th .comment-owner .icon-btn { width: 26px; height: 26px; }
+  .kv-th .comment-owner .icon-btn svg { width: 13px; height: 13px; }
+
+  /* ---------- more on this movie: swipeable rail ---------- */
+  .kv-th .more-talk { margin: 0; min-width: 0; }
+  .kv-th .more-talk .stack {
+    display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 2px 2px 6px; overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  }
+  .kv-th .more-talk .stack::-webkit-scrollbar { display: none; }
+  .kv-th .more-talk .pcard { flex: 0 0 min(78%, 270px); scroll-snap-align: start; padding: 12px 14px; margin: 0; border-radius: 14px; }
+  .kv-th .more-talk .pcard-title { font-size: 14.5px; margin: 0 0 4px; line-height: 1.3; }
+  .kv-th .more-talk .pcard-text { font-size: 13px; line-height: 1.45; margin: 0 0 8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .kv-th .more-talk .pcard-foot { margin: 0; padding-top: 8px; font-size: 12px; }
+  .kv-th .more-talk .pcard-foot time { font-size: 11.5px; }
+
+  /* ---------- phones ---------- */
+  @media (max-width: 640px) {
+    .kv-th .shell--narrow { max-width: calc(100% - 20px); }
+    .kv-th .thread-hero-inner { padding-block: 56px 18px; }
+    .kv-th .movie-mini { --tear: 54px; padding: 7px 12px 7px 7px; }
+    .kv-th .movie-mini > img, .kv-th .movie-mini-none { width: 36px; height: 54px; margin-right: 9px; }
+    .kv-th .movie-mini strong { font-size: 14px; }
+    .kv-th .thread { gap: 10px; padding-bottom: 28px; }
+    .kv-th .thread-main { padding: 14px 14px 12px; border-radius: 14px; }
+    .kv-th .thread-main::before { font-size: 96px; right: 10px; }
+    .kv-th .thread-title { font-size: 20px; }
+    .kv-th .thread-by .stats { margin-left: 0; width: 100%; }
+    .kv-th .thread-content { font-size: 14.5px; }
+    .kv-th .thread-card, .kv-th .comments { border-radius: 14px; }
+    .kv-th .thread-card { padding: 10px 10px 12px; }
+    .kv-th .thread-card .section-head .small { display: none; }
+    .kv-th .comments { padding: 10px 12px 6px; }
+    .kv-th .comment-form { grid-template-columns: auto minmax(0, 1fr); }
+    .kv-th .comment-form .btn { grid-column: 1 / -1; justify-self: end; margin: 0; }
+    .kv-th .thread-actions .btn { flex: 1 1 auto; justify-content: center; padding: 0 12px; }
+    .kv-th .more-talk .pcard { flex-basis: 78%; }
+  }
+  @media (prefers-reduced-motion: reduce) { .kv-th .thread > * { animation: none; } }
+</style>
+
+<main class="page page--flush kv-th">
 
   <section class="thread-hero">
     <% if (backdrop) { %><img class="thread-hero-img" src="<%= backdrop %>" alt=""><% } else if (d.posterUrl) { %><img class="thread-hero-img thread-hero-img--poster" src="<%= d.posterUrl %>" alt=""><% } %>
@@ -42,6 +239,10 @@
           <span><strong><%= post.username %></strong></span>
         </a>
         <time class="muted" title="<%= fmtDate(post.created_at, true) %>"><%= fmtDate(post.created_at, true) %></time>
+        <span class="stats">
+          <span class="stat"><%= mins %> min read</span>
+          <a class="stat" href="#comments"><%- include('partials/icon', { n: 'chat' }) %><%= comments.length %></a>
+        </span>
       </div>
 
       <% if (genres.length) { %><div class="chips"><% genres.forEach((g) => { %><a class="chip" href="/discussions?genre=<%= encodeURIComponent(g) %>"><%= g %></a><% }) %></div><% } %>
@@ -60,6 +261,7 @@
 
       <p class="likes-line">
         <% if (d.likes > 0) { %>
+          <span class="likes-av" aria-hidden="true"><% likers.slice(0, 4).forEach((l) => { %><span class="avatar" style="--h:<%= hue(l.username) %>"><%= l.username.charAt(0).toUpperCase() %></span><% }) %></span>
           <a href="/posts/<%= post.id %>/likes">Liked by
             <strong><span data-like-count="<%= post.id %>"><%= d.likes %></span></strong> <%= d.likes === 1 ? 'person' : 'people' %></a>
           <span class="muted">· <%= likers.slice(0, 3).map((l) => l.username).join(', ') %><%= others > 0 || likers.length > 3 ? ' …' : '' %></span>
@@ -93,7 +295,7 @@
 
       <div class="comment-list">
         <% comments.forEach((c) => { %>
-          <div class="comment" id="c-<%= c.id %>">
+          <div class="comment<%= c.username === post.username ? ' comment--author' : '' %>" id="c-<%= c.id %>">
             <a class="avatar" style="--h:<%= hue(c.username) %>" href="/users/<%= encodeURIComponent(c.username) %>"><%= c.username.charAt(0).toUpperCase() %></a>
             <div class="comment-body">
               <div class="comment-top">

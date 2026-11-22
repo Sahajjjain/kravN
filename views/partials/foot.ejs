@@ -2,8 +2,7 @@
 <footer class="foot">
   <div class="sprocket" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
   <div class="foot-row">
-    <a class="brand brand--sm" href="/feed">Krav<span>N</span></a><span class="muted small">v3 · movies &amp; series</span>
-    <p>Movie data and images from <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming availability by JustWatch.</p>
+    <a class="brand brand--sm" href="/feed">Krav<span>N</span></a>
     <a class="foot-suggest" href="https://kravn-suggests.onrender.com/#/" target="_blank" rel="noopener noreferrer">Try KravN Suggests →</a>
   </div>
 </footer>
@@ -14,7 +13,6 @@
 <script>window.KRAVN = <%- json({ me: me, tmdb: tmdbReady }) %>;</script>
 <script src="/js/core.js?v=<%= assetV %>" defer></script>
 <script src="/js/cards.js?v=<%= assetV %>" defer></script>
-<script src="/js/eggs.js?v=<%= assetV %>" defer></script>
 <script>if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });</script>
 </body>
 </html>

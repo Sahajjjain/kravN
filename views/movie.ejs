@@ -5,20 +5,187 @@
   const regions = Object.keys(m.providers).filter((cc) => m.providers[cc].flatrate.length || m.providers[cc].rent.length || m.providers[cc].buy.length);
   const defaultRegion = regions.includes('IN') ? 'IN' : regions.includes('US') ? 'US' : regions[0];
   const sortUrl = (s) => m.url + (s === 'latest' ? '' : '?sort=' + s) + '#discussions';
+  const hasCollection = !!(collection && collection.parts.length > 1);
+  /* page order: discussions → seasons → collection → cast → videos → where to watch → details → more like this → photos → reviews */
   const sections = [
     ['discussions', 'Discussions', true],
     ['seasons', 'Seasons', m.seasons.length],
+    ['collection', 'Collection', hasCollection],
     ['cast', 'Cast', m.cast.length],
     ['videos', 'Videos', m.videos.length],
-    ['photos', 'Photos', m.backdrops.length || m.posters.length],
     ['watch', 'Where to watch', regions.length],
     ['details', 'Details', true],
-    ['reviews', 'Reviews', m.reviews.length],
     ['more', 'More like this', m.recommendations.length || m.similar.length],
+    ['photos', 'Photos', m.backdrops.length || m.posters.length],
+    ['reviews', 'Reviews', m.reviews.length],
   ].filter((s) => s[2]);
 %>
 <%- include('partials/head', { title: m.title + (m.year ? ' (' + m.year + ')' : ''), description: m.overview.slice(0, 160), bodyClass: 'movie-page' }) %>
 <%- include('partials/nav') %>
+
+<style>
+  /* =====================================================================
+     MOVIE PAGE — compact, consistent, phone-first
+     (scoped to .movie-page so nothing else on the site changes)
+     ===================================================================== */
+
+  /* ---------- hero ---------- */
+  .movie-page .mhero { position: relative; overflow: hidden; isolation: isolate; margin-top: calc(var(--nav-h) * -1); padding-top: var(--nav-h); background: color-mix(in srgb, var(--bg-2) 90%, #000); }
+  .movie-page .mhero-img { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 20%; opacity: .5; }
+  .movie-page .mhero-shade {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      linear-gradient(90deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 72%, transparent) 42%, color-mix(in srgb, var(--bg) 18%, transparent) 100%),
+      linear-gradient(0deg, var(--bg) 0%, transparent 45%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg) 70%, transparent) 0%, transparent 30%);
+  }
+  .movie-page .mhero-inner { position: relative; z-index: 2; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: end; padding-block: 36px 28px; }
+  .movie-page .mhero-poster {
+    width: clamp(120px, 16vw, 210px); aspect-ratio: 2/3; object-fit: cover; border-radius: 12px; display: grid; place-items: center;
+    background: var(--surface-2); border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 24px 50px -22px rgba(0, 0, 0, .85); cursor: zoom-in;
+  }
+  .movie-page .mhero-poster--none { cursor: default; }
+  .movie-page .mhero-body { display: grid; gap: 10px; justify-items: start; min-width: 0; }
+  .movie-page .mhero-title { margin: 0; font-size: clamp(24px, 4.2vw, 46px); font-weight: 800; line-height: 1.08; letter-spacing: -.03em; overflow-wrap: anywhere; }
+  .movie-page .mhero-title small { font-size: .55em; font-weight: 500; letter-spacing: 0; color: color-mix(in srgb, var(--text) 60%, transparent); }
+  .movie-page .mhero-tagline { margin: 0; font-size: 14px; font-style: italic; color: color-mix(in srgb, var(--text) 62%, transparent); }
+  .movie-page .mhero-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 13px; color: color-mix(in srgb, var(--text) 78%, transparent); }
+  .movie-page .mhero-facts .cert { padding: 1px 7px; border: 1px solid color-mix(in srgb, var(--text) 35%, transparent); border-radius: 5px; font-size: 11.5px; font-weight: 600; }
+  .movie-page .mhero-facts .pill { font-size: 11px; padding: 2px 9px; border-radius: 999px; }
+  .movie-page .mhero-body > .chips {
+    display: flex; flex-wrap: nowrap; gap: 6px; max-width: 100%; overflow-x: auto; scrollbar-width: none; padding: 0; margin: 0;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+  }
+  .movie-page .mhero-body > .chips::-webkit-scrollbar { display: none; }
+  .movie-page .mhero-body > .chips .chip {
+    flex: none; display: inline-flex; align-items: center; height: 28px; padding: 0 12px; margin: 0; border-radius: 999px; font: 500 12.5px/1 var(--font); white-space: nowrap; box-shadow: none;
+    color: color-mix(in srgb, var(--text) 85%, transparent); background: color-mix(in srgb, var(--text) 7%, transparent); border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  }
+  .movie-page .mhero-body > .chips .chip:hover { color: #fff; border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+  .movie-page .mhero-overview { margin: 0; max-width: 64ch; font-size: 14.5px; line-height: 1.6; color: color-mix(in srgb, var(--text) 82%, transparent); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .movie-page .crew-line { display: flex; flex-wrap: wrap; gap: 4px 22px; margin: 0; font-size: 12.5px; }
+  .movie-page .crew-line dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: color-mix(in srgb, var(--text) 52%, transparent); }
+  .movie-page .crew-line dd { margin: 0; font-weight: 600; }
+  .movie-page .mhero .hero-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .movie-page .mhero .hero-actions .btn { height: 38px; padding: 0 18px; border-radius: 999px; font-size: 13.5px; }
+
+  /* ---------- sticky section nav: one slim swipeable line ---------- */
+  .movie-page .subnav { position: sticky; top: var(--nav-h); z-index: 40; background: color-mix(in srgb, var(--bg) 86%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent); }
+  .movie-page .subnav-inner { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-block: 8px; }
+  .movie-page .subnav-inner::-webkit-scrollbar { display: none; }
+  .movie-page .subnav a {
+    flex: none; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 13px; border-radius: 999px; white-space: nowrap;
+    font-size: 12.5px; font-weight: 600; color: color-mix(in srgb, var(--text) 66%, transparent); transition: color .2s, background .2s;
+  }
+  .movie-page .subnav a:hover { color: var(--text); }
+  .movie-page .subnav a.on, .movie-page .subnav a[aria-current] { color: #fff; background: var(--accent); }
+  .movie-page .subnav a em { font-style: normal; font-size: 11px; opacity: .8; }
+
+  /* ---------- section rhythm ---------- */
+  .movie-page .movie-sections { display: grid; gap: 26px; padding-block: 20px 40px; }
+  .movie-page .msec { margin: 0; scroll-margin-top: calc(var(--nav-h) + 54px); min-width: 0; }
+  .movie-page .msec .section-head, .movie-page .collection .section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; }
+  .movie-page .msec .section-head h2, .movie-page .collection .section-head h2 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -.012em; display: flex; align-items: center; gap: 9px; }
+  .movie-page .msec .section-head h2::before, .movie-page .collection .section-head h2::before { content: ''; width: 3px; height: .95em; border-radius: 3px; background: linear-gradient(180deg, var(--accent-2), var(--accent)); flex: none; }
+  .movie-page .msec .section-head .count { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; line-height: 1.4; background: color-mix(in srgb, var(--text) 8%, transparent); color: color-mix(in srgb, var(--text) 75%, transparent); }
+  .movie-page .msec .rail-track { gap: 10px; }
+  .movie-page #photos > [data-rail] + [data-rail] { margin-top: 18px; }
+
+  /* ---------- discussions ---------- */
+  .movie-page .seg { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 0 0 12px; padding: 3px; width: max-content; max-width: 100%; border-radius: 999px; background: color-mix(in srgb, var(--text) 6%, transparent); }
+  .movie-page .seg::-webkit-scrollbar { display: none; }
+  .movie-page .seg a { flex: none; display: inline-flex; align-items: center; height: 28px; padding: 0 13px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; color: color-mix(in srgb, var(--text) 70%, transparent); }
+  .movie-page .seg a.on { color: #fff; background: var(--accent); }
+  .movie-page .compose-teaser { margin: 0 0 12px; padding: 10px 12px; }
+
+  /* the user-written posts: two compact columns on laptop, one on phone.
+     The movie's TMDB rating (and genre line) is hidden here — only people's takes are shown. */
+  .movie-page #feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; align-items: start; }
+  .movie-page #feed .pcard { margin: 0; padding: 12px 14px; border-radius: 14px; min-width: 0; }
+  .movie-page #feed .pcard .pcard-eyebrow { display: none; }
+  .movie-page #feed .pcard .pcard-title { margin: 0 0 4px; font-size: 14.5px; line-height: 1.3; }
+  .movie-page #feed .pcard .pcard-text { margin: 0 0 8px; font-size: 13px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .movie-page #feed .pcard .pcard-foot { margin: 0; padding-top: 8px; font-size: 12px; }
+  .movie-page .empty { padding: 26px 16px; }
+
+  /* ---------- cast ---------- */
+  .movie-page .person { flex: 0 0 auto; width: 92px; display: grid; justify-items: center; gap: 3px; text-align: center; }
+  .movie-page .person-photo { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--surface-2); border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
+  .movie-page .person-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .movie-page .person-photo > span { display: grid; place-items: center; width: 100%; height: 100%; font-weight: 700; font-size: 22px; color: #fff; background: hsl(var(--h, 260) 38% 30%); }
+  .movie-page .person strong { font-size: 12px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .movie-page .person small { font-size: 11px; line-height: 1.25; color: color-mix(in srgb, var(--text) 55%, transparent); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .movie-page .crew-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px 16px; margin: 14px 0 0; }
+  .movie-page .crew-grid > div { padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--text) 4%, transparent); }
+  .movie-page .crew-grid dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: color-mix(in srgb, var(--text) 52%, transparent); }
+  .movie-page .crew-grid dd { margin: 2px 0 0; font-size: 13px; font-weight: 600; }
+
+  /* ---------- videos + photos ---------- */
+  .movie-page .video { flex: 0 0 auto; width: min(230px, 64vw); display: grid; gap: 4px; text-align: left; padding: 0; background: none; border: 0; color: inherit; cursor: pointer; }
+  .movie-page .video-thumb { position: relative; display: block; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+  .movie-page .video-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .movie-page .video-thumb i { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, .28); color: #fff; }
+  .movie-page .video-thumb i svg { width: 30px; height: 30px; }
+  .movie-page .video strong { font-size: 12.5px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .movie-page .video small { font-size: 11px; color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .movie-page .photo { flex: 0 0 auto; height: 132px; padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: var(--surface-2); cursor: zoom-in; }
+  .movie-page .photo--tall { height: 180px; }
+  .movie-page .photo img { height: 100%; width: auto; display: block; }
+
+  /* ---------- where to watch ---------- */
+  .movie-page .providers { display: grid; gap: 12px; }
+  .movie-page .provider-group h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .movie-page .provider-list { display: flex; flex-wrap: wrap; gap: 10px; }
+  .movie-page .provider { display: grid; justify-items: center; gap: 3px; width: 58px; text-align: center; }
+  .movie-page .provider img { width: 44px; height: 44px; border-radius: 11px; object-fit: cover; }
+  .movie-page .provider small { font-size: 10px; line-height: 1.2; color: color-mix(in srgb, var(--text) 62%, transparent); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .movie-page .select { height: 32px; font-size: 13px; padding: 0 10px; border-radius: 10px; }
+
+  /* ---------- details ---------- */
+  .movie-page .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 0; }
+  .movie-page .facts > div { padding: 9px 11px; border-radius: 11px; background: color-mix(in srgb, var(--text) 4%, transparent); border: 1px solid color-mix(in srgb, var(--text) 7%, transparent); min-width: 0; }
+  .movie-page .facts dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: color-mix(in srgb, var(--text) 52%, transparent); }
+  .movie-page .facts dd { margin: 3px 0 0; font-size: 13px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+  .movie-page .sub { margin: 16px 0 8px; font-size: 13px; font-weight: 700; }
+  .movie-page #details .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .movie-page #details .chip--static { height: 26px; padding: 0 11px; font-size: 12px; display: inline-flex; align-items: center; border-radius: 999px; }
+  .movie-page .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+  /* ---------- reviews ---------- */
+  .movie-page .reviews { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; align-items: start; }
+  .movie-page .review { padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--text) 4%, transparent); border: 1px solid color-mix(in srgb, var(--text) 8%, transparent); min-width: 0; }
+  .movie-page .review header { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 6px; font-size: 13px; }
+  .movie-page .review header .avatar { width: 26px; height: 26px; font-size: 11px; }
+  .movie-page .review header .rate { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; color: #f5c518; }
+  .movie-page .review header .rate svg { width: 11px; height: 11px; fill: currentColor; }
+  .movie-page .review header time { margin-left: auto; font-size: 11.5px; }
+  .movie-page .review-text { margin: 0; font-size: 13.5px; line-height: 1.55; overflow-wrap: anywhere; }
+
+  /* ---------- phones ---------- */
+  @media (max-width: 640px) {
+    .movie-page .mhero-inner { grid-template-columns: 96px minmax(0, 1fr); gap: 8px 14px; align-items: start; padding-block: 18px 20px; }
+    .movie-page .mhero-body { display: contents; }
+    .movie-page .mhero-poster { width: 96px; grid-row: 1 / span 3; border-radius: 10px; }
+    .movie-page .mhero-title { grid-column: 2; grid-row: 1; font-size: 22px; align-self: end; }
+    .movie-page .mhero-tagline { grid-column: 2; grid-row: 2; font-size: 12.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .movie-page .mhero-facts { grid-column: 2; grid-row: 3; gap: 4px 9px; font-size: 12px; align-self: start; }
+    .movie-page .mhero-body > .chips, .movie-page .mhero-overview, .movie-page .crew-line, .movie-page .mhero .hero-actions { grid-column: 1 / -1; }
+    .movie-page .mhero-body > .chips { margin-top: 2px; }
+    .movie-page .mhero-overview { font-size: 13.5px; -webkit-line-clamp: 5; }
+    .movie-page .crew-line { gap: 4px 18px; }
+    .movie-page .mhero .hero-actions { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 8px; width: 100%; }
+    .movie-page .mhero .hero-actions .btn { height: 38px; padding: 0 8px; font-size: 12.5px; justify-content: center; white-space: nowrap; gap: 5px; }
+    .movie-page .mhero-shade { background: linear-gradient(0deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 78%, transparent) 50%, color-mix(in srgb, var(--bg) 35%, transparent) 100%), linear-gradient(180deg, color-mix(in srgb, var(--bg) 65%, transparent) 0%, transparent 30%); }
+    .movie-page .movie-sections { gap: 22px; padding-block: 16px 28px; }
+    .movie-page #feed { grid-template-columns: minmax(0, 1fr); }
+    .movie-page .reviews { grid-template-columns: minmax(0, 1fr); }
+    .movie-page .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .movie-page .person { width: 84px; }
+    .movie-page .person-photo { width: 66px; height: 66px; }
+    .movie-page .photo { height: 112px; }
+    .movie-page .photo--tall { height: 156px; }
+  }
+</style>
 
 <main class="page page--flush">
 
@@ -67,7 +234,6 @@
           <a class="btn btn-primary" href="#discussions" data-act="compose"><%- include('partials/icon', { n: 'chat' }) %> Start a discussion</a>
           <% if (trailer) { %><button type="button" class="btn btn-glass" data-video="<%= trailer.key %>"><%- include('partials/icon', { n: 'play' }) %> Trailer</button><% } %>
           <button type="button" class="btn btn-glass" data-share-movie data-url="<%= m.url %>" data-title="<%= m.title %>"><%- include('partials/icon', { n: 'share' }) %> Share</button>
-          <% if (m.external.imdb) { %><a class="btn btn-glass" href="<%= m.external.imdb %>" target="_blank" rel="noopener noreferrer">IMDb <%- include('partials/icon', { n: 'ext' }) %></a><% } %>
         </div>
       </div>
     </div>
@@ -158,6 +324,18 @@
       </section>
     <% } %>
 
+    <!-- ============ COLLECTION (right above the cast) ============ -->
+    <% if (hasCollection) { %>
+      <section class="msec collection" id="collection" data-rail>
+        <div class="section-head"><h2><%= collection.name %></h2></div>
+        <div class="rail-wrap">
+          <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+          <div class="rail-track"><% collection.parts.forEach((p) => { %><%- include('partials/movieCard', { m: p }) %><% }) %></div>
+          <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+        </div>
+      </section>
+    <% } %>
+
     <!-- ============ CAST & CREW ============ -->
     <% if (m.cast.length) { %>
       <section class="msec" id="cast" data-rail>
@@ -204,32 +382,6 @@
       </section>
     <% } %>
 
-    <!-- ============ PHOTOS ============ -->
-    <% if (m.backdrops.length || m.posters.length) { %>
-      <section class="msec" id="photos">
-        <% if (m.backdrops.length) { %>
-          <div data-rail>
-            <div class="section-head"><h2>Photos</h2></div>
-            <div class="rail-wrap">
-              <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
-              <div class="rail-track"><% m.backdrops.forEach((p) => { %><button type="button" class="photo" data-lightbox="<%= p.full %>"><img src="<%= p.thumb %>" alt="Scene from <%= m.title %>" loading="lazy"></button><% }) %></div>
-              <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
-            </div>
-          </div>
-        <% } %>
-        <% if (m.posters.length) { %>
-          <div data-rail>
-            <div class="section-head"><h2>Posters</h2></div>
-            <div class="rail-wrap">
-              <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
-              <div class="rail-track"><% m.posters.forEach((p) => { %><button type="button" class="photo photo--tall" data-lightbox="<%= p.full %>"><img src="<%= p.thumb %>" alt="<%= m.title %> poster" loading="lazy"></button><% }) %></div>
-              <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
-            </div>
-          </div>
-        <% } %>
-      </section>
-    <% } %>
-
     <!-- ============ WHERE TO WATCH ============ -->
     <% if (regions.length) { %>
       <section class="msec" id="watch">
@@ -249,7 +401,6 @@
             <% if (p.link) { %><a class="more" href="<%= p.link %>" target="_blank" rel="noopener noreferrer">All options for <%= cc %> <%- include('partials/icon', { n: 'ext' }) %></a><% } %>
           </div>
         <% }) %>
-        <p class="muted small">Streaming data provided by JustWatch.</p>
       </section>
     <% } %>
 
@@ -278,33 +429,44 @@
         <% } }) %>
       </dl>
 
-      <% if (m.companies.length) { %>
-        <h3 class="sub">Production</h3>
-        <div class="chips"><% m.companies.forEach((c) => { %><span class="chip chip--static"><%= c.name %></span><% }) %></div>
-      <% } %>
-      <% if (m.keywords.length) { %>
-        <h3 class="sub">Keywords</h3>
-        <div class="chips"><% m.keywords.forEach((k) => { %><a class="chip" href="/search?q=<%= encodeURIComponent(k.name) %>">#<%= k.name %></a><% }) %></div>
-      <% } %>
-      <div class="links">
-        <% [['IMDb', m.external.imdb], ['TMDB', m.external.tmdb], ['Official site', m.external.homepage], ['Instagram', m.external.instagram], ['X / Twitter', m.external.twitter], ['Facebook', m.external.facebook], ['Wikidata', m.external.wikidata]].forEach(([label, url]) => { if (url) { %>
-          <a class="btn btn-ghost btn-sm" href="<%= url %>" target="_blank" rel="noopener noreferrer"><%= label %> <%- include('partials/icon', { n: 'ext' }) %></a>
+     
+
+    <!-- ============ MORE LIKE THIS (moved up) ============ -->
+    <% if (m.recommendations.length || m.similar.length) { %>
+      <section class="msec" id="more">
+        <% [['Recommended for you', m.recommendations], ['More like this', m.similar]].forEach(([title, list]) => { if (list.length) { %>
+          <%- include('partials/row', { row: { title, movies: list } }) %>
         <% } }) %>
-      </div>
+      </section>
+    <% } %>
 
-      <% if (collection && collection.parts.length > 1) { %>
-        <div data-rail class="collection">
-          <div class="section-head"><h2><%= collection.name %></h2></div>
-          <div class="rail-wrap">
-            <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
-            <div class="rail-track"><% collection.parts.forEach((p) => { %><%- include('partials/movieCard', { m: p }) %><% }) %></div>
-            <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+    <!-- ============ PHOTOS (just above reviews) ============ -->
+    <% if (m.backdrops.length || m.posters.length) { %>
+      <section class="msec" id="photos">
+        <% if (m.backdrops.length) { %>
+          <div data-rail>
+            <div class="section-head"><h2>Photos</h2></div>
+            <div class="rail-wrap">
+              <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+              <div class="rail-track"><% m.backdrops.forEach((p) => { %><button type="button" class="photo" data-lightbox="<%= p.full %>"><img src="<%= p.thumb %>" alt="Scene from <%= m.title %>" loading="lazy"></button><% }) %></div>
+              <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+            </div>
           </div>
-        </div>
-      <% } %>
-    </section>
+        <% } %>
+        <% if (m.posters.length) { %>
+          <div data-rail>
+            <div class="section-head"><h2>Posters</h2></div>
+            <div class="rail-wrap">
+              <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+              <div class="rail-track"><% m.posters.forEach((p) => { %><button type="button" class="photo photo--tall" data-lightbox="<%= p.full %>"><img src="<%= p.thumb %>" alt="<%= m.title %> poster" loading="lazy"></button><% }) %></div>
+              <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+            </div>
+          </div>
+        <% } %>
+      </section>
+    <% } %>
 
-    <!-- ============ REVIEWS ============ -->
+    <!-- ============ REVIEWS (bottom of the page) ============ -->
     <% if (m.reviews.length) { %>
       <section class="msec" id="reviews">
         <div class="section-head"><h2>Reviews from TMDB</h2></div>
@@ -322,15 +484,6 @@
             </article>
           <% }) %>
         </div>
-      </section>
-    <% } %>
-
-    <!-- ============ MORE LIKE THIS ============ -->
-    <% if (m.recommendations.length || m.similar.length) { %>
-      <section class="msec" id="more">
-        <% [['Recommended for you', m.recommendations], ['More like this', m.similar]].forEach(([title, list]) => { if (list.length) { %>
-          <%- include('partials/row', { row: { title, movies: list } }) %>
-        <% } }) %>
       </section>
     <% } %>
 

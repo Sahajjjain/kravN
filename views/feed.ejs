@@ -1,56 +1,299 @@
 <%- include('partials/head', { title: 'Home' }) %>
 <%- include('partials/nav') %>
+<style>
+  /* =====================================================================
+     SHARED: compact poster tiles + slim genre pills
+     Used by the home page rail and the discussions grid.
+     ===================================================================== */
+
+  /* ---------- genre pills (home "Browse by genre" + discussions filter chips) ---------- */
+  .kv-genres, .toolbar .chips--scroll {
+    display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity; padding: 2px 0 6px;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
+  }
+  .kv-genres::-webkit-scrollbar, .toolbar .chips--scroll::-webkit-scrollbar { display: none; }
+  .kv-genre, .toolbar .chips--scroll .chip {
+    flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; height: 32px; padding: 0 14px; margin: 0;
+    border-radius: 999px; font: 500 12.5px/1 var(--font); letter-spacing: .01em; color: color-mix(in srgb, var(--text) 82%, transparent);
+    white-space: nowrap; background: color-mix(in srgb, var(--text) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); box-shadow: none;
+    transition: color .2s, background .2s, border-color .2s, transform .2s;
+  }
+  .kv-genre:hover, .kv-genre:focus-visible,
+  .toolbar .chips--scroll .chip:hover, .toolbar .chips--scroll .chip:focus-visible {
+    color: #fff; border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  .toolbar .chips--scroll .chip.on { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .kv-genre:active, .toolbar .chips--scroll .chip:active { transform: scale(.96); }
+
+  /* ---------- discussions grid ---------- */
+  .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; align-items: start; }
+
+  /* ---------- the tile itself ---------- */
+  :is(.rail-track--posts, .pgrid) .pcard {
+    display: flex; flex-direction: column; gap: 0; padding: 0; height: auto; position: relative; overflow: hidden; min-width: 0; margin: 0;
+    border-radius: 14px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, var(--surface)), var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+    transition: transform .25s ease, border-color .25s, box-shadow .25s;
+  }
+  :is(.rail-track--posts, .pgrid) .pcard:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: 0 16px 36px -18px rgba(0, 0, 0, .7); }
+
+  /* poster: the full 2:3 frame */
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster {
+    position: relative; display: block; width: 100%; height: auto; aspect-ratio: 2/3; flex: none; margin: 0; border-radius: 0;
+    background: color-mix(in srgb, var(--surface-2) 90%, #000); overflow: hidden;
+  }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; transition: transform .5s ease; }
+  :is(.rail-track--posts, .pgrid) .pcard:hover .pcard-poster img { transform: scale(1.04); }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster::after { content: ''; position: absolute; inset: auto 0 0 0; height: 38%; background: linear-gradient(0deg, rgba(0,0,0,.55), transparent); pointer-events: none; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--muted); }
+
+  /* rating chip over the poster (inline display:none keeps it hidden on other pages; forced on in tiles) */
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-badge {
+    display: inline-flex !important; position: absolute; z-index: 2; top: 8px; left: 8px; align-items: center; gap: 4px;
+    padding: 3px 8px 3px 6px; border-radius: 999px; font: 700 11px/1 var(--font); color: #fff;
+    background: rgba(10, 10, 14, .62); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, .14);
+  }
+  .pcard-badge svg { width: 11px; height: 11px; color: #f5c518; fill: currentColor; }
+
+  /* text block */
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-body { padding: 10px 11px 11px; display: grid; gap: 5px; min-width: 0; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow { margin: 0; display: block; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow .rate,
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow .muted { display: none; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-movie {
+    display: block; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--accent-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; z-index: 2;
+  }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-title { margin: 0; font-size: 13.5px; font-weight: 650; line-height: 1.3; letter-spacing: -.005em; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-title a { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: inherit; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-text { display: none; }
+
+  /* footer: author left, like + comment right */
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-foot { margin: 3px 0 0; padding: 8px 0 0; border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent); display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: nowrap; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-author { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 11.5px; color: color-mix(in srgb, var(--text) 70%, transparent); position: relative; z-index: 2; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-author span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 62px; }
+  :is(.rail-track--posts, .pgrid) .pcard .avatar--sm { width: 20px; height: 20px; font-size: 10px; flex: none; }
+  :is(.rail-track--posts, .pgrid) .pcard time,
+  :is(.rail-track--posts, .pgrid) .pcard [data-share-post] { display: none; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-actions { margin: 0; display: inline-flex; gap: 8px; position: relative; z-index: 2; }
+  :is(.rail-track--posts, .pgrid) .pcard .act { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; padding: 0; min-height: 0; background: none; border: 0; }
+  :is(.rail-track--posts, .pgrid) .pcard .act svg { width: 13px; height: 13px; }
+
+  /* ---------- home rail sizing ---------- */
+  .rail-track--posts { gap: 14px; align-items: flex-start; padding-block: 4px 10px; }
+  .rail-track--posts .pcard { flex: 0 0 auto; width: clamp(150px, 14vw, 184px); max-width: 184px; scroll-snap-align: start; }
+
+  /* ---------- phones ---------- */
+  @media (max-width: 640px) {
+    .kv-genres, .toolbar .chips--scroll { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; gap: 7px; }
+    .kv-genre, .toolbar .chips--scroll .chip { height: 30px; padding: 0 12px; font-size: 12px; }
+    .pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    :is(.rail-track--posts, .pgrid) .pcard { border-radius: 12px; }
+    :is(.rail-track--posts, .pgrid) .pcard .pcard-body { padding: 8px 9px 9px; gap: 4px; }
+    :is(.rail-track--posts, .pgrid) .pcard .pcard-title { font-size: 12.5px; }
+    :is(.rail-track--posts, .pgrid) .pcard .pcard-movie { font-size: 9.5px; }
+    :is(.rail-track--posts, .pgrid) .pcard .pcard-author span:last-child { max-width: 44px; }
+    .rail-track--posts { gap: 10px; }
+    .rail-track--posts .pcard { width: 132px; max-width: 132px; }
+  }
+  @media (min-width: 900px) { .pgrid { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); } }
+  @media (hover: none) { :is(.rail-track--posts, .pgrid) .pcard:hover { transform: none; } }
+</style>
 
 <main class="page page--flush">
 
-  <% if (hero) { %>
-    <section class="hero">
-      <img class="hero-img" src="<%= hero.backdropLg %>" srcset="<%= hero.backdrop %> 780w, <%= hero.backdropLg %> 1280w" sizes="100vw" alt="" fetchpriority="high" decoding="async">
-      <div class="hero-shade"></div>
-      <div class="hero-body">
-        <span class="eyebrow"><span class="dot"></span> Trending this week</span>
-        <h1 class="hero-title"><%= hero.title %></h1>
-        <div class="hero-meta">
-          <% if (hero.percent) { %><span class="match <%= hero.percent >= 70 ? 'hi' : hero.percent >= 50 ? 'mid' : 'lo' %>"><%= hero.percent %>% match</span><% } %>
-          <% if (hero.year) { %><span><%= hero.year %></span><% } %>
-          <% hero.genreIds.slice(0, 3).forEach((id) => { if (genreNames[id]) { %><span class="pill"><%= genreNames[id] %></span><% } }) %>
+  <%
+    /* Backdrop: the most famous titles first (popular + top rated of all time), then trending */
+    const pick = (re) => rows.filter((r) => re.test(r.title)).reduce((a, r) => a.concat(r.movies || []), []);
+    const seen = new Set();
+    let pool = []
+      .concat(pick(/popular/i), pick(/top rated/i), pick(/trending/i), rows.reduce((a, r) => a.concat(r.movies || []), []))
+      .filter((m) => m && m.poster && !seen.has(m.poster) && seen.add(m.poster))
+      .map((m) => m.poster);
+    if (pool.length < 8) pool = top.map((p) => posterOf(p)).filter(Boolean);
+    pool = pool.slice(0, 32);
+    const colCount = pool.length >= 16 ? 8 : 4;
+    const cols = Array.from({ length: colCount }, (_, c) => pool.filter((_, i) => i % colCount === c)).filter((c) => c.length);
+    const loopCol = (col) => { let base = col.slice(); while (base.length < 6) base = base.concat(col); return base.concat(base); };
+  %>
+
+  <style>
+    /* ---------- hero: clean cinematic poster wall in 3D perspective, no glow ---------- */
+    .kv-hero {
+      position: relative; isolation: isolate; overflow: hidden;
+      margin-top: calc(var(--nav-h) * -1); padding-top: var(--nav-h);
+      min-height: clamp(380px, 58vh, 580px); display: flex; align-items: center;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--bg-2) 88%, #000), var(--bg-2));
+    }
+    .kv-stage { position: absolute; inset: 0; z-index: 0; overflow: hidden; perspective: 1400px; perspective-origin: 72% 35%; pointer-events: none; }
+    .kv-wall {
+      position: absolute; inset: -38% -12%; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 14px;
+      transform: rotateX(24deg) rotateY(-18deg) rotateZ(-7deg) scale(1.2); transform-style: preserve-3d;
+      opacity: .4; filter: saturate(.85) contrast(1.05); user-select: none; -webkit-user-select: none;
+    }
+    .kv-col { display: grid; gap: 14px; align-content: start; animation: kvDrift var(--d, 110s) linear infinite var(--dir, normal); will-change: transform; }
+    .kv-col:nth-child(odd) { opacity: .78; }
+    .kv-col img {
+      width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 10px; background: var(--surface-2);
+      pointer-events: none; -webkit-user-drag: none;
+      border: 1px solid rgba(255, 255, 255, .08); box-shadow: 0 14px 34px -14px rgba(0, 0, 0, .8);
+    }
+    @keyframes kvDrift { to { transform: translateY(-50%); } }
+
+    /* readability shade + fine film grain */
+    .kv-shade {
+      position: absolute; inset: 0; z-index: 1; pointer-events: none;
+      background:
+        linear-gradient(90deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 86%, transparent) 38%, color-mix(in srgb, var(--bg) 22%, transparent) 92%),
+        linear-gradient(0deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 40%, transparent) 22%, transparent 48%),
+        linear-gradient(180deg, color-mix(in srgb, var(--bg) 78%, transparent) 0%, transparent 32%);
+    }
+    .kv-shade::after {
+      content: ''; position: absolute; inset: 0; opacity: .08; mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    }
+
+    /* film-reel edges with scrolling sprocket holes (laptop only) */
+    .kv-film { position: absolute; z-index: 2; top: 0; bottom: 0; width: 30px; pointer-events: none; background: linear-gradient(90deg, rgba(0, 0, 0, .55), rgba(0, 0, 0, .15)); }
+    .kv-film--l { left: 0; border-right: 1px solid rgba(255, 255, 255, .06); }
+    .kv-film--r { right: 0; transform: scaleX(-1); border-right: 1px solid rgba(255, 255, 255, .06); }
+    .kv-film::before {
+      content: ''; position: absolute; inset: 0 0 0 9px; width: 12px;
+      background: repeating-linear-gradient(180deg, rgba(255, 255, 255, .16) 0 12px, transparent 12px 28px);
+      -webkit-mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+              mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+      border-radius: 3px; animation: kvReel 2.4s linear infinite;
+    }
+    @keyframes kvReel { to { background-position: 0 28px; } }
+
+    /* content */
+    .kv-inner { position: relative; z-index: 3; width: min(1400px, 100% - 96px); margin: 0 auto; }
+    .kv-body { padding: 48px 0 64px; display: grid; gap: 14px; justify-items: start; min-width: 0; }
+    .kv-title { display: grid; gap: 6px; max-width: 760px; overflow-wrap: anywhere; line-height: 1.04; margin: 0; }
+    .kv-title .hi { font-size: clamp(15px, 2vw, 20px); font-weight: 500; letter-spacing: .01em; color: var(--accent-2); }
+    .kv-title .to {
+      font-size: clamp(34px, 5.8vw, 68px); font-weight: 700; letter-spacing: -.035em;
+      background: linear-gradient(180deg, #fff 30%, color-mix(in srgb, var(--text) 60%, transparent));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .kv-title .logo { white-space: nowrap; }
+    .kv-title .logo span { -webkit-text-fill-color: var(--accent); color: var(--accent); }
+    .kv-sub { color: color-mix(in srgb, var(--text) 68%, transparent); max-width: 460px; font-size: 15.5px; line-height: 1.55; margin: 0; }
+    .kv-body .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+
+    /* CTAs: minimal pills, solid primary + quiet glass secondary */
+    .kv-body .kv-cta {
+      position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      height: 46px; padding: 0 24px; margin: 0; border-radius: 999px;
+      font: 500 13.5px/1 var(--font); letter-spacing: .04em; color: #fff; white-space: nowrap; text-decoration: none;
+      transition: transform .25s ease, background .25s ease, border-color .25s ease, box-shadow .25s ease;
+    }
+    .kv-body .kv-cta:hover { transform: translateY(-2px); }
+    .kv-body .kv-cta:active { transform: scale(.97); }
+    .kv-body .kv-cta-ic { display: grid; place-items: center; flex: none; width: auto; border: 0; margin: 0; }
+    .kv-body .kv-cta-ic svg { width: 17px; height: 17px; transition: transform .25s ease; }
+    .kv-body .kv-cta:hover .kv-cta-ic svg { transform: scale(1.12); }
+
+    /* hollow variants: thin outline, fill in on hover */
+    .kv-body .kv-cta--main {
+      background: transparent; border: 1px solid color-mix(in srgb, var(--accent) 85%, #fff 10%); color: #fff;
+      box-shadow: none;
+    }
+    .kv-body .kv-cta--main:hover {
+      background: var(--accent); border-color: var(--accent);
+      box-shadow: 0 12px 28px -14px color-mix(in srgb, var(--accent) 80%, transparent);
+    }
+
+    .kv-body .kv-cta--ghost {
+      background: transparent; border: 1px solid rgba(255, 255, 255, .28); color: rgba(255, 255, 255, .92);
+      -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none;
+    }
+    .kv-body .kv-cta--ghost:hover { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .6); color: #fff; }
+
+    /* section headings */
+    .kv-h { display: flex; align-items: center; gap: 10px; font-size: clamp(17px, 2vw, 21px); font-weight: 700; letter-spacing: -.015em; margin: 0; }
+    .kv-h i { width: 3px; height: 1em; border-radius: 3px; background: linear-gradient(180deg, var(--accent-2), var(--accent)); flex: none; }
+    .kv-first .section-head { margin-top: 22px; margin-bottom: 10px; }
+
+    @media (min-width: 1600px) { .kv-inner { width: min(1560px, 100% - 144px); } }
+    @media (max-width: 1099px) {
+      .kv-col:nth-child(n+7) { display: none; }
+      .kv-inner { width: calc(100% - 48px); }
+      .kv-film { display: none; }
+    }
+    @media (max-width: 640px) {
+      .kv-hero { min-height: 0; align-items: flex-end; }
+      .kv-col:nth-child(n+7) { display: none; }
+      .kv-wall { gap: 6px; opacity: .4; inset: -24% -34%; transform: rotateX(16deg) rotateY(-10deg) rotateZ(-7deg) scale(1); }
+      .kv-col { gap: 6px; } .kv-col img { border-radius: 6px; }
+      .kv-shade {
+        background:
+          linear-gradient(0deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 88%, transparent) 40%, color-mix(in srgb, var(--bg) 20%, transparent) 100%),
+          linear-gradient(180deg, color-mix(in srgb, var(--bg) 70%, transparent) 0%, transparent 25%);
+      }
+      .kv-inner { width: calc(100% - 32px); }
+      .kv-body { padding: 22px 0 24px; gap: 9px; }
+      .kv-title .to { font-size: clamp(32px, 10vw, 40px); }
+      .kv-sub { font-size: 14px; max-width: 34ch; }
+      .kv-body .hero-actions { width: 100%; display: grid; grid-template-columns: 1.55fr 1fr; gap: 8px; }
+      .kv-body .kv-cta { height: 44px; padding: 0 14px; gap: 8px; font-size: 13px; width: 100%; }
+      .kv-body .kv-cta-ic svg { width: 16px; height: 16px; }
+      .kv-first .section-head { margin-top: 18px; }
+    }
+    @media (max-width: 400px) { .kv-long { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .kv-col, .kv-film::before { animation: none !important; } }
+  </style>
+
+  <!-- ============ WELCOME HERO ============ -->
+  <section class="kv-hero">
+    <% if (cols.length) { %>
+      <div class="kv-stage" aria-hidden="true">
+        <div class="kv-wall">
+          <% cols.forEach((col, c) => { %>
+            <div class="kv-col" style="--d:<%= 100 + c * 14 %>s;--dir:<%= c % 2 ? 'reverse' : 'normal' %>"><% loopCol(col).forEach((src) => { %><img src="<%= src %>" alt="" loading="lazy" decoding="async" draggable="false"><% }) %></div>
+          <% }) %>
         </div>
-        <p class="hero-text"><%= hero.overview %></p>
+      </div>
+    <% } %>
+    <div class="kv-shade" aria-hidden="true"></div>
+    <span class="kv-film kv-film--l" aria-hidden="true"></span>
+    <span class="kv-film kv-film--r" aria-hidden="true"></span>
+
+    <div class="kv-inner">
+      <div class="kv-body">
+        <span class="eyebrow"><span class="dot"></span> <%= me ? 'Welcome back' : 'Movies & series, talked about' %></span>
+        <h1 class="kv-title">
+          <span class="hi"><%= me ? 'Hey ' + me.username + ',' : 'Hey there,' %></span>
+          <span class="to">Welcome to <span class="logo">Krav<span>N</span></span></span>
+        </h1>
+        <p class="kv-sub">Where theories come alive.</p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="<%= hero.url %>?compose=1#discussions"><%- include('partials/icon', { n: 'chat' }) %> Start a discussion</a>
-          <a class="btn btn-glass" href="<%= hero.url %>"><%- include('partials/icon', { n: 'info' }) %> More info</a>
+          <a class="btn btn-primary kv-cta kv-cta--main" href="<%= me ? '/posts/new' : '/register' %>"><span class="kv-cta-ic"><%- include('partials/icon', { n: me ? 'plus' : 'user' }) %></span><span class="kv-cta-tx"><%= me ? 'Start a discussion' : 'Join KravN' %></span></a>
+          <a class="btn btn-glass kv-cta kv-cta--ghost" href="/discussions"><span class="kv-cta-ic"><%- include('partials/icon', { n: 'chat' }) %></span><span class="kv-cta-tx">Browse<span class="kv-long"> discussions</span></span></a>
         </div>
       </div>
-    </section>
-  <% } else { %>
-    <section class="hero hero--plain">
-      <div class="hero-body">
-        <span class="eyebrow"><span class="dot"></span> Welcome back</span>
-        <h1 class="hero-title"><%= me ? 'Hey ' + me.username + ', what are we talking about?' : 'Where theories come alive.' %></h1>
-        <p class="hero-text">Search any movie or series and start the conversation right underneath it.</p>
-        <div class="hero-actions"><a class="btn btn-primary" href="<%= me ? '/posts/new' : '/register' %>"><%- include('partials/icon', { n: 'plus' }) %> <%= me ? 'Start a discussion' : 'Join KravN' %></a></div>
-      </div>
-    </section>
-  <% } %>
+    </div>
+  </section>
 
   <div class="shell">
 
-    <% if (!me) { %>
-      <aside class="join-banner">
-        <div><strong>Welcome to Krav<span class="n">N</span></strong><span>Browse every movie, series and discussion freely. Sign up to post, like and comment.</span></div>
-        <div class="join-banner-actions"><a class="btn btn-primary btn-sm" href="/register">Sign up</a><a class="btn btn-ghost btn-sm" href="/login">Log in</a></div>
-      </aside>
-    <% } %>
-
     <% if (Object.keys(genreNames).length) { %>
-      <div class="chips chips--scroll" aria-label="Browse by genre">
-        <% Object.entries(genreNames).forEach(([id, name]) => { %><a class="chip" href="/genre/<%= id %>"><%= name %></a><% }) %>
-      </div>
+      <section class="kv-first" aria-label="Browse by genre">
+        <div class="section-head"><h2 class="kv-h"><i></i>Browse by genre</h2></div>
+        <div class="kv-genres">
+          <% Object.entries(genreNames).forEach(([id, name]) => { %><a class="kv-genre" href="/genre/<%= id %>"><%= name %></a><% }) %>
+        </div>
+      </section>
     <% } %>
 
     <section class="rail" data-rail>
       <div class="section-head">
-        <h2>Latest discussions</h2>
+        <h2 class="kv-h"><i></i>Trending discussions</h2>
         <a class="more" href="/discussions">See all <%- include('partials/icon', { n: 'next' }) %></a>
       </div>
       <% if (latest.length) { %>
@@ -60,13 +303,13 @@
           <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
         </div>
       <% } else { %>
-        <div class="empty"><p>No discussions yet — be the first to start one.</p><a class="btn btn-primary" href="<%= me ? '/posts/new' : '/register' %>">Start a discussion</a></div>
+        <div class="empty"><p>No discussions yet. Be the first to start one.</p><a class="btn btn-primary" href="<%= me ? '/posts/new' : '/register' %>">Start a discussion</a></div>
       <% } %>
     </section>
 
     <% if (top.length) { %>
       <section class="rail" data-rail>
-        <div class="section-head"><h2>Most discussed on KravN</h2></div>
+        <div class="section-head"><h2 class="kv-h"><i></i>Most discussed movies</h2></div>
         <div class="rail-wrap">
           <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
           <div class="rail-track">

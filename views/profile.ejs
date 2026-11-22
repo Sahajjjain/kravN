@@ -1,9 +1,161 @@
 <%
   const u = profileUser;
-  const allGenres = topGenres.length ? [...new Set(posts.flatMap((p) => genreList(p)))].sort() : [];
+  const allGenres = [...new Set(posts.flatMap((p) => genreList(p) || []).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b)));
 %>
 <%- include('partials/head', { title: isOwn ? 'Your dashboard' : '@' + u.username }) %>
 <%- include('partials/nav') %>
+
+<style>
+  /* =====================================================================
+     PROFILE: compact header -> inline stats -> genre filter -> posts
+     ===================================================================== */
+
+  /* ---------- header ---------- */
+  .page .profile-head {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 18px 20px; margin: 0 0 12px; border-radius: 18px;
+    background:
+      radial-gradient(90% 160% at 0% 0%, hsl(var(--h, 260) 70% 50% / .22), transparent 62%),
+      linear-gradient(180deg, color-mix(in srgb, var(--text) 5%, var(--surface)), var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+  }
+  .page .profile-head .avatar--xl {
+    width: 60px; height: 60px; font-size: 25px; font-weight: 700; flex: none;
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px color-mix(in srgb, var(--text) 18%, transparent);
+  }
+  .profile-id { flex: 1 1 220px; display: grid; gap: 3px; justify-items: start; min-width: 0; }
+  .profile-id .eyebrow { display: none; }
+  .profile-id h1 { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; font-size: clamp(20px, 2.6vw, 26px); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; overflow-wrap: anywhere; }
+  .profile-id h1 .pill { font-size: 10.5px; padding: 2px 8px; }
+  .profile-id .muted { margin: 0; font-size: 12.5px; }
+
+  /* hollow pill buttons */
+  .profile-actions { display: flex; gap: 8px; flex: none; }
+  .profile-actions .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; padding: 0 16px; margin: 0;
+    border-radius: 999px; font: 500 12.5px/1 var(--font); letter-spacing: .03em; color: #fff; white-space: nowrap;
+    background: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+    transition: transform .2s ease, background .2s ease, border-color .2s ease;
+  }
+  .profile-actions .btn svg { width: 15px; height: 15px; }
+  .profile-actions .btn:hover { transform: translateY(-1px); }
+  .profile-actions .btn:active { transform: scale(.97); }
+  .profile-actions .btn-primary { border: 1px solid color-mix(in srgb, var(--accent) 85%, #fff 10%); }
+  .profile-actions .btn-primary:hover { background: var(--accent); border-color: var(--accent); }
+  .profile-actions .btn-glass { border: 1px solid rgba(255, 255, 255, .26); color: rgba(255, 255, 255, .92); }
+  .profile-actions .btn-glass:hover { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .55); }
+
+  /* ---------- stats: one slim inline strip ---------- */
+  .page .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); margin: 0 0 4px; padding: 0; overflow: hidden;
+    border-radius: 14px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+    background: color-mix(in srgb, var(--text) 3%, var(--surface));
+  }
+  .page .stats .stat {
+    display: flex; align-items: baseline; justify-content: center; gap: 7px; padding: 13px 8px; margin: 0;
+    border: 0; border-radius: 0; background: none; box-shadow: none; min-width: 0;
+  }
+  .page .stats .stat + .stat { border-left: 1px solid color-mix(in srgb, var(--text) 8%, transparent); }
+  .page .stats .stat strong { font-size: 19px; font-weight: 700; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text); }
+  .page .stats .stat span { font-size: 11px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; color: color-mix(in srgb, var(--text) 55%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .page .sprocket { margin: 12px 0 0; opacity: .5; }
+
+  /* ---------- toolbar: genres, then sort + view ---------- */
+  .page .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 16px; min-width: 0; }
+  .page .toolbar .chips--scroll { flex: 1; min-width: 0; }
+  .page .toolbar-right { display: flex !important; align-items: center; gap: 8px; flex: none; }
+
+  /* genre chips: one swipeable row, every genre reachable */
+  .page .toolbar .chips--scroll {
+    display: flex; flex-wrap: nowrap; gap: 8px; margin: 0; padding: 2px 0 6px; min-width: 0;
+    overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; touch-action: pan-x;
+    scrollbar-width: none; cursor: grab;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent 100%);
+            mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent 100%);
+  }
+  .page .toolbar .chips--scroll::-webkit-scrollbar { display: none; }
+  .page .toolbar .chips--scroll.is-drag { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+  .page .toolbar .chips--scroll.at-end { -webkit-mask-image: none; mask-image: none; }
+  .page .toolbar .chips--scroll .chip {
+    flex: none; display: inline-flex; align-items: center; height: 32px; padding: 0 14px; margin: 0; border-radius: 999px;
+    font: 500 12.5px/1 var(--font); letter-spacing: .01em; white-space: nowrap; cursor: pointer;
+    color: color-mix(in srgb, var(--text) 82%, transparent); background: color-mix(in srgb, var(--text) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text) 12%, transparent); box-shadow: none;
+    transition: color .2s, background .2s, border-color .2s, transform .2s;
+  }
+  .page .toolbar .chips--scroll .chip:hover { color: #fff; border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+  .page .toolbar .chips--scroll .chip.on { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .page .toolbar .chips--scroll .chip:active { transform: scale(.96); }
+
+  /* sort dropdown */
+  .page .toolbar .select {
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    height: 36px; width: 142px; min-width: 0; margin: 0; padding: 0 34px 0 16px; border-radius: 999px; cursor: pointer;
+    font: 500 12.5px/1 var(--font); letter-spacing: .01em; color: var(--text);
+    background-color: color-mix(in srgb, var(--text) 6%, transparent);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b4b4bd' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat: no-repeat; background-position: right 14px center;
+    border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+    transition: border-color .2s ease, background-color .2s ease;
+  }
+  .page .toolbar .select:hover { background-color: color-mix(in srgb, var(--text) 9%, transparent); border-color: color-mix(in srgb, var(--text) 26%, transparent); }
+  .page .toolbar .select:focus-visible { outline: 0; border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+  .page .toolbar .select option { background: var(--surface); color: var(--text); }
+
+  /* list / grid toggle: always visible, own sizing, inline svg icons */
+  .page .toolbar .kv-view {
+    display: inline-flex !important; align-items: center; gap: 2px; flex: none; visibility: visible !important; opacity: 1 !important;
+    height: 36px; padding: 3px; margin: 0; border-radius: 999px;
+    background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  }
+  .page .toolbar .kv-view button {
+    display: inline-flex !important; align-items: center; justify-content: center; width: 38px; height: 28px; padding: 0; margin: 0;
+    border: 0; border-radius: 999px; background: transparent; cursor: pointer;
+    color: color-mix(in srgb, var(--text) 62%, transparent); transition: background .2s ease, color .2s ease;
+  }
+  .page .toolbar .kv-view button:hover { color: var(--text); }
+  .page .toolbar .kv-view button.on { background: var(--accent); color: #fff; }
+  .page .toolbar .kv-view svg { display: block; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* grid view of the feed (poster tiles) */
+  .page #feed.pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 14px; align-items: start; }
+  @media (max-width: 640px) { .page #feed.pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+
+  .page .empty-line { text-align: center; padding: 36px 0; }
+
+  /* ---------- tablet ---------- */
+  @media (max-width: 760px) {
+    .page .toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+    .page .toolbar .chips--scroll { flex: none; }
+    .page .toolbar-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* ---------- phone ---------- */
+  @media (max-width: 640px) {
+    .page .profile-head { display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; padding: 14px; border-radius: 16px; margin-bottom: 10px; }
+    .page .profile-head .avatar--xl { width: 52px; height: 52px; font-size: 22px; }
+    .profile-id { flex: none; }
+    .profile-id h1 { font-size: 20px; }
+    .profile-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr 1fr; }
+    .profile-actions .btn { width: 100%; height: 38px; padding: 0 10px; font-size: 12.5px; }
+
+    /* four stats in one tight row: number over label */
+    .page .stats { border-radius: 12px; }
+    .page .stats .stat { flex-direction: column; align-items: center; gap: 4px; padding: 11px 2px; }
+    .page .stats .stat strong { font-size: 17px; }
+    .page .stats .stat span { font-size: 9.5px; letter-spacing: .04em; max-width: 100%; }
+
+    .page .toolbar { gap: 8px; margin: 12px 0 14px; }
+    .page .toolbar .chips--scroll { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; gap: 7px; }
+    .page .toolbar .chips--scroll .chip { height: 30px; padding: 0 12px; font-size: 12px; }
+    .page .toolbar .select { width: 136px; }
+  }
+  @media (max-width: 360px) {
+    .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr; }
+  }
+</style>
 
 <main class="page">
   <div class="shell">
@@ -14,7 +166,6 @@
         <span class="eyebrow"><span class="dot"></span> <%= isOwn ? 'Your dashboard' : 'Profile' %></span>
         <h1><%= u.username %><% if (isOwn) { %><span class="pill pill--accent">You</span><% } %></h1>
         <p class="muted">Member since <%= fmtDate(u.created_at) %></p>
-        <% if (topGenres.length) { %><div class="chips"><% topGenres.forEach((g) => { %><span class="chip chip--static"><%= g %></span><% }) %></div><% } %>
       </div>
       <div class="profile-actions">
         <% if (posts.length) { %><button type="button" class="btn btn-primary" data-cards-open="#feed"><%- include('partials/icon', { n: 'cards' }) %> Kravn Cards</button><% } %>
@@ -23,10 +174,10 @@
     </header>
 
     <div class="stats">
-      <div class="stat"><strong data-count="<%= stats.discussions %>"><%= stats.discussions %></strong><span>Discussion<%= stats.discussions === 1 ? '' : 's' %></span></div>
-      <div class="stat"><strong data-count="<%= stats.likes %>"><%= stats.likes %></strong><span>Like<%= stats.likes === 1 ? '' : 's' %> received</span></div>
-      <div class="stat"><strong data-count="<%= stats.comments %>"><%= stats.comments %></strong><span>Comment<%= stats.comments === 1 ? '' : 's' %> received</span></div>
-      <div class="stat"><strong data-count="<%= stats.movies %>"><%= stats.movies %></strong><span>Movie<%= stats.movies === 1 ? '' : 's' %> discussed</span></div>
+      <div class="stat" title="Discussions"><strong data-count="<%= stats.discussions %>"><%= stats.discussions %></strong><span>Posts</span></div>
+      <div class="stat" title="Likes received"><strong data-count="<%= stats.likes %>"><%= stats.likes %></strong><span>Likes</span></div>
+      <div class="stat" title="Comments received"><strong data-count="<%= stats.comments %>"><%= stats.comments %></strong><span>Comments</span></div>
+      <div class="stat" title="Movies discussed"><strong data-count="<%= stats.movies %>"><%= stats.movies %></strong><span>Movies</span></div>
     </div>
 
     <div class="sprocket" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
@@ -46,13 +197,13 @@
           <select class="select" data-sort-select aria-label="Sort discussions">
             <option value="latest">Latest</option>
             <option value="oldest">Oldest</option>
-            <option value="rating">Highest rated</option>
+            <option value="rating">Top rated</option>
             <option value="likes">Most liked</option>
             <option value="random">Random</option>
           </select>
-          <div class="seg seg--icons" data-view-toggle>
-            <button type="button" data-view="list" class="on" aria-label="List view"><%- include('partials/icon', { n: 'list' }) %></button>
-            <button type="button" data-view="grid" aria-label="Poster grid"><%- include('partials/icon', { n: 'grid' }) %></button>
+          <div class="seg seg--icons kv-view" data-view-toggle role="group" aria-label="Change layout">
+            <button type="button" data-view="list" class="on" aria-label="List view" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></button>
+            <button type="button" data-view="grid" aria-label="Poster grid" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button>
           </div>
         </div>
       </div>
@@ -62,4 +213,52 @@
     <% } %>
   </div>
 </main>
+<script>
+  /* list <-> grid toggle for the feed. Sets an explicit state (never flips), so it is safe alongside any existing handler. */
+  (function () {
+    var wrap = document.querySelector('[data-view-toggle]');
+    var feed = document.getElementById('feed');
+    if (!wrap || !feed) return;
+    function apply(view) {
+      feed.classList.toggle('pgrid', view === 'grid');
+      feed.classList.toggle('stack', view !== 'grid');
+      wrap.querySelectorAll('[data-view]').forEach(function (b) { var on = b.getAttribute('data-view') === view; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      try { localStorage.setItem('kv-profile-view', view); } catch (e) {}
+    }
+    wrap.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-view]');
+      if (b) apply(b.getAttribute('data-view'));
+    });
+    try { var saved = localStorage.getItem('kv-profile-view'); if (saved === 'grid') apply('grid'); } catch (e) {}
+  })();
+</script>
+<script>
+  /* genre chips: drag-to-scroll with mouse, keep selected chip in view, drop the edge fade at the end */
+  (function () {
+    var row = document.querySelector('[data-filter-genres]');
+    if (!row) return;
+    function edge() { row.classList.toggle('at-end', row.scrollLeft + row.clientWidth >= row.scrollWidth - 4); }
+    row.addEventListener('scroll', edge, { passive: true });
+    window.addEventListener('resize', edge);
+    edge();
+
+    var down = false, moved = false, startX = 0, startLeft = 0;
+    row.addEventListener('mousedown', function (e) { down = true; moved = false; startX = e.pageX; startLeft = row.scrollLeft; });
+    window.addEventListener('mousemove', function (e) {
+      if (!down) return;
+      var dx = e.pageX - startX;
+      if (Math.abs(dx) > 4) { moved = true; row.classList.add('is-drag'); }
+      if (moved) row.scrollLeft = startLeft - dx;
+    });
+    window.addEventListener('mouseup', function () { down = false; row.classList.remove('is-drag'); });
+    row.addEventListener('click', function (e) {
+      if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; return; }
+      var chip = e.target.closest('.chip');
+      if (chip && chip.scrollIntoView) {
+        var left = chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2;
+        row.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+      }
+    }, true);
+  })();
+</script>
 <%- include('partials/foot') %>

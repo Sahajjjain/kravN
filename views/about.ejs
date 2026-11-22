@@ -31,20 +31,6 @@
     <div class="contact">
       <a class="btn btn-ghost" href="mailto:jainsahaj167@gmail.com"><%- include('partials/icon', { n: 'mail' }) %> jainsahaj167@gmail.com</a>
       <a class="btn btn-ghost" href="https://www.instagram.com/kravn.in" target="_blank" rel="noopener noreferrer">@kravn.in <%- include('partials/icon', { n: 'ext' }) %></a>
-    </div>
-
-    <div class="sprocket" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-
-    <% if (me) { %>
-      <h2>Easter egg hunt <small class="muted" data-egg-count></small></h2>
-      <p>KravN is full of hidden surprises. Some are in the search box, some are on movie pages, some only appear at a certain time of night. Found ones are listed below — the rest stay secret.</p>
-      <ul class="egg-dex" data-egg-dex></ul>
-      <a class="btn btn-primary" href="/posts/new">Alright, now go post your hottest movie take →</a>
-    <% } else { %>
-      <a class="btn btn-primary" href="/register">Join KravN →</a>
-    <% } %>
-
-    <p class="muted small attribution">This product uses the TMDB API but is not endorsed or certified by TMDB. Movie data, posters and photos are provided by <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer">TMDB</a>; streaming availability by JustWatch.</p>
-  </div>
+    
 </main>
 <%- include('partials/foot') %>

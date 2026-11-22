@@ -15,12 +15,13 @@
   <% if (showMovie) { %>
     <a class="pcard-poster" href="<%= threadUrl %>" tabindex="-1" aria-hidden="true">
       <% if (d.posterUrl) { %><img src="<%= d.posterUrl %>" alt="" loading="lazy" decoding="async"><% } else { %><span class="pcard-poster-fallback"><%- include('icon', { n: 'film' }) %></span><% } %>
+      <% if (d.rating) { %><span class="pcard-badge" style="display:none"><%- include('icon', { n: 'star' }) %><%= d.rating %></span><% } %>
     </a>
   <% } %>
   <div class="pcard-body">
     <div class="pcard-eyebrow">
       <% if (showMovie) { %><a href="<%= movieLink(post) %>" class="pcard-movie"><%= post.movie_name %></a><% } %>
-      <% if (d.rating) { %><span class="rate"><%- include('icon', { n: 'star' }) %><%= d.rating %></span><% } %>
+      <% if (d.rating && !compact) { %><span class="rate"><%- include('icon', { n: 'star' }) %><%= d.rating %></span><% } %>
       <% if (!compact && genres[0]) { %><span class="muted"><%= genres.slice(0, 2).join(' · ') %></span><% } %>
     </div>
     <h3 class="pcard-title"><a class="stretch" href="<%= threadUrl %>"><%= post.title %></a></h3>
