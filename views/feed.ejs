@@ -227,7 +227,7 @@
       .kv-film { display: none; }
     }
     @media (max-width: 640px) {
-      .kv-hero { min-height: 0; align-items: flex-end; }
+  .kv-hero { min-height: 27vh; min-height: 27svh; align-items: flex-end; }
       .kv-col:nth-child(n+7) { display: none; }
       .kv-wall { gap: 6px; opacity: .4; inset: -24% -34%; transform: rotateX(16deg) rotateY(-10deg) rotateZ(-7deg) scale(1); }
       .kv-col { gap: 6px; } .kv-col img { border-radius: 6px; }
@@ -266,7 +266,6 @@
 
     <div class="kv-inner">
       <div class="kv-body">
-        <span class="eyebrow"><span class="dot"></span> <%= me ? 'Welcome back' : 'Movies & series, talked about' %></span>
         <h1 class="kv-title">
           <span class="hi"><%= me ? 'Hey ' + me.username + ',' : 'Hey there,' %></span>
           <span class="to">Welcome to <span class="logo">Krav<span>N</span></span></span>
