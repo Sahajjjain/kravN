@@ -1,0 +1,340 @@
+<%
+  const m = movie;
+  const tone = m.percent >= 70 ? 'hi' : m.percent >= 50 ? 'mid' : 'lo';
+  const trailer = m.videos.find((v) => v.type === 'Trailer') || m.videos[0];
+  const regions = Object.keys(m.providers).filter((cc) => m.providers[cc].flatrate.length || m.providers[cc].rent.length || m.providers[cc].buy.length);
+  const defaultRegion = regions.includes('IN') ? 'IN' : regions.includes('US') ? 'US' : regions[0];
+  const sortUrl = (s) => m.url + (s === 'latest' ? '' : '?sort=' + s) + '#discussions';
+  const sections = [
+    ['discussions', 'Discussions', true],
+    ['seasons', 'Seasons', m.seasons.length],
+    ['cast', 'Cast', m.cast.length],
+    ['videos', 'Videos', m.videos.length],
+    ['photos', 'Photos', m.backdrops.length || m.posters.length],
+    ['watch', 'Where to watch', regions.length],
+    ['details', 'Details', true],
+    ['reviews', 'Reviews', m.reviews.length],
+    ['more', 'More like this', m.recommendations.length || m.similar.length],
+  ].filter((s) => s[2]);
+%>
+<%- include('partials/head', { title: m.title + (m.year ? ' (' + m.year + ')' : ''), description: m.overview.slice(0, 160), bodyClass: 'movie-page' }) %>
+<%- include('partials/nav') %>
+
+<main class="page page--flush">
+
+  <!-- ============ HERO ============ -->
+  <section class="mhero">
+    <% if (m.backdrop) { %><img class="mhero-img" src="<%= m.backdrop %>" srcset="<%= m.backdropSm %> 780w, <%= m.backdrop %> 1280w" sizes="100vw" alt="" fetchpriority="high" decoding="async"><% } %>
+    <div class="mhero-shade"></div>
+    <div class="shell mhero-inner">
+      <% if (m.poster) { %>
+        <img class="mhero-poster" src="<%= m.poster %>" alt="<%= m.title %> poster" data-lightbox="<%= m.posterLg %>" data-egg="poster">
+      <% } else { %>
+        <div class="mhero-poster mhero-poster--none"><%- include('partials/icon', { n: 'film' }) %></div>
+      <% } %>
+
+      <div class="mhero-body">
+        <h1 class="mhero-title"><%= m.title %><% if (m.year) { %> <small>(<%= m.year %>)</small><% } %></h1>
+        <% if (m.tagline) { %><p class="mhero-tagline">“<%= m.tagline %>”</p><% } %>
+
+        <div class="mhero-facts">
+          <% if (m.percent) { %>
+            <span class="ring <%= tone %>" style="--p:<%= m.percent %>" data-egg="ring" title="<%= m.voteAvg.toFixed(1) %>/10 from <%= m.voteCount.toLocaleString('en-US') %> votes on TMDB"><b><%= m.percent %><sup>%</sup></b></span>
+          <% } %>
+          <% if (m.certification) { %><span class="cert"><%= m.certification %></span><% } %>
+          <% if (m.date) { %><span><%= longDate(m.date) %></span><% } %>
+          <% if (m.isTv && m.seasonCount) { %><span><%= m.seasonCount %> season<%= m.seasonCount === 1 ? '' : 's' %><% if (m.episodeCount) { %> · <%= m.episodeCount %> ep<% } %></span><% } %>
+          <% if (m.runtime) { %><span><%= runtime(m.runtime) %><%= m.isTv ? ' / ep' : '' %></span><% } %>
+          <% if (m.status && m.status !== 'Released') { %><span class="pill"><%= m.status %></span><% } %>
+          <% if (m.language) { %><span class="pill"><%= m.language.toUpperCase() %></span><% } %>
+        </div>
+
+        <div class="chips">
+          <% m.genres.forEach((g) => { %><a class="chip" href="/genre/<%= g.id %>"><%= g.name %></a><% }) %>
+        </div>
+
+        <% if (m.overview) { %><p class="mhero-overview"><%= m.overview %></p><% } %>
+
+        <% if (m.keyCrew.length) { %>
+          <dl class="crew-line">
+            <% m.keyCrew.slice(0, 3).forEach((c) => { %>
+              <div><dt><%= c.label %></dt><dd><% c.people.forEach((p, i) => { %><a href="/person/<%= p.id %>"><%= p.name %></a><%= i < c.people.length - 1 ? ', ' : '' %><% }) %></dd></div>
+            <% }) %>
+          </dl>
+        <% } %>
+
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#discussions" data-act="compose"><%- include('partials/icon', { n: 'chat' }) %> Start a discussion</a>
+          <% if (trailer) { %><button type="button" class="btn btn-glass" data-video="<%= trailer.key %>"><%- include('partials/icon', { n: 'play' }) %> Trailer</button><% } %>
+          <button type="button" class="btn btn-glass" data-share-movie data-url="<%= m.url %>" data-title="<%= m.title %>"><%- include('partials/icon', { n: 'share' }) %> Share</button>
+          <% if (m.external.imdb) { %><a class="btn btn-glass" href="<%= m.external.imdb %>" target="_blank" rel="noopener noreferrer">IMDb <%- include('partials/icon', { n: 'ext' }) %></a><% } %>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- sticky section nav -->
+  <nav class="subnav" aria-label="On this page" data-spy>
+    <div class="shell subnav-inner">
+      <% sections.forEach((s) => { %><a href="#<%= s[0] %>"><%= s[1] %><% if (s[0] === 'discussions') { %> <em><%= total %></em><% } %></a><% }) %>
+    </div>
+  </nav>
+
+  <div class="shell movie-sections">
+
+    <!-- ============ DISCUSSIONS ============ -->
+    <section class="msec" id="discussions">
+      <div class="section-head">
+        <h2>Discussions <span class="count"><%= total %></span></h2>
+        <% if (posts.length) { %><button type="button" class="btn btn-ghost btn-sm" data-cards-open="#feed"><%- include('partials/icon', { n: 'cards' }) %> Kravn Cards</button><% } %>
+      </div>
+
+      <% if (!me) { %>
+        <a class="compose-teaser" href="/login?next=<%= encodeURIComponent(m.url + '?compose=1') %>">
+          <span class="avatar" style="--h:260">?</span>
+          <span>Log in or sign up to start a discussion about <b><%= m.title %></b></span>
+          <span class="btn btn-primary btn-sm">Log in</span>
+        </a>
+      <% } else { %>
+      <form class="composer<%= compose ? ' open' : '' %>" id="composer" method="POST" action="<%= m.url %>/discussions">
+        <button type="button" class="composer-toggle" data-act="composer-toggle">
+          <span class="avatar" style="--h:<%= hue(me.username) %>"><%= me.username.charAt(0).toUpperCase() %></span>
+          <span>Start a discussion about <b><%= m.title %></b>…</span>
+        </button>
+        <div class="composer-body">
+          <label>Title<input type="text" name="title" maxlength="200" required placeholder="What's your theory or take?"></label>
+          <label>Your take <span class="char-hint" data-char-hint>start typing…</span>
+            <textarea name="content" rows="5" maxlength="8000" required placeholder="Lay it all out here…" data-char-count></textarea>
+          </label>
+          <div class="composer-actions">
+            <button type="button" class="btn btn-ghost" data-act="composer-toggle">Cancel</button>
+            <button type="submit" class="btn btn-primary">Post to the discussion</button>
+          </div>
+        </div>
+      </form>
+      <% } %>
+
+      <div class="seg" role="tablist" aria-label="Sort discussions">
+        <a class="<%= sort === 'latest' ? 'on' : '' %>" href="<%= sortUrl('latest') %>">Latest</a>
+        <a class="<%= sort === 'top' ? 'on' : '' %>" href="<%= sortUrl('top') %>">Most liked</a>
+        <a class="<%= sort === 'hot' ? 'on' : '' %>" href="<%= sortUrl('hot') %>">Most talked about</a>
+        <a class="<%= sort === 'oldest' ? 'on' : '' %>" href="<%= sortUrl('oldest') %>">Oldest</a>
+      </div>
+
+      <% if (posts.length) { %>
+        <div class="stack" id="feed" data-post-list><%- include('partials/postCards', { posts, showMovie: false }) %></div>
+        <% if (hasMore) { %>
+          <div class="loader" data-infinite="/api<%= m.url %>/discussions?sort=<%= sort %>" data-next="2" data-target="#feed" data-bare data-end="End of the discussion — for now."><span class="spinner"></span></div>
+        <% } %>
+      <% } else { %>
+        <div class="empty">
+          <%- include('partials/icon', { n: 'chat', cls: 'ic--xl' }) %>
+          <p>No one has started a discussion on <b><%= m.title %></b> yet.</p>
+          <% if (me) { %><button type="button" class="btn btn-primary" data-act="composer-toggle">Be the first</button><% } else { %><a class="btn btn-primary" href="/register?next=<%= encodeURIComponent(m.url) %>">Sign up to be the first</a><% } %>
+        </div>
+      <% } %>
+    </section>
+
+    <!-- ============ SEASONS (series only) ============ -->
+    <% if (m.seasons.length) { %>
+      <section class="msec" id="seasons" data-rail>
+        <div class="section-head"><h2>Seasons <span class="count"><%= m.seasons.length %></span></h2></div>
+        <div class="rail-wrap">
+          <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+          <div class="rail-track">
+            <% m.seasons.forEach((s) => { %>
+              <div class="mcard season-card" title="<%= s.overview ? s.overview.slice(0, 200) : s.name %>">
+                <div class="mcard-poster">
+                  <% if (s.poster) { %><img src="<%= s.poster %>" alt="<%= m.title %> — <%= s.name %>" width="342" height="513" loading="lazy" decoding="async"><% } else { %><div class="mcard-fallback"><%- include('partials/icon', { n: 'film' }) %><span><%= s.name %></span></div><% } %>
+                  <% if (s.percent) { %><span class="match <%= s.percent >= 70 ? 'hi' : s.percent >= 50 ? 'mid' : 'lo' %>"><%= s.percent %>%</span><% } %>
+                </div>
+                <div class="mcard-info"><strong><%= s.name %></strong><span><%= [s.year, s.episodes ? s.episodes + ' episode' + (s.episodes === 1 ? '' : 's') : ''].filter(Boolean).join(' · ') %></span></div>
+              </div>
+            <% }) %>
+          </div>
+          <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+        </div>
+        <% if (m.nextEpisode && m.nextEpisode.date) { %><p class="muted small">Next episode: S<%= m.nextEpisode.season %>·E<%= m.nextEpisode.number %><%= m.nextEpisode.name ? ' “' + m.nextEpisode.name + '”' : '' %> — <%= longDate(m.nextEpisode.date) %></p><% } %>
+      </section>
+    <% } %>
+
+    <!-- ============ CAST & CREW ============ -->
+    <% if (m.cast.length) { %>
+      <section class="msec" id="cast" data-rail>
+        <div class="section-head"><h2>Cast</h2></div>
+        <div class="rail-wrap">
+          <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+          <div class="rail-track">
+            <% m.cast.forEach((c) => { %>
+              <a class="person" href="/person/<%= c.id %>">
+                <span class="person-photo"><% if (c.photo) { %><img src="<%= c.photo %>" alt="<%= c.name %>" loading="lazy"><% } else { %><span style="--h:<%= hue(c.name) %>"><%= c.name.charAt(0) %></span><% } %></span>
+                <strong><%= c.name %></strong>
+                <small><%= c.character %></small>
+              </a>
+            <% }) %>
+          </div>
+          <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+        </div>
+        <% if (m.keyCrew.length) { %>
+          <dl class="crew-grid">
+            <% m.keyCrew.forEach((c) => { %>
+              <div><dt><%= c.label %></dt><dd><% c.people.forEach((p, i) => { %><a href="/person/<%= p.id %>"><%= p.name %></a><%= i < c.people.length - 1 ? ', ' : '' %><% }) %></dd></div>
+            <% }) %>
+          </dl>
+        <% } %>
+      </section>
+    <% } %>
+
+    <!-- ============ VIDEOS ============ -->
+    <% if (m.videos.length) { %>
+      <section class="msec" id="videos" data-rail>
+        <div class="section-head"><h2>Trailers &amp; videos</h2></div>
+        <div class="rail-wrap">
+          <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+          <div class="rail-track">
+            <% m.videos.forEach((v) => { %>
+              <button type="button" class="video" data-video="<%= v.key %>">
+                <span class="video-thumb"><img src="https://i.ytimg.com/vi/<%= v.key %>/hqdefault.jpg" alt="" loading="lazy"><i><%- include('partials/icon', { n: 'play' }) %></i></span>
+                <strong><%= v.name %></strong><small><%= v.type %></small>
+              </button>
+            <% }) %>
+          </div>
+          <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+        </div>
+      </section>
+    <% } %>
+
+    <!-- ============ PHOTOS ============ -->
+    <% if (m.backdrops.length || m.posters.length) { %>
+      <section class="msec" id="photos">
+        <% if (m.backdrops.length) { %>
+          <div data-rail>
+            <div class="section-head"><h2>Photos</h2></div>
+            <div class="rail-wrap">
+              <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+              <div class="rail-track"><% m.backdrops.forEach((p) => { %><button type="button" class="photo" data-lightbox="<%= p.full %>"><img src="<%= p.thumb %>" alt="Scene from <%= m.title %>" loading="lazy"></button><% }) %></div>
+              <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+            </div>
+          </div>
+        <% } %>
+        <% if (m.posters.length) { %>
+          <div data-rail>
+            <div class="section-head"><h2>Posters</h2></div>
+            <div class="rail-wrap">
+              <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+              <div class="rail-track"><% m.posters.forEach((p) => { %><button type="button" class="photo photo--tall" data-lightbox="<%= p.full %>"><img src="<%= p.thumb %>" alt="<%= m.title %> poster" loading="lazy"></button><% }) %></div>
+              <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+            </div>
+          </div>
+        <% } %>
+      </section>
+    <% } %>
+
+    <!-- ============ WHERE TO WATCH ============ -->
+    <% if (regions.length) { %>
+      <section class="msec" id="watch">
+        <div class="section-head">
+          <h2>Where to watch</h2>
+          <select class="select" data-region-select aria-label="Country">
+            <% regions.forEach((cc) => { %><option value="<%= cc %>"<%= cc === defaultRegion ? ' selected' : '' %>><%= cc %></option><% }) %>
+          </select>
+        </div>
+        <% regions.forEach((cc) => { const p = m.providers[cc]; %>
+          <div class="providers" data-region="<%= cc %>"<%= cc === defaultRegion ? '' : ' hidden' %>>
+            <% [['flatrate', 'Stream'], ['rent', 'Rent'], ['buy', 'Buy']].forEach(([key, label]) => { if (p[key].length) { %>
+              <div class="provider-group"><h3><%= label %></h3>
+                <div class="provider-list"><% p[key].forEach((x) => { %><span class="provider" title="<%= x.name %>"><% if (x.logo) { %><img src="<%= x.logo %>" alt="<%= x.name %>" loading="lazy"><% } %><small><%= x.name %></small></span><% }) %></div>
+              </div>
+            <% } }) %>
+            <% if (p.link) { %><a class="more" href="<%= p.link %>" target="_blank" rel="noopener noreferrer">All options for <%= cc %> <%- include('partials/icon', { n: 'ext' }) %></a><% } %>
+          </div>
+        <% }) %>
+        <p class="muted small">Streaming data provided by JustWatch.</p>
+      </section>
+    <% } %>
+
+    <!-- ============ DETAILS ============ -->
+    <section class="msec" id="details">
+      <div class="section-head"><h2>Details</h2></div>
+      <dl class="facts">
+        <% [
+          ['Original title', m.originalTitle !== m.title ? m.originalTitle : ''],
+          ['Status', m.status],
+          [m.isTv ? 'First aired' : 'Release date', m.date ? longDate(m.date) : ''],
+          ['Last aired', m.lastAired ? longDate(m.lastAired) : ''],
+          ['Seasons', m.isTv && m.seasonCount ? String(m.seasonCount) : ''],
+          ['Episodes', m.isTv && m.episodeCount ? String(m.episodeCount) : ''],
+          ['Network', m.networks.join(', ')],
+          [m.isTv ? 'Episode runtime' : 'Runtime', m.runtime ? runtime(m.runtime) + ' (' + m.runtime + ' min)' : ''],
+          ['Original language', m.language ? m.language.toUpperCase() : ''],
+          ['Spoken languages', m.spokenLanguages.join(', ')],
+          ['Countries', m.countries.join(', ')],
+          ['Budget', money(m.budget)],
+          ['Box office', money(m.revenue)],
+          ['TMDB score', m.voteCount ? m.voteAvg.toFixed(1) + ' / 10 · ' + m.voteCount.toLocaleString('en-US') + ' votes' : ''],
+          ['Age rating', m.certification || ''],
+        ].forEach(([label, value]) => { if (value) { %>
+          <div><dt><%= label %></dt><dd><%= value %></dd></div>
+        <% } }) %>
+      </dl>
+
+      <% if (m.companies.length) { %>
+        <h3 class="sub">Production</h3>
+        <div class="chips"><% m.companies.forEach((c) => { %><span class="chip chip--static"><%= c.name %></span><% }) %></div>
+      <% } %>
+      <% if (m.keywords.length) { %>
+        <h3 class="sub">Keywords</h3>
+        <div class="chips"><% m.keywords.forEach((k) => { %><a class="chip" href="/search?q=<%= encodeURIComponent(k.name) %>">#<%= k.name %></a><% }) %></div>
+      <% } %>
+      <div class="links">
+        <% [['IMDb', m.external.imdb], ['TMDB', m.external.tmdb], ['Official site', m.external.homepage], ['Instagram', m.external.instagram], ['X / Twitter', m.external.twitter], ['Facebook', m.external.facebook], ['Wikidata', m.external.wikidata]].forEach(([label, url]) => { if (url) { %>
+          <a class="btn btn-ghost btn-sm" href="<%= url %>" target="_blank" rel="noopener noreferrer"><%= label %> <%- include('partials/icon', { n: 'ext' }) %></a>
+        <% } }) %>
+      </div>
+
+      <% if (collection && collection.parts.length > 1) { %>
+        <div data-rail class="collection">
+          <div class="section-head"><h2><%= collection.name %></h2></div>
+          <div class="rail-wrap">
+            <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+            <div class="rail-track"><% collection.parts.forEach((p) => { %><%- include('partials/movieCard', { m: p }) %><% }) %></div>
+            <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+          </div>
+        </div>
+      <% } %>
+    </section>
+
+    <!-- ============ REVIEWS ============ -->
+    <% if (m.reviews.length) { %>
+      <section class="msec" id="reviews">
+        <div class="section-head"><h2>Reviews from TMDB</h2></div>
+        <div class="reviews">
+          <% m.reviews.forEach((r) => { %>
+            <article class="review" data-collapse>
+              <header>
+                <span class="avatar" style="--h:<%= hue(r.author) %>"><%= r.author.charAt(0).toUpperCase() %></span>
+                <strong><%= r.author %></strong>
+                <% if (r.rating) { %><span class="rate"><%- include('partials/icon', { n: 'star' }) %><%= r.rating %>/10</span><% } %>
+                <time class="muted"><%= fmtDate(r.date) %></time>
+              </header>
+              <p class="review-text"><%= r.content %></p>
+              <button type="button" class="link-btn" data-collapse-btn>Read more</button>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+    <!-- ============ MORE LIKE THIS ============ -->
+    <% if (m.recommendations.length || m.similar.length) { %>
+      <section class="msec" id="more">
+        <% [['Recommended for you', m.recommendations], ['More like this', m.similar]].forEach(([title, list]) => { if (list.length) { %>
+          <%- include('partials/row', { row: { title, movies: list } }) %>
+        <% } }) %>
+      </section>
+    <% } %>
+
+  </div>
+</main>
+
+<%- include('partials/foot') %>

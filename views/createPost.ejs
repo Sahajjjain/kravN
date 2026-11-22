@@ -1,0 +1,21 @@
+<%- include('partials/head', { title: 'Start a discussion' }) %>
+<%- include('partials/nav') %>
+
+<main class="page">
+  <div class="shell shell--narrow">
+    <header class="page-head page-head--center">
+      <span class="eyebrow"><span class="dot"></span> New post</span>
+      <h1>Which movie or series is this about?</h1>
+      <p class="muted">Find the title and the discussion starts right underneath it, where everyone talking about it will see you.</p>
+    </header>
+
+    <form class="search-form search-form--page search-form--big" action="/search" method="GET" role="search" onsubmit="return false">
+      <%- include('partials/icon', { n: 'search' }) %>
+      <input type="search" id="movie-input" value="<%= prefill %>" placeholder="Search for a movie or series…" autocomplete="off" autofocus aria-label="Movie or series title" data-livesearch data-target="#movie-results" data-mode="compose" data-movies-only>
+    </form>
+
+    <div class="live-results live-results--page" id="movie-results"></div>
+    <p class="muted small center">Can't find it? Try adding the year, like “dune 2021”.</p>
+  </div>
+</main>
+<%- include('partials/foot') %>

@@ -1,0 +1,62 @@
+<header class="topnav" id="topnav">
+  <a class="brand" href="/feed" aria-label="KravN home" data-egg="logo">Krav<span>N</span></a>
+
+  <nav class="topnav-links" aria-label="Main">
+    <a href="/feed" class="<%= nav === 'home' ? 'on' : '' %>">Home</a>
+    <a href="/discussions" class="<%= nav === 'discussions' ? 'on' : '' %>">Discussions</a>
+    <% if (me) { %><a href="/dashboard" class="<%= nav === 'dashboard' ? 'on' : '' %>">Dashboard</a><% } %>
+    <a href="/about" class="<%= nav === 'about' ? 'on' : '' %>">About</a>
+  </nav>
+
+  <div class="topnav-right">
+    <button type="button" class="icon-btn" data-act="search" aria-label="Search movies, series, people and discussions"><%- include('icon', { n: 'search' }) %></button>
+    <a class="btn btn-primary btn-sm topnav-new" href="<%= me ? '/posts/new' : '/login?next=/posts/new' %>"><%- include('icon', { n: 'plus' }) %><span>Start a discussion</span></a>
+    <% if (me) { %><a class="icon-btn topnav-bell<%= nav === 'notifications' ? ' on' : '' %>" href="/notifications" aria-label="Notifications">
+      <%- include('icon', { n: 'bell' }) %><% if (unread > 0) { %><i class="badge-dot"><%= unread > 9 ? '9+' : unread %></i><% } %>
+    </a><% } %>
+    <button type="button" class="icon-btn" data-act="theme" aria-label="Switch theme"><span class="theme-sun"><%- include('icon', { n: 'sun' }) %></span><span class="theme-moon"><%- include('icon', { n: 'moon' }) %></span></button>
+    <% if (!me) { %>
+      <a class="btn btn-ghost btn-sm topnav-login" href="/login?next=<%= encodeURIComponent(here) %>">Log in</a>
+      <a class="btn btn-primary btn-sm topnav-join" href="/register?next=<%= encodeURIComponent(here) %>">Sign up</a>
+    <% } %>
+    <% if (me) { %>
+      <div class="menu" data-menu>
+        <button type="button" class="avatar avatar--btn" style="--h:<%= hue(me.username) %>" data-menu-btn aria-label="Account menu" aria-haspopup="true"><%= me.username.charAt(0).toUpperCase() %></button>
+        <div class="menu-pop" role="menu">
+          <div class="menu-who">@<%= me.username %></div>
+          <a href="/dashboard" role="menuitem"><%- include('icon', { n: 'user' }) %> My dashboard</a>
+          <a href="/notifications" role="menuitem"><%- include('icon', { n: 'bell' }) %> Notifications</a>
+          <a href="/about" role="menuitem"><%- include('icon', { n: 'info' }) %> About KravN</a>
+          <button type="button" role="menuitem" data-act="eggs"><%- include('icon', { n: 'egg' }) %> Easter eggs <small data-egg-count></small></button>
+          <a href="/logout" role="menuitem"><%- include('icon', { n: 'logout' }) %> Log out</a>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</header>
+
+<!-- full-screen search -->
+<div class="overlay search-overlay" id="search-overlay" hidden>
+  <div class="overlay-inner">
+    <form class="search-form" action="/search" method="GET" role="search">
+      <%- include('icon', { n: 'search' }) %>
+      <input type="search" name="q" id="search-input" placeholder="Search movies, series, actors or discussions…" autocomplete="off" aria-label="Search" data-livesearch data-target="#search-results">
+      <button type="button" class="icon-btn" data-act="close-overlay" aria-label="Close search"><%- include('icon', { n: 'x' }) %></button>
+    </form>
+    <div class="live-results" id="search-results"></div>
+    <p class="search-hint">Press <kbd>Enter</kbd> to see every result · <kbd>Esc</kbd> to close</p>
+  </div>
+</div>
+
+<nav class="bottomnav" aria-label="Quick navigation">
+  <a href="/feed" class="<%= nav === 'home' ? 'on' : '' %>"><%- include('icon', { n: 'home' }) %><span>Home</span></a>
+  <a href="/discussions" class="<%= nav === 'discussions' ? 'on' : '' %>"><%- include('icon', { n: 'chat' }) %><span>Talk</span></a>
+  <a href="<%= me ? '/posts/new' : '/login?next=/posts/new' %>" class="bottomnav-new" aria-label="Start a discussion"><%- include('icon', { n: 'plus' }) %></a>
+  <% if (me) { %>
+  <a href="/notifications" class="<%= nav === 'notifications' ? 'on' : '' %>"><%- include('icon', { n: 'bell' }) %><span>Alerts</span><% if (unread > 0) { %><i class="badge-dot"><%= unread > 9 ? '9+' : unread %></i><% } %></a>
+  <a href="/dashboard" class="<%= nav === 'dashboard' ? 'on' : '' %>"><%- include('icon', { n: 'user' }) %><span>Me</span></a>
+  <% } else { %>
+  <a href="/about" class="<%= nav === 'about' ? 'on' : '' %>"><%- include('icon', { n: 'info' }) %><span>About</span></a>
+  <a href="/login?next=<%= encodeURIComponent(here) %>"><%- include('icon', { n: 'user' }) %><span>Log in</span></a>
+  <% } %>
+</nav>

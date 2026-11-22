@@ -1,0 +1,126 @@
+<%
+  const d = cardData(post);
+  const genres = genreList(post);
+  const mine = !!me && me.id === post.user_id;
+  const movieUrl = movie ? movie.url : movieLink(post);
+  const backdrop = movie && movie.backdrop;
+  const others = Math.max(0, d.likes - likers.length);
+%>
+<%- include('partials/head', { title: post.title, description: post.content.slice(0, 160) }) %>
+<%- include('partials/nav') %>
+
+<main class="page page--flush">
+
+  <section class="thread-hero">
+    <% if (backdrop) { %><img class="thread-hero-img" src="<%= backdrop %>" alt=""><% } else if (d.posterUrl) { %><img class="thread-hero-img thread-hero-img--poster" src="<%= d.posterUrl %>" alt=""><% } %>
+    <div class="thread-hero-shade"></div>
+    <div class="shell shell--narrow thread-hero-inner">
+      <a class="movie-mini" href="<%= movieUrl %>">
+        <% if (d.posterUrl) { %><img src="<%= d.posterUrl %>" alt=""><% } else { %><span class="movie-mini-none"><%- include('partials/icon', { n: 'film' }) %></span><% } %>
+        <span>
+          <small>Discussion on</small>
+          <strong><%= post.movie_name %></strong>
+          <em>
+            <% if (d.rating) { %><span class="rate"><%- include('partials/icon', { n: 'star' }) %><%= d.rating %></span><% } %>
+            <% if (post.release_date) { %><span><%= post.release_date %></span><% } %>
+            <% if (post.runtime) { %><span><%= post.runtime %></span><% } %>
+          </em>
+        </span>
+        <%- include('partials/icon', { n: 'next' }) %>
+      </a>
+    </div>
+  </section>
+
+  <div class="shell shell--narrow thread">
+
+    <article class="thread-main" id="d-<%= post.id %>" data-post="<%= json(d) %>">
+      <h1 class="thread-title"><%= post.title %></h1>
+
+      <div class="thread-by">
+        <a class="pcard-author" href="/users/<%= encodeURIComponent(post.username) %>">
+          <span class="avatar" style="--h:<%= hue(post.username) %>"><%= post.username.charAt(0).toUpperCase() %></span>
+          <span><strong><%= post.username %></strong></span>
+        </a>
+        <time class="muted" title="<%= fmtDate(post.created_at, true) %>"><%= fmtDate(post.created_at, true) %></time>
+      </div>
+
+      <% if (genres.length) { %><div class="chips"><% genres.forEach((g) => { %><a class="chip" href="/discussions?genre=<%= encodeURIComponent(g) %>"><%= g %></a><% }) %></div><% } %>
+
+      <p class="thread-content"><%= post.content %></p>
+
+      <div class="thread-actions">
+        <button type="button" class="btn btn-ghost like-big<%= d.liked ? ' on' : '' %>" data-like="<%= post.id %>" aria-pressed="<%= d.liked %>"><%- include('partials/icon', { n: 'heart' }) %> <span data-like-label><%= d.liked ? 'Liked' : 'Like' %></span></button>
+        <button type="button" class="btn btn-ghost" data-share-post><%- include('partials/icon', { n: 'share' }) %> Share</button>
+        <% if (mine) { %>
+          <form action="/posts/<%= post.id %>/delete" method="POST" onsubmit="return confirm('Delete this discussion permanently?');">
+            <button type="submit" class="btn btn-ghost btn-danger"><%- include('partials/icon', { n: 'trash' }) %> Delete</button>
+          </form>
+        <% } %>
+      </div>
+
+      <p class="likes-line">
+        <% if (d.likes > 0) { %>
+          <a href="/posts/<%= post.id %>/likes">Liked by
+            <strong><span data-like-count="<%= post.id %>"><%= d.likes %></span></strong> <%= d.likes === 1 ? 'person' : 'people' %></a>
+          <span class="muted">· <%= likers.slice(0, 3).map((l) => l.username).join(', ') %><%= others > 0 || likers.length > 3 ? ' …' : '' %></span>
+        <% } else { %><span class="muted">Be the first to like this · <span data-like-count="<%= post.id %>" hidden>0</span></span><% } %>
+      </p>
+    </article>
+
+    <!-- Kravn Card — the collectible, shareable version of this discussion -->
+    <section class="thread-card" aria-label="Kravn Card">
+      <div class="section-head"><h2>Your KravN Card</h2><span class="muted small">Download it or share it anywhere</span></div>
+      <div class="kcard-mount" data-kcard-mount data-post="<%= json(d) %>"></div>
+    </section>
+
+    <!-- Comments -->
+    <section class="comments" id="comments">
+      <div class="section-head"><h2>Comments <span class="count"><%= comments.length %></span></h2></div>
+
+      <% if (me) { %>
+      <form class="comment-form" action="/posts/<%= post.id %>/comments" method="POST">
+        <span class="avatar" style="--h:<%= hue(me.username) %>"><%= me.username.charAt(0).toUpperCase() %></span>
+        <textarea name="content" rows="2" maxlength="2000" required placeholder="Add to the discussion…"></textarea>
+        <button type="submit" class="btn btn-primary btn-sm">Comment</button>
+      </form>
+      <% } else { %>
+      <a class="compose-teaser" href="/login?next=<%= encodeURIComponent('/posts/' + post.id + '#comments') %>">
+        <span class="avatar" style="--h:260">?</span><span>Log in or sign up to join this discussion</span><span class="btn btn-primary btn-sm">Log in</span>
+      </a>
+      <% } %>
+
+      <% if (!comments.length) { %><p class="muted empty-line">No comments yet. Say something.</p><% } %>
+
+      <div class="comment-list">
+        <% comments.forEach((c) => { %>
+          <div class="comment" id="c-<%= c.id %>">
+            <a class="avatar" style="--h:<%= hue(c.username) %>" href="/users/<%= encodeURIComponent(c.username) %>"><%= c.username.charAt(0).toUpperCase() %></a>
+            <div class="comment-body">
+              <div class="comment-top">
+                <a href="/users/<%= encodeURIComponent(c.username) %>"><strong><%= c.username %></strong></a>
+                <% if (c.username === post.username) { %><span class="pill">Author</span><% } %>
+                <time class="muted" title="<%= fmtDate(c.created_at, true) %>"><%= timeAgo(c.created_at) %></time>
+              </div>
+              <p><%= c.content %></p>
+            </div>
+            <% if (me && c.user_id === me.id) { %>
+              <div class="comment-owner">
+                <a class="icon-btn icon-btn--sm" href="/comments/<%= c.id %>/edit" aria-label="Edit comment"><%- include('partials/icon', { n: 'edit' }) %></a>
+                <form action="/comments/<%= c.id %>/delete" method="POST" onsubmit="return confirm('Delete this comment?');"><button type="submit" class="icon-btn icon-btn--sm" aria-label="Delete comment"><%- include('partials/icon', { n: 'trash' }) %></button></form>
+              </div>
+            <% } %>
+          </div>
+        <% }) %>
+      </div>
+    </section>
+
+    <% if (more.length) { %>
+      <section class="more-talk">
+        <div class="section-head"><h2>More on <%= post.movie_name %></h2><a class="more" href="<%= movieUrl %>#discussions">All discussions <%- include('partials/icon', { n: 'next' }) %></a></div>
+        <div class="stack"><%- include('partials/postCards', { posts: more, showMovie: false }) %></div>
+      </section>
+    <% } %>
+
+  </div>
+</main>
+<%- include('partials/foot') %>

@@ -1,0 +1,46 @@
+<%- include('partials/head', { title: person.name, description: person.bio.slice(0, 160) }) %>
+<%- include('partials/nav') %>
+
+<main class="page">
+  <div class="shell">
+    <header class="person-head">
+      <% if (person.photo) { %><img class="person-photo-lg" src="<%= person.photo %>" alt="<%= person.name %>" data-lightbox="<%= person.photo %>"><% } else { %><span class="person-photo-lg person-photo-lg--none" style="--h:<%= hue(person.name) %>"><%= person.name.charAt(0) %></span><% } %>
+      <div class="person-info">
+        <span class="eyebrow"><span class="dot"></span> <%= person.department || 'Person' %></span>
+        <h1><%= person.name %></h1>
+        <dl class="facts facts--inline">
+          <% if (person.birthday) { %><div><dt>Born</dt><dd><%= longDate(person.birthday) %><%= person.birthplace ? ' · ' + person.birthplace : '' %></dd></div><% } %>
+          <% if (person.deathday) { %><div><dt>Died</dt><dd><%= longDate(person.deathday) %></dd></div><% } %>
+          <% if (person.alsoKnownAs.length) { %><div><dt>Also known as</dt><dd><%= person.alsoKnownAs.join(' · ') %></dd></div><% } %>
+        </dl>
+        <% if (person.bio) { %>
+          <div data-collapse class="bio"><p class="review-text"><%= person.bio %></p><button type="button" class="link-btn" data-collapse-btn>Read more</button></div>
+        <% } %>
+        <div class="links">
+          <% [['IMDb', person.external.imdb], ['TMDB', person.external.tmdb], ['Instagram', person.external.instagram], ['X / Twitter', person.external.twitter]].forEach(([label, url]) => { if (url) { %>
+            <a class="btn btn-ghost btn-sm" href="<%= url %>" target="_blank" rel="noopener noreferrer"><%= label %> <%- include('partials/icon', { n: 'ext' }) %></a>
+          <% } }) %>
+        </div>
+      </div>
+    </header>
+
+    <% if (person.photos.length > 1) { %>
+      <section class="msec" data-rail>
+        <div class="section-head"><h2>Photos</h2></div>
+        <div class="rail-wrap">
+          <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+          <div class="rail-track"><% person.photos.forEach((p) => { %><button type="button" class="photo photo--tall" data-lightbox="<%= p.full %>"><img src="<%= p.thumb %>" alt="<%= person.name %>" loading="lazy"></button><% }) %></div>
+          <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+        </div>
+      </section>
+    <% } %>
+
+    <section class="msec">
+      <div class="section-head"><h2>Films <span class="count"><%= person.films.length %></span></h2></div>
+      <% if (person.films.length) { %>
+        <div class="grid-posters"><% person.films.forEach((f) => { %><%- include('partials/movieCard', { m: f, sub: f.role }) %><% }) %></div>
+      <% } else { %><p class="muted">No films listed.</p><% } %>
+    </section>
+  </div>
+</main>
+<%- include('partials/foot') %>

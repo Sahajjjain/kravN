@@ -1,0 +1,55 @@
+<%- include('partials/head', { title: q ? 'Search: ' + q : 'Search' }) %>
+<%- include('partials/nav') %>
+
+<main class="page">
+  <div class="shell">
+    <header class="page-head">
+      <span class="eyebrow"><span class="dot"></span> Search</span>
+      <h1><%= q ? 'Results for “' + q + '”' : 'Search KravN' %></h1>
+    </header>
+
+    <form class="search-form search-form--page" action="/search" method="GET" role="search">
+      <%- include('partials/icon', { n: 'search' }) %>
+      <input type="search" name="q" value="<%= q %>" placeholder="Search movies, series, actors or discussions…" autocomplete="off" aria-label="Search">
+      <button class="btn btn-primary btn-sm" type="submit">Search</button>
+    </form>
+
+    <% if (!q) { %>
+      <div class="empty"><p>Type a movie, an actor or something someone might have said about it.</p></div>
+    <% } else { %>
+
+      <% if (people.length) { %>
+        <div class="people-strip">
+          <% people.forEach((p) => { %>
+            <a class="person person--sm" href="/person/<%= p.id %>">
+              <span class="person-photo"><% if (p.image) { %><img src="<%= p.image %>" alt="<%= p.title %>" loading="lazy"><% } %></span>
+              <strong><%= p.title %></strong><small><%= p.year %></small>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div class="tabs" data-tabs>
+        <div class="tab-bar" role="tablist">
+          <button type="button" role="tab" data-tab="tab-movies" class="<%= movies.length || !posts.length ? 'on' : '' %>">Movies &amp; Series</button>
+          <button type="button" role="tab" data-tab="tab-posts" class="<%= !movies.length && posts.length ? 'on' : '' %>">Discussions</button>
+        </div>
+
+        <div class="tab-panel" id="tab-movies"<%= !movies.length && posts.length ? ' hidden' : '' %>>
+          <% if (movies.length) { %>
+            <div class="grid-posters" id="movie-grid"><%- include('partials/movieCards', { movies }) %></div>
+            <% if (hasMoreMovies) { %><div class="loader" data-infinite="/api/grid?src=search&q=<%= encodeURIComponent(q) %>" data-next="2" data-target="#movie-grid"><span class="spinner"></span></div><% } %>
+          <% } else { %><div class="empty"><p>Nothing found for “<%= q %>”. Try another spelling or a year, like “dune 2021”.</p></div><% } %>
+        </div>
+
+        <div class="tab-panel" id="tab-posts"<%= movies.length || !posts.length ? ' hidden' : '' %>>
+          <% if (posts.length) { %>
+            <div class="stack" id="post-results" data-post-list><%- include('partials/postCards', { posts }) %></div>
+            <% if (hasMorePosts) { %><div class="loader" data-infinite="/api/discussions?q=<%= encodeURIComponent(q) %>" data-next="2" data-target="#post-results"><span class="spinner"></span></div><% } %>
+          <% } else { %><div class="empty"><p>No discussions match “<%= q %>” yet.</p><a class="btn btn-primary" href="/posts/new">Start one</a></div><% } %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</main>
+<%- include('partials/foot') %>

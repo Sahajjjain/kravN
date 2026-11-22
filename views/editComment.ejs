@@ -1,0 +1,22 @@
+<%- include('partials/head', { title: 'Edit comment' }) %>
+<%- include('partials/nav') %>
+
+<main class="page">
+  <div class="shell shell--narrow">
+    <a class="back-link" href="/posts/<%= comment.post_id %>#c-<%= comment.id %>"><%- include('partials/icon', { n: 'prev' }) %> Back to the discussion</a>
+    <header class="page-head">
+      <span class="eyebrow"><span class="dot"></span> Edit comment</span>
+      <h1><%= comment.post_title %></h1>
+      <p class="muted"><%= comment.movie_name %></p>
+    </header>
+
+    <form class="form card" action="/comments/<%= comment.id %>/edit" method="POST">
+      <label>Your comment<textarea name="content" rows="6" maxlength="2000" required><%= comment.content %></textarea></label>
+      <div class="composer-actions">
+        <a class="btn btn-ghost" href="/posts/<%= comment.post_id %>#c-<%= comment.id %>">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+    </form>
+  </div>
+</main>
+<%- include('partials/foot') %>

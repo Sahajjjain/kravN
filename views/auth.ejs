@@ -1,0 +1,28 @@
+<% const isLogin = mode === 'login'; %>
+<%- include('partials/head', { title: isLogin ? 'Log in' : 'Join', bodyClass: 'auth' }) %>
+<%- include('partials/posterwall', { posters }) %>
+<div class="landing-shade"></div>
+<main class="auth-wrap">
+  <a class="brand brand--lg" href="/feed" data-egg="logo">Krav<span>N</span></a>
+  <section class="auth-card">
+    <span class="eyebrow"><span class="dot"></span> <%= isLogin ? 'Member login' : 'Create your account' %></span>
+    <h1><%= isLogin ? 'Welcome back.' : 'Join KravN.' %></h1>
+    <p class="muted"><%= isLogin ? 'Log in to continue the discussion.' : 'Share your theories, reviews and hot takes.' %></p>
+
+    <% if (error) { %><p class="auth-error" role="alert"><%= error %></p><% } %>
+
+    <form action="/<%= mode %>" method="POST" class="form">
+      <% if (!isLogin) { %>
+        <label>Username<input type="text" name="username" placeholder="yourname" required autocomplete="username" maxlength="40"></label>
+      <% } %>
+      <label>Email<input type="email" name="email" placeholder="you@example.com" required autocomplete="email"></label>
+      <label>Password<input type="password" name="password" placeholder="••••••••" required autocomplete="<%= isLogin ? 'current-password' : 'new-password' %>"></label>
+      <button type="submit" class="btn btn-primary btn-block"><%= isLogin ? 'Log in' : 'Create account' %></button>
+    </form>
+
+    <p class="auth-switch">
+      <% if (isLogin) { %>New here? <a href="/register">Create an account</a><% } else { %>Already a member? <a href="/login">Log in</a><% } %>
+    </p>
+  </section>
+</main>
+<%- include('partials/foot', { bare: true }) %>

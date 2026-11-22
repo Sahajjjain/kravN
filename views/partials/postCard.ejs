@@ -1,0 +1,41 @@
+<%#
+  One discussion. locals: post, optional compact (rail tile), showMovie (default true: poster + movie name).
+  data-* attributes feed the client-side sorting, filtering and the Kravn Cards deck.
+%>
+<%
+  const d = cardData(post);
+  const showMovie = locals.showMovie !== false;
+  const compact = !!locals.compact;
+  const genres = genreList(post);
+  const threadUrl = '/posts/' + post.id;
+%>
+<article class="pcard<%= compact ? ' pcard--tile' : '' %><%= showMovie ? '' : ' pcard--bare' %>" id="d-<%= post.id %>"
+  data-post="<%= json(d) %>" data-created="<%= new Date(post.created_at).getTime() %>" data-rating="<%= d.rating || 0 %>"
+  data-likes="<%= d.likes %>" data-genre="<%= genres.join('|') %>">
+  <% if (showMovie) { %>
+    <a class="pcard-poster" href="<%= threadUrl %>" tabindex="-1" aria-hidden="true">
+      <% if (d.posterUrl) { %><img src="<%= d.posterUrl %>" alt="" loading="lazy" decoding="async"><% } else { %><span class="pcard-poster-fallback"><%- include('icon', { n: 'film' }) %></span><% } %>
+    </a>
+  <% } %>
+  <div class="pcard-body">
+    <div class="pcard-eyebrow">
+      <% if (showMovie) { %><a href="<%= movieLink(post) %>" class="pcard-movie"><%= post.movie_name %></a><% } %>
+      <% if (d.rating) { %><span class="rate"><%- include('icon', { n: 'star' }) %><%= d.rating %></span><% } %>
+      <% if (!compact && genres[0]) { %><span class="muted"><%= genres.slice(0, 2).join(' · ') %></span><% } %>
+    </div>
+    <h3 class="pcard-title"><a class="stretch" href="<%= threadUrl %>"><%= post.title %></a></h3>
+    <p class="pcard-text"><%= post.content %></p>
+    <div class="pcard-foot">
+      <a class="pcard-author" href="/users/<%= encodeURIComponent(post.username) %>">
+        <span class="avatar avatar--sm" style="--h:<%= hue(post.username) %>"><%= post.username.charAt(0).toUpperCase() %></span>
+        <span><%= post.username %></span>
+      </a>
+      <time class="muted" datetime="<%= new Date(post.created_at).toISOString() %>" title="<%= fmtDate(post.created_at, true) %>"><%= timeAgo(post.created_at) %></time>
+      <span class="pcard-actions">
+        <button type="button" class="act like<%= d.liked ? ' on' : '' %>" data-like="<%= post.id %>" aria-pressed="<%= d.liked %>" aria-label="Like this discussion"><%- include('icon', { n: 'heart' }) %><span data-like-count="<%= post.id %>"><%= d.likes %></span></button>
+        <a class="act" href="<%= threadUrl %>#comments" aria-label="Comments"><%- include('icon', { n: 'chat' }) %><span><%= post.comment_count %></span></a>
+        <button type="button" class="act" data-share-post aria-label="Share"><%- include('icon', { n: 'share' }) %></button>
+      </span>
+    </div>
+  </div>
+</article>

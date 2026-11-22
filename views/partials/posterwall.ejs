@@ -1,0 +1,8 @@
+<%# Slow-drifting columns of poster art behind the landing and sign-in pages %>
+<div class="wall" aria-hidden="true">
+  <% for (let c = 0; c < 6; c++) { %>
+    <div class="wall-col" style="--d:<%= 70 + c * 11 %>s;--dir:<%= c % 2 ? 'reverse' : 'normal' %>">
+      <% const col = posters.filter((_, i) => i % 6 === c); [...col, ...col].forEach((url) => { %><img src="<%= url %>" alt="" loading="lazy"><% }) %>
+    </div>
+  <% } %>
+</div>

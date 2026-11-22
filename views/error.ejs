@@ -1,0 +1,15 @@
+<%- include('partials/head', { title: code + '', bodyClass: 'error-page' }) %>
+<%- include('partials/nav') %>
+<main class="error-main">
+  <div class="clapper" data-egg="clapper" aria-hidden="true">
+    <div class="clapper-top"></div>
+    <div class="clapper-body"><strong><%= code %></strong><small>SCENE · TAKE 1</small></div>
+  </div>
+  <h1><%= code === 404 ? 'Cut! Nothing here.' : code === 403 ? 'Not in your scene.' : 'The projector jammed.' %></h1>
+  <p class="muted"><%= message %></p>
+  <div class="error-actions">
+    <a class="btn btn-primary" href="/feed">Back to the lobby</a>
+    <button type="button" class="btn btn-glass" onclick="history.length > 1 ? history.back() : location.assign('/')">Go back</button>
+  </div>
+</main>
+<%- include('partials/foot', { bare: true }) %>

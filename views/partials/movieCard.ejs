@@ -1,0 +1,16 @@
+<%# One poster — a movie or a series, they look and behave the same. locals: m {id,title,year,poster,percent,url,type}, optional href, badge, sub %>
+<a class="mcard" href="<%= locals.href || m.url || '/movie/' + m.id %>" title="<%= m.title %>">
+  <div class="mcard-poster">
+    <% if (m.poster) { %>
+      <img src="<%= m.poster %>" alt="<%= m.title %>" width="342" height="513" loading="lazy" decoding="async">
+    <% } else { %>
+      <div class="mcard-fallback"><%- include('icon', { n: 'film' }) %><span><%= m.title %></span></div>
+    <% } %>
+    <% if (m.percent) { %><span class="match <%= m.percent >= 70 ? 'hi' : m.percent >= 50 ? 'mid' : 'lo' %>"><%= m.percent %>%</span><% } %>
+    <% if (locals.badge) { %><span class="mcard-badge"><%= locals.badge %></span><% } %>
+  </div>
+  <div class="mcard-info">
+    <strong><%= m.title %></strong>
+    <span><%= [m.year, m.type === 'tv' ? 'Series' : null, locals.sub].filter(Boolean).join(' · ') %></span>
+  </div>
+</a>

@@ -1,0 +1,24 @@
+<%- include('partials/head', { title: 'Likes' }) %>
+<%- include('partials/nav') %>
+
+<main class="page">
+  <div class="shell shell--narrow">
+    <a class="back-link" href="/posts/<%= post.id %>"><%- include('partials/icon', { n: 'prev' }) %> Back to the discussion</a>
+    <header class="page-head">
+      <span class="eyebrow"><span class="dot"></span> Liked by</span>
+      <h1><%= likers.length %> <%= likers.length === 1 ? 'person' : 'people' %></h1>
+      <p class="muted"><%= post.title %> · <%= post.movie_name %></p>
+    </header>
+
+    <% if (!likers.length) { %><div class="empty"><p>No likes yet.</p></div><% } %>
+    <div class="notif-list">
+      <% likers.forEach((l) => { %>
+        <a class="notif" href="/users/<%= encodeURIComponent(l.username) %>">
+          <span class="avatar" style="--h:<%= hue(l.username) %>"><%= l.username.charAt(0).toUpperCase() %></span>
+          <span class="notif-text"><strong><%= l.username %></strong><time class="muted">Member since <%= fmtDate(l.created_at) %></time></span>
+        </a>
+      <% }) %>
+    </div>
+  </div>
+</main>
+<%- include('partials/foot') %>

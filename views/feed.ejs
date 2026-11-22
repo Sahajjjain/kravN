@@ -1,0 +1,93 @@
+<%- include('partials/head', { title: 'Home' }) %>
+<%- include('partials/nav') %>
+
+<main class="page page--flush">
+
+  <% if (hero) { %>
+    <section class="hero">
+      <img class="hero-img" src="<%= hero.backdropLg %>" srcset="<%= hero.backdrop %> 780w, <%= hero.backdropLg %> 1280w" sizes="100vw" alt="" fetchpriority="high" decoding="async">
+      <div class="hero-shade"></div>
+      <div class="hero-body">
+        <span class="eyebrow"><span class="dot"></span> Trending this week</span>
+        <h1 class="hero-title"><%= hero.title %></h1>
+        <div class="hero-meta">
+          <% if (hero.percent) { %><span class="match <%= hero.percent >= 70 ? 'hi' : hero.percent >= 50 ? 'mid' : 'lo' %>"><%= hero.percent %>% match</span><% } %>
+          <% if (hero.year) { %><span><%= hero.year %></span><% } %>
+          <% hero.genreIds.slice(0, 3).forEach((id) => { if (genreNames[id]) { %><span class="pill"><%= genreNames[id] %></span><% } }) %>
+        </div>
+        <p class="hero-text"><%= hero.overview %></p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="<%= hero.url %>?compose=1#discussions"><%- include('partials/icon', { n: 'chat' }) %> Start a discussion</a>
+          <a class="btn btn-glass" href="<%= hero.url %>"><%- include('partials/icon', { n: 'info' }) %> More info</a>
+        </div>
+      </div>
+    </section>
+  <% } else { %>
+    <section class="hero hero--plain">
+      <div class="hero-body">
+        <span class="eyebrow"><span class="dot"></span> Welcome back</span>
+        <h1 class="hero-title"><%= me ? 'Hey ' + me.username + ', what are we talking about?' : 'Where theories come alive.' %></h1>
+        <p class="hero-text">Search any movie or series and start the conversation right underneath it.</p>
+        <div class="hero-actions"><a class="btn btn-primary" href="<%= me ? '/posts/new' : '/register' %>"><%- include('partials/icon', { n: 'plus' }) %> <%= me ? 'Start a discussion' : 'Join KravN' %></a></div>
+      </div>
+    </section>
+  <% } %>
+
+  <div class="shell">
+
+    <% if (!me) { %>
+      <aside class="join-banner">
+        <div><strong>Welcome to Krav<span class="n">N</span></strong><span>Browse every movie, series and discussion freely. Sign up to post, like and comment.</span></div>
+        <div class="join-banner-actions"><a class="btn btn-primary btn-sm" href="/register">Sign up</a><a class="btn btn-ghost btn-sm" href="/login">Log in</a></div>
+      </aside>
+    <% } %>
+
+    <% if (Object.keys(genreNames).length) { %>
+      <div class="chips chips--scroll" aria-label="Browse by genre">
+        <% Object.entries(genreNames).forEach(([id, name]) => { %><a class="chip" href="/genre/<%= id %>"><%= name %></a><% }) %>
+      </div>
+    <% } %>
+
+    <section class="rail" data-rail>
+      <div class="section-head">
+        <h2>Latest discussions</h2>
+        <a class="more" href="/discussions">See all <%- include('partials/icon', { n: 'next' }) %></a>
+      </div>
+      <% if (latest.length) { %>
+        <div class="rail-wrap">
+          <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+          <div class="rail-track rail-track--posts" id="latest"><% latest.forEach((post) => { %><%- include('partials/postCard', { post, compact: true }) %><% }) %></div>
+          <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+        </div>
+      <% } else { %>
+        <div class="empty"><p>No discussions yet — be the first to start one.</p><a class="btn btn-primary" href="<%= me ? '/posts/new' : '/register' %>">Start a discussion</a></div>
+      <% } %>
+    </section>
+
+    <% if (top.length) { %>
+      <section class="rail" data-rail>
+        <div class="section-head"><h2>Most discussed on KravN</h2></div>
+        <div class="rail-wrap">
+          <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
+          <div class="rail-track">
+            <% top.forEach((p) => { %><%- include('partials/movieCard', {
+              m: { title: p.movie_name, year: (String(p.release_date || '').match(/(?:19|20)\d{2}/) || [''])[0], poster: posterOf(p), percent: null },
+              href: movieLink(p),
+              badge: p.discussions + (p.discussions === 1 ? ' discussion' : ' discussions')
+            }) %><% }) %>
+          </div>
+          <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
+        </div>
+      </section>
+    <% } %>
+
+    <% rows.forEach((row) => { %><%- include('partials/row', { row }) %><% }) %>
+
+    <div id="more-rows"></div>
+    <% if (nextRow < totalRows) { %>
+      <div class="loader" data-infinite="/api/home/rows?count=3" data-param="from" data-next="<%= nextRow %>" data-target="#more-rows"><span class="spinner"></span></div>
+    <% } %>
+  </div>
+</main>
+
+<%- include('partials/foot') %>

@@ -1,0 +1,34 @@
+<%- include('partials/head', { title: 'Notifications' }) %>
+<%- include('partials/nav') %>
+
+<main class="page">
+  <div class="shell shell--narrow">
+    <header class="page-head">
+      <span class="eyebrow"><span class="dot"></span> Activity</span>
+      <h1>Notifications</h1>
+    </header>
+
+    <% if (!notifications.length) { %>
+      <div class="empty">
+        <%- include('partials/icon', { n: 'bell', cls: 'ic--xl' }) %>
+        <p>Nothing yet. When someone likes or comments on your discussions, it shows up here.</p>
+        <a class="btn btn-primary" href="/posts/new">Start a discussion</a>
+      </div>
+    <% } %>
+
+    <div class="notif-list">
+      <% notifications.forEach((n) => { const actor = n.actor_username || 'Someone'; %>
+        <a class="notif<%= n.is_read ? '' : ' unread' %>" href="/posts/<%= n.post_id %><%= n.type === 'comment' ? '#comments' : '' %>">
+          <span class="avatar" style="--h:<%= hue(actor) %>"><%= actor.charAt(0).toUpperCase() %></span>
+          <span class="notif-text">
+            <span><strong><%= actor %></strong> <%= n.type === 'like' ? 'liked' : 'commented on' %> your discussion <em><%= n.post_title || n.movie_name || '(deleted)' %></em></span>
+            <% if (n.type === 'comment' && n.comment_content) { %><q><%= n.comment_content.length > 140 ? n.comment_content.slice(0, 140) + '…' : n.comment_content %></q><% } %>
+            <time class="muted"><%= timeAgo(n.created_at) %></time>
+          </span>
+          <% if (posterOf({ poster_url: n.poster_url })) { %><img class="notif-poster" src="<%= n.poster_url %>" alt="" loading="lazy"><% } %>
+        </a>
+      <% }) %>
+    </div>
+  </div>
+</main>
+<%- include('partials/foot') %>

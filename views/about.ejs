@@ -1,0 +1,50 @@
+<%- include('partials/head', { title: 'About' }) %>
+<%- include('partials/nav') %>
+
+<main class="page page--flush">
+  <section class="about-hero">
+    <% if (favorites.length) { %>
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee-track"><% [...favorites, ...favorites].forEach((f) => { %><img src="<%= f.poster %>" alt="" loading="lazy"><% }) %></div>
+      </div>
+    <% } %>
+    <div class="about-shade"></div>
+    <div class="about-title">
+      <span class="eyebrow"><span class="dot"></span> The story</span>
+      <h1 class="landing-logo" data-egg="logo">Krav<span>N</span></h1>
+      <p class="landing-tag">Where movie theories become discussions.</p>
+    </div>
+  </section>
+
+  <div class="shell shell--narrow prose">
+    <h2>Welcome to KravN</h2>
+    <p>Ever finished a movie and immediately thought, <em>“Wait… did anyone else notice that?”</em> Or spent way too much time explaining why your theory is better than the writer's original ending?</p>
+    <p>That's exactly why KravN exists — a space built for the moment the credits roll and the real conversation starts. A place for movie lovers, binge-watchers, plot-hole hunters, and people who simply have too many opinions about films and web series.</p>
+
+    <div class="sprocket" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+
+    <h2>The story behind KravN</h2>
+    <p>Hey! I'm Sahaj Jain, founder of KravN. I'm a Computer Science student who enjoys building things almost as much as watching way too many movies.</p>
+    <p>KravN started as a small learning project and somehow turned into my first fully deployed web application. Along the way I picked up databases, authentication, deployment, late-night debugging, and the important lesson that one tiny bug can ruin an otherwise peaceful evening.</p>
+    <p>This is only the beginning — more features, better discussions, and a lot more movie debates are on the way. Hope y'all have fun posting movie theories and reviews.</p>
+
+    <div class="contact">
+      <a class="btn btn-ghost" href="mailto:jainsahaj167@gmail.com"><%- include('partials/icon', { n: 'mail' }) %> jainsahaj167@gmail.com</a>
+      <a class="btn btn-ghost" href="https://www.instagram.com/kravn.in" target="_blank" rel="noopener noreferrer">@kravn.in <%- include('partials/icon', { n: 'ext' }) %></a>
+    </div>
+
+    <div class="sprocket" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+
+    <% if (me) { %>
+      <h2>Easter egg hunt <small class="muted" data-egg-count></small></h2>
+      <p>KravN is full of hidden surprises. Some are in the search box, some are on movie pages, some only appear at a certain time of night. Found ones are listed below — the rest stay secret.</p>
+      <ul class="egg-dex" data-egg-dex></ul>
+      <a class="btn btn-primary" href="/posts/new">Alright, now go post your hottest movie take →</a>
+    <% } else { %>
+      <a class="btn btn-primary" href="/register">Join KravN →</a>
+    <% } %>
+
+    <p class="muted small attribution">This product uses the TMDB API but is not endorsed or certified by TMDB. Movie data, posters and photos are provided by <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer">TMDB</a>; streaming availability by JustWatch.</p>
+  </div>
+</main>
+<%- include('partials/foot') %>

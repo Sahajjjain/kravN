@@ -1,0 +1,11 @@
+<section class="rail" data-rail>
+  <div class="section-head">
+    <h2><%= row.title %></h2>
+    <% if (row.href) { %><a class="more" href="<%= row.href %>">Explore all <%- include('icon', { n: 'next' }) %></a><% } %>
+  </div>
+  <div class="rail-wrap">
+    <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('icon', { n: 'prev' }) %></button>
+    <div class="rail-track"><% row.movies.forEach((m) => { %><%- include('movieCard', { m }) %><% }) %></div>
+    <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('icon', { n: 'next' }) %></button>
+  </div>
+</section>

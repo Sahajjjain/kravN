@@ -1,0 +1,41 @@
+<% const qs = (o) => { const p = new URLSearchParams(Object.assign({ genre, sort }, o)); if (!p.get('genre')) p.delete('genre'); if (p.get('sort') === 'latest') p.delete('sort'); const s = p.toString(); return '/discussions' + (s ? '?' + s : ''); }; %>
+<%- include('partials/head', { title: 'Latest discussions' }) %>
+<%- include('partials/nav') %>
+
+<main class="page">
+  <div class="shell shell--narrow">
+    <header class="page-head">
+      <span class="eyebrow"><span class="dot"></span> Live from the community</span>
+      <h1>Latest discussions</h1>
+      <p class="muted">Every theory, review and hot take across all movies — newest first. Keep scrolling.</p>
+    </header>
+
+    <a class="compose-teaser" href="<%= me ? '/posts/new' : '/login?next=/posts/new' %>">
+      <span class="avatar" style="--h:<%= me ? hue(me.username) : 260 %>"><%= me ? me.username.charAt(0).toUpperCase() : '?' %></span>
+      <span><%= me ? 'Pick a movie and start a discussion…' : 'Log in to start a discussion…' %></span>
+      <span class="btn btn-primary btn-sm"><%= me ? 'Post' : 'Log in' %></span>
+    </a>
+
+    <div class="toolbar">
+      <div class="chips chips--scroll">
+        <a class="chip<%= genre ? '' : ' on' %>" href="<%= qs({ genre: '' }) %>">All</a>
+        <% genres.forEach((g) => { %><a class="chip<%= genre === g.name ? ' on' : '' %>" href="<%= qs({ genre: g.name }) %>"><%= g.name %></a><% }) %>
+      </div>
+      <div class="seg" role="tablist" aria-label="Sort">
+        <a class="<%= sort === 'latest' ? 'on' : '' %>" href="<%= qs({ sort: 'latest' }) %>">Latest</a>
+        <a class="<%= sort === 'top' ? 'on' : '' %>" href="<%= qs({ sort: 'top' }) %>">Most liked</a>
+        <a class="<%= sort === 'hot' ? 'on' : '' %>" href="<%= qs({ sort: 'hot' }) %>">Most talked about</a>
+      </div>
+    </div>
+
+    <% if (posts.length) { %>
+      <div class="stack" id="feed" data-post-list><%- include('partials/postCards', { posts }) %></div>
+      <% if (hasMore) { %>
+        <div class="loader" data-infinite="/api/discussions?genre=<%= encodeURIComponent(genre) %>&sort=<%= sort %>" data-next="2" data-target="#feed" data-end="That's a wrap — you've seen every discussion."><span class="spinner"></span></div>
+      <% } else { %><p class="end" data-egg="credits">That's a wrap — you've seen every discussion.</p><% } %>
+    <% } else { %>
+      <div class="empty"><p>No <%= genre || '' %> discussions yet.</p><a class="btn btn-primary" href="<%= me ? '/posts/new' : '/register' %>">Start the first one</a></div>
+    <% } %>
+  </div>
+</main>
+<%- include('partials/foot') %>

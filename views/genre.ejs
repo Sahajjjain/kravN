@@ -1,0 +1,22 @@
+<%- include('partials/head', { title: genre.name + ' movies & series' }) %>
+<%- include('partials/nav') %>
+
+<main class="page">
+  <div class="shell">
+    <header class="page-head">
+      <span class="eyebrow"><span class="dot"></span> Genre</span>
+      <h1><%= genre.name %></h1>
+    </header>
+
+    <div class="toolbar">
+      <div class="chips chips--scroll"><% genres.forEach((g) => { %><a class="chip<%= g.id === genre.id ? ' on' : '' %>" href="/genre/<%= g.id %>"><%= g.name %></a><% }) %></div>
+      <div class="seg">
+        <% const labels = { popular: 'Popular', rated: 'Top rated', newest: 'Newest', revenue: 'Box office' }; sorts.forEach((s) => { %><a class="<%= s === sort ? 'on' : '' %>" href="/genre/<%= genre.id %>?sort=<%= s %>"><%= labels[s] %></a><% }) %>
+      </div>
+    </div>
+
+    <div class="grid-posters" id="movie-grid"><%- include('partials/movieCards', { movies }) %></div>
+    <% if (hasMore) { %><div class="loader" data-infinite="/api/grid?src=genre&id=<%= genre.id %>&sort=<%= sort %>" data-next="2" data-target="#movie-grid"><span class="spinner"></span></div><% } %>
+  </div>
+</main>
+<%- include('partials/foot') %>
