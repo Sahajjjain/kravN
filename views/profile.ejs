@@ -12,18 +12,32 @@
       poster: posterOf(p) || '',
       genres: (genreList(p) || []).filter(Boolean),
       likes: Number(p.likes ?? p.like_count) || 0,
+      liked: !!(p.liked ?? p.liked_by_me ?? p.user_liked),
       rating,
-      ts: new Date(p.created_at || 0).getTime() || 0,
-      text: String(p.content || p.body || '').replace(/\s+/g, ' ').trim().slice(0, 180)
+      badge: rating ? '★ ' + (Math.round(rating * 10) / 10) : '',
+      ts: new Date(p.created_at || 0).getTime() || 0
     };
   });
   const allGenres = [...new Set(items.flatMap((i) => i.genres))].sort((a, b) => String(a).localeCompare(String(b)));
+
+  // Filter + sort dropdowns share one component (markup, styles and script).
+  const ic = (d) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  const CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  const menus = [
+    { key: 'genre', def: '', label: 'All genres', name: 'Filter by genre',
+      icon: ic('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'),
+      options: [{ v: '', t: 'All genres' }, ...allGenres.map((g) => ({ v: g, t: g }))] },
+    { key: 'sort', def: 'latest', label: 'Latest', name: 'Sort discussions',
+      icon: ic('<path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/>'),
+      options: [{ v: 'latest', t: 'Latest' }, { v: 'oldest', t: 'Oldest' }, { v: 'rating', t: 'Top rated' }, { v: 'likes', t: 'Most liked' }, { v: 'random', t: 'Random' }] }
+  ].filter((m) => m.options.length > 1);
 %>
 <%- include('partials/head', { title: isOwn ? 'Your dashboard' : '@' + u.username }) %>
 <%- include('partials/nav') %>
 
 <style>
-  /* PROFILE: header -> stats -> genre filter + sort -> poster grid (cards come from partials/movieCard + movie-card.css) */
+  /* PROFILE: header -> stats -> filter pills -> poster grid (cards come from partials/movieCard + movie-card.css) */
 
   /* ---------- header ---------- */
   .page .profile-head {
@@ -63,70 +77,93 @@
   .page .stats .stat span { font-size: 11px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; color: color-mix(in srgb, var(--text) 55%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .page .sprocket { margin: 12px 0 0; opacity: .5; }
 
-  /* ---------- toolbar: genre chips (swipeable) + sort ---------- */
-  .page .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 18px; min-width: 0; }
-  .pf-chips {
-    flex: 1; min-width: 0; display: flex; flex-wrap: nowrap; gap: 8px; padding: 2px 0 6px; overflow-x: auto; overflow-y: hidden; cursor: grab;
-    -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; touch-action: pan-x; scrollbar-width: none;
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent);
-  }
-  .pf-chips::-webkit-scrollbar { display: none; }
-  .pf-chips.at-end { -webkit-mask-image: none; mask-image: none; }
-  .pf-chips.is-drag { cursor: grabbing; user-select: none; -webkit-user-select: none; }
-  .pf-chip {
-    flex: none; display: inline-flex; align-items: center; height: 32px; padding: 0 14px; border-radius: 999px; cursor: pointer; white-space: nowrap;
-    font: 500 12.5px/1 var(--font); letter-spacing: .01em; color: color-mix(in srgb, var(--text) 82%, transparent);
-    background: color-mix(in srgb, var(--text) 5%, transparent); border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
-    transition: color .2s, background .2s, border-color .2s, transform .2s;
-  }
-  .pf-chip:hover { border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
-  .pf-chip.on { color: #fff; background: var(--accent); border-color: var(--accent); }
-  .pf-chip:active { transform: scale(.96); }
+  /* ---------- toolbar: genre + sort dropdown pills ---------- */
+  .page .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 20px; min-width: 0; }
 
-  .pf-sort {
-    -webkit-appearance: none; appearance: none; flex: none; height: 36px; width: 142px; padding: 0 34px 0 16px; border-radius: 999px; cursor: pointer;
-    font: 500 12.5px/1 var(--font); color: var(--text); background-color: color-mix(in srgb, var(--text) 6%, transparent);
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b4b4bd' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
-    background-repeat: no-repeat; background-position: right 14px center; border: 1px solid color-mix(in srgb, var(--text) 14%, transparent); transition: border-color .2s;
+  .dd { position: relative; z-index: 40; min-width: 0; }
+  .dd--sort { margin-left: auto; }
+  .dd-pill {
+    list-style: none; display: inline-flex; align-items: center; gap: 9px; height: 40px; padding: 0 14px 0 16px; border-radius: 999px; max-width: 100%;
+    cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+    font: 600 13px/1 var(--font); color: var(--text);
+    background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+    transition: background .2s, border-color .2s, box-shadow .2s;
   }
-  .pf-sort:hover { border-color: color-mix(in srgb, var(--text) 26%, transparent); }
-  .pf-sort:focus-visible { outline: 0; border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
-  .pf-sort option { background: var(--surface); color: var(--text); }
+  .dd-pill::-webkit-details-marker { display: none; }
+  .dd-pill:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .dd-pill > svg { width: 15px; height: 15px; flex: none; opacity: .75; }
+  .dd-pill .chev { width: 14px; height: 14px; opacity: .7; transition: transform .25s ease; }
+  .dd-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .dd[open] .dd-pill { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .dd[open] .chev { transform: rotate(180deg); }
+  .dd.has-value .dd-pill { background: color-mix(in srgb, var(--accent) 20%, transparent); border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+
+  .dd-panel {
+    position: absolute; top: calc(100% + 10px); left: 0; width: min(440px, calc(100vw - 32px)); padding: 10px; border-radius: 20px;
+    background: color-mix(in srgb, var(--text) 5%, var(--surface)); border: 1px solid color-mix(in srgb, var(--text) 13%, transparent);
+    box-shadow: 0 28px 60px -20px rgba(0, 0, 0, .85);
+    -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    transform-origin: top left; animation: dd-pop .18s ease-out;
+  }
+  .dd--sort .dd-panel { left: auto; right: 0; width: 210px; transform-origin: top right; }
+  @keyframes dd-pop { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+
+  .dd-list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 4px; max-height: min(56vh, 340px);
+    overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 25%, transparent) transparent;
+  }
+  .dd--sort .dd-list { grid-template-columns: 1fr; }
+  .dd-opt {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; height: 40px; padding: 0 12px; margin: 0; border: 0; border-radius: 12px;
+    cursor: pointer; text-align: left; white-space: nowrap; font: 500 13px/1 var(--font); background: none;
+    color: color-mix(in srgb, var(--text) 82%, transparent); transition: background .15s, color .15s;
+  }
+  .dd-opt span { overflow: hidden; text-overflow: ellipsis; }
+  .dd-opt svg { width: 14px; height: 14px; flex: none; opacity: 0; }
+  .dd-opt:hover, .dd-opt:focus-visible { background: color-mix(in srgb, var(--accent) 16%, transparent); color: #fff; }
+  .dd-opt.on { background: var(--accent); color: #fff; font-weight: 600; }
+  .dd-opt.on svg { opacity: 1; }
+  .dd-opt--all { grid-column: 1 / -1; margin-bottom: 4px; }
+  .dd :is(.dd-pill, .dd-opt):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* ---------- poster grid ---------- */
   .pf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; align-items: start; }
   .pf-item[hidden] { display: none; }
   .pf-empty { text-align: center; padding: 36px 0; }
 
-  /* ---------- Kravn Cards viewer ---------- */
-  .kc { --kc-w: min(84vw, 380px); position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; color: #fff; background: rgba(8, 8, 12, .94); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+  /* ---------- Kravn Cards: a vertical, one-card-at-a-time feed of the same poster cards ---------- */
+  .kc { --kc-h: 100vh; --kc-w: min(78vw, 340px, calc((var(--kc-h) - 220px) * .667)); position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; color: #fff; background: rgba(8, 8, 12, .95); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+  @supports (height: 100dvh) { .kc { --kc-h: 100dvh; } }
   .kc[hidden] { display: none !important; }
-  .kc-top { display: flex; align-items: center; justify-content: space-between; padding: calc(12px + env(safe-area-inset-top)) 16px 6px; }
-  .kc-count { font: 600 13px/1 var(--font); letter-spacing: .08em; color: rgba(255, 255, 255, .7); }
-  .kc-btn { width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border-radius: 50%; cursor: pointer; color: #fff; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .25); transition: background .2s; }
-  .kc-btn:hover { background: rgba(255, 255, 255, .16); }
-  .kc-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .kc-track { flex: 1; min-height: 0; display: flex; align-items: center; gap: 14px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; scrollbar-width: none; padding: 6px calc((100vw - var(--kc-w)) / 2); }
-  .kc-track::-webkit-scrollbar { display: none; }
-  .kc-card { flex: 0 0 var(--kc-w); height: min(calc(100vh - 170px), 620px); height: min(calc(100dvh - 170px), 620px); scroll-snap-align: center; scroll-snap-stop: always; position: relative; overflow: hidden; border-radius: 22px; display: flex; align-items: flex-end; background: #1a1a22; border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 30px 60px -30px #000; }
-  .kc-bg { position: absolute; inset: 0; background-size: cover; background-position: center top; }
-  .kc-shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0, 0, 0, .94) 0%, rgba(0, 0, 0, .6) 40%, rgba(0, 0, 0, .05) 72%); }
-  .kc-rate { position: absolute; z-index: 2; top: 12px; left: 12px; padding: 5px 10px; border-radius: 999px; font: 700 12px/1 var(--font); background: rgba(10, 10, 14, .62); border: 1px solid rgba(255, 255, 255, .16); }
-  .kc-body { position: relative; z-index: 1; width: 100%; display: grid; gap: 8px; padding: 18px; }
-  .kc-movie { font: 600 11px/1 var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2, #c9b8ff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .kc-title { margin: 0; font: 700 21px/1.2 var(--font); letter-spacing: -.01em; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .kc-text { margin: 0; font-size: 13px; line-height: 1.5; color: rgba(255, 255, 255, .78); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .kc-open { justify-self: start; display: inline-flex; align-items: center; height: 38px; margin-top: 4px; padding: 0 18px; border-radius: 999px; text-decoration: none; font: 600 12.5px/1 var(--font); letter-spacing: .03em; color: #fff; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .4); transition: background .2s, border-color .2s; }
-  .kc-open:hover { background: var(--accent); border-color: var(--accent); }
-  .kc-nav { display: flex; justify-content: center; gap: 14px; padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .kc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: calc(12px + env(safe-area-inset-top)) 16px 6px; }
+  .kc-count { font: 600 13px/1 var(--font); letter-spacing: .08em; color: rgba(255, 255, 255, .75); font-variant-numeric: tabular-nums; }
+  .kc-hint { flex: 1; text-align: center; font-size: 12px; color: rgba(255, 255, 255, .45); }
+  .kc-close { width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border-radius: 50%; cursor: pointer; color: #fff; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .25); transition: background .2s; }
+  .kc-close:hover { background: rgba(255, 255, 255, .16); }
+  .kc-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+
+  .kc-feed { flex: 1; min-height: 0; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .kc-feed::-webkit-scrollbar { display: none; }
+  .kc-slide { height: 100%; scroll-snap-align: center; scroll-snap-stop: always; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+  .kc-slide .mcard { width: var(--kc-w); flex: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+  .kc-slide .mcard-poster { position: relative; }
   .kc-empty { margin: auto; padding: 0 24px; text-align: center; font-size: 14px; color: rgba(255, 255, 255, .7); }
 
-  /* ---------- tablet ---------- */
-  @media (max-width: 760px) {
-    .page .toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
-    .pf-chips { flex: none; }
-    .pf-sort { width: 150px; }
+  .kc-heart { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; pointer-events: none; opacity: 0; color: #fff; }
+  .kc-heart svg { width: 96px; height: 96px; fill: currentColor; stroke: none; filter: drop-shadow(0 6px 24px rgba(0, 0, 0, .55)); }
+  .kc-heart.pop { animation: kc-pop .75s ease-out; }
+  @keyframes kc-pop { 0% { opacity: 0; transform: scale(.4); } 22% { opacity: 1; transform: scale(1.15); } 60% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+
+  .kc-like {
+    display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; margin: 0; border-radius: 999px; cursor: pointer; color: #fff;
+    font: 600 13px/1 var(--font); font-variant-numeric: tabular-nums; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .28);
+    transition: background .2s, border-color .2s, transform .2s;
   }
+  .kc-like svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
+  .kc-like:active svg { transform: scale(.8); }
+  .kc-like.on { background: color-mix(in srgb, var(--accent) 28%, transparent); border-color: var(--accent); }
+  .kc-like.on svg { fill: currentColor; }
+
   /* ---------- phone ---------- */
   @media (max-width: 640px) {
     .page .profile-head { display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; padding: 14px; border-radius: 16px; margin-bottom: 10px; }
@@ -140,15 +177,21 @@
     .page .stats .stat { flex-direction: column; align-items: center; gap: 4px; padding: 11px 2px; }
     .page .stats .stat strong { font-size: 17px; }
     .page .stats .stat span { font-size: 9.5px; letter-spacing: .04em; max-width: 100%; }
-    .page .toolbar { margin: 12px 0 14px; }
-    .pf-chips { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; gap: 7px; }
-    .pf-chip { height: 30px; padding: 0 12px; font-size: 12px; }
-    .pf-sort { width: 136px; height: 36px; }
+    .page .toolbar { margin: 12px 0 16px; }
+    .dd-pill { height: 38px; padding: 0 12px 0 14px; }
+    .dd--genre { max-width: calc(100% - 140px); }
+    .dd-list { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 52vh; }
+    .dd--sort .dd-list { grid-template-columns: 1fr; }
+    .dd-panel { border-radius: 18px; }
     .pf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 10px; }
-    .kc-nav { display: none; }
-    .kc-card { height: min(calc(100vh - 110px), 620px); height: min(calc(100dvh - 110px), 620px); }
+    .kc-hint { font-size: 11px; }
   }
-  @media (max-width: 360px) { .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr; } }
+  @media (max-width: 360px) { .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr; } .kc-hint { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .dd-panel { animation: none; }
+    .dd-pill, .dd-pill .chev, .dd-opt, .kc-like, .kc-like svg { transition: none; }
+    .kc-heart.pop { animation-duration: .01s; }
+  }
 </style>
 
 <main class="page">
@@ -183,27 +226,25 @@
       </div>
     <% } else { %>
       <div class="toolbar">
-        <div class="pf-chips" data-pf-genres>
-          <button type="button" class="pf-chip on" data-genre="">All</button>
-          <% allGenres.forEach((g) => { %><button type="button" class="pf-chip" data-genre="<%= g %>"><%= g %></button><% }) %>
-        </div>
-        <select class="pf-sort" data-pf-sort aria-label="Sort discussions">
-          <option value="latest">Latest</option>
-          <option value="oldest">Oldest</option>
-          <option value="rating">Top rated</option>
-          <option value="likes">Most liked</option>
-          <option value="random">Random</option>
-        </select>
+        <% menus.forEach((m) => { %>
+          <details class="dd dd--<%= m.key %>" data-dd="<%= m.key %>" data-default="<%= m.def %>">
+            <summary class="dd-pill" aria-label="<%= m.name %>"><%- m.icon %><span class="dd-label"><%= m.label %></span><%- CHEV %></summary>
+            <div class="dd-panel">
+              <div class="dd-list">
+                <% m.options.forEach((o, i) => { %><button type="button" class="dd-opt<%= m.key === 'genre' && i === 0 ? ' dd-opt--all' : '' %><%= o.v === m.def ? ' on' : '' %>" data-value="<%= o.v %>" data-label="<%= o.t %>"><span><%= o.t %></span><%- CHECK %></button><% }) %>
+              </div>
+            </div>
+          </details>
+        <% }) %>
       </div>
 
       <div class="pf-grid" id="feed">
         <% items.forEach((it) => { %>
-          <div class="pf-item" data-genres="<%= it.genres.join('|') %>" data-ts="<%= it.ts %>" data-rating="<%= it.rating %>" data-likes="<%= it.likes %>"
-               data-href="<%= it.href %>" data-title="<%= it.title %>" data-movie="<%= it.movie %>" data-poster="<%= it.poster %>" data-text="<%= it.text %>" data-badge="<%= it.rating ? '★ ' + (Math.round(it.rating * 10) / 10) : '' %>">
+          <div class="pf-item" data-id="<%= it.id %>" data-genres="<%= it.genres.join('|') %>" data-ts="<%= it.ts %>" data-rating="<%= it.rating %>" data-likes="<%= it.likes %>" data-liked="<%= it.liked ? 1 : 0 %>">
             <%- include('partials/movieCard', {
               m: { id: it.id, title: it.title, year: it.year, poster: it.poster, percent: null, url: it.href, type: '' },
               href: it.href,
-              badge: it.rating ? '★ ' + (Math.round(it.rating * 10) / 10) : '',
+              badge: it.badge,
               sub: it.movie && it.movie !== it.title ? it.movie : ''
             }) %>
           </div>
@@ -215,103 +256,137 @@
 </main>
 
 <script>
-  /* genre filter + sort + swipeable chips + Kravn Cards viewer (all driven by the .pf-item data attributes) */
+  /* dropdown filters + sort + Kravn Cards feed (everything reads the .pf-item data attributes) */
   (function () {
     var grid = document.getElementById('feed');
     if (!grid) return;
+    var LIKE_URL = function (id) { return '/posts/' + id + '/like'; }; // POST, toggles the like — change if your route differs
     var items = Array.prototype.slice.call(grid.querySelectorAll('.pf-item'));
-    var chips = document.querySelector('[data-pf-genres]');
-    var sortSel = document.querySelector('[data-pf-sort]');
     var emptyMsg = document.getElementById('pf-empty');
-    var genre = '', sort = 'latest';
+    var state = { genre: '', sort: 'latest' };
+    var HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>';
     function num(el, k) { return parseFloat(el.getAttribute('data-' + k)) || 0; }
+    function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html) e.innerHTML = html; return e; }
 
+    /* ----- filter + sort ----- */
+    var by = {
+      latest: function (a, b) { return num(b, 'ts') - num(a, 'ts'); },
+      oldest: function (a, b) { return num(a, 'ts') - num(b, 'ts'); },
+      rating: function (a, b) { return num(b, 'rating') - num(a, 'rating'); },
+      likes:  function (a, b) { return num(b, 'likes') - num(a, 'likes'); },
+      random: function () { return Math.random() - .5; }
+    };
     function apply() {
-      var shown = items.filter(function (el) {
-        var ok = !genre || (el.getAttribute('data-genres') || '').split('|').indexOf(genre) > -1;
-        el.hidden = !ok; return ok;
+      var shown = items.filter(function (it) {
+        var ok = !state.genre || (it.getAttribute('data-genres') || '').split('|').indexOf(state.genre) > -1;
+        it.hidden = !ok; return ok;
       });
-      var by = { latest: function (a, b) { return num(b, 'ts') - num(a, 'ts'); }, oldest: function (a, b) { return num(a, 'ts') - num(b, 'ts'); },
-                 rating: function (a, b) { return num(b, 'rating') - num(a, 'rating'); }, likes: function (a, b) { return num(b, 'likes') - num(a, 'likes'); },
-                 random: function () { return Math.random() - .5; } };
-      shown.sort(by[sort] || by.latest).forEach(function (el) { grid.appendChild(el); });
+      shown.sort(by[state.sort] || by.latest).forEach(function (it) { grid.appendChild(it); });
       if (emptyMsg) emptyMsg.hidden = shown.length > 0;
     }
-    if (sortSel) sortSel.addEventListener('change', function () { sort = sortSel.value; apply(); });
 
-    /* chips: click to filter, drag/swipe to scroll */
-    if (chips) {
-      function edge() { chips.classList.toggle('at-end', chips.scrollLeft + chips.clientWidth >= chips.scrollWidth - 4); }
-      chips.addEventListener('scroll', edge, { passive: true }); window.addEventListener('resize', edge); edge();
-      var down = false, moved = false, sx = 0, sl = 0;
-      chips.addEventListener('mousedown', function (e) { down = true; moved = false; sx = e.pageX; sl = chips.scrollLeft; });
-      window.addEventListener('mousemove', function (e) {
-        if (!down) return;
-        if (Math.abs(e.pageX - sx) > 4) { moved = true; chips.classList.add('is-drag'); }
-        if (moved) chips.scrollLeft = sl - (e.pageX - sx);
+    /* ----- dropdown pills ----- */
+    var menus = Array.prototype.slice.call(document.querySelectorAll('[data-dd]'));
+    menus.forEach(function (m) {
+      m.addEventListener('toggle', function () {
+        if (!m.open) return;
+        menus.forEach(function (o) { if (o !== m) o.open = false; });
+        var on = m.querySelector('.dd-opt.on'); if (on) on.scrollIntoView({ block: 'nearest' });
       });
-      window.addEventListener('mouseup', function () { down = false; chips.classList.remove('is-drag'); });
-      chips.addEventListener('click', function (e) {
-        if (moved) { moved = false; return; }
-        var c = e.target.closest('.pf-chip'); if (!c) return;
-        chips.querySelectorAll('.pf-chip').forEach(function (x) { x.classList.toggle('on', x === c); });
-        genre = c.getAttribute('data-genre') || '';
-        chips.scrollTo({ left: Math.max(0, c.offsetLeft - (chips.clientWidth - c.offsetWidth) / 2), behavior: 'smooth' });
-        apply();
+      m.addEventListener('click', function (e) {
+        var o = e.target.closest('.dd-opt'); if (!o) return;
+        var v = o.getAttribute('data-value');
+        m.querySelectorAll('.dd-opt').forEach(function (x) { x.classList.toggle('on', x === o); });
+        m.querySelector('.dd-label').textContent = o.getAttribute('data-label');
+        m.classList.toggle('has-value', v !== m.getAttribute('data-default'));
+        state[m.getAttribute('data-dd')] = v;
+        m.open = false; apply();
       });
+    });
+    document.addEventListener('click', function (e) { menus.forEach(function (m) { if (m.open && !m.contains(e.target)) m.open = false; }); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      menus.forEach(function (m) { if (m.open) { m.open = false; m.querySelector('summary').focus(); } });
+    });
+
+    /* ----- likes (shared by the double-tap and the heart button) ----- */
+    function itemOf(slide) { return grid.querySelector('.pf-item[data-id="' + slide.getAttribute('data-id') + '"]'); }
+    function paint(slide) {
+      var it = itemOf(slide), on = it.getAttribute('data-liked') === '1', b = slide.querySelector('.kc-like');
+      b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.querySelector('span').textContent = num(it, 'likes');
+    }
+    function setLike(slide, want) {
+      var it = itemOf(slide), was = it.getAttribute('data-liked') === '1', n = num(it, 'likes');
+      if (want === was) return;
+      function write(liked, count) { it.setAttribute('data-liked', liked ? 1 : 0); it.setAttribute('data-likes', Math.max(0, count)); paint(slide); }
+      write(want, n + (want ? 1 : -1));
+      fetch(LIKE_URL(it.getAttribute('data-id')), { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch', 'Accept': 'application/json' } })
+        .then(function (r) {
+          if (r.status === 401) { location.href = '/login?next=' + encodeURIComponent(location.pathname); throw 0; }
+          if (!r.ok) throw r;
+          return r.json().catch(function () { return null; });
+        })
+        .then(function (j) { if (j && typeof j.liked === 'boolean') write(j.liked, typeof j.likes === 'number' ? j.likes : num(it, 'likes')); })
+        .catch(function () { write(was, n); });
+    }
+    function burst(slide) {
+      var h = slide.querySelector('.kc-heart'); if (!h) return;
+      h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop');
     }
 
-    /* Kravn Cards */
-    var ov, track, counter, slides = [], idx = 0, lastFocus, tick = false;
-    function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
-    function btn(label, path) { var b = el('button', 'kc-btn'); b.type = 'button'; b.setAttribute('aria-label', label); b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg>'; return b; }
-    function step() { return slides.length > 1 ? slides[1].offsetLeft - slides[0].offsetLeft : 1; }
-    function sync() { if (!slides.length) return; idx = Math.max(0, Math.min(slides.length - 1, Math.round(track.scrollLeft / step()))); counter.textContent = (idx + 1) + ' / ' + slides.length; }
-    function go(i) { if (slides.length) track.scrollTo({ left: Math.max(0, Math.min(slides.length - 1, i)) * step(), behavior: 'smooth' }); }
-    function hide() { if (!ov) return; ov.hidden = true; document.documentElement.style.overflow = ''; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+    /* ----- Kravn Cards: vertical feed, tap opens, double-tap likes ----- */
+    var ov, feed, counter, slides = [], idx = 0, lastFocus, ticking = false, tapTimer = null;
+    function sync() { idx = Math.max(0, Math.min(slides.length - 1, Math.round(feed.scrollTop / feed.clientHeight))); counter.textContent = slides.length ? (idx + 1) + ' / ' + slides.length : ''; }
+    function go(i) { feed.scrollTo({ top: Math.max(0, Math.min(slides.length - 1, i)) * feed.clientHeight, behavior: 'smooth' }); }
+    function hide() { ov.hidden = true; document.documentElement.style.overflow = ''; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+
     function build() {
       ov = el('div', 'kc'); ov.hidden = true; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Kravn Cards');
       var top = el('div', 'kc-top'); counter = el('span', 'kc-count');
-      var close = btn('Close cards', 'M6 6l12 12M18 6L6 18'); close.addEventListener('click', hide);
-      top.appendChild(counter); top.appendChild(close);
-      track = el('div', 'kc-track');
-      track.addEventListener('scroll', function () { if (tick) return; tick = true; requestAnimationFrame(function () { tick = false; sync(); }); }, { passive: true });
-      var nav = el('div', 'kc-nav'), prev = btn('Previous card', 'M15 5l-7 7 7 7'), next = btn('Next card', 'M9 5l7 7-7 7');
-      prev.addEventListener('click', function () { go(idx - 1); }); next.addEventListener('click', function () { go(idx + 1); });
-      nav.appendChild(prev); nav.appendChild(next);
-      ov.appendChild(top); ov.appendChild(track); ov.appendChild(nav);
-      ov.addEventListener('click', function (e) { if (e.target === ov || e.target === track) hide(); });
+      var close = el('button', 'kc-close', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>');
+      close.type = 'button'; close.setAttribute('aria-label', 'Close cards'); close.addEventListener('click', hide);
+      top.appendChild(counter); top.appendChild(el('span', 'kc-hint', 'Tap to open · double-tap to like')); top.appendChild(close);
+      feed = el('div', 'kc-feed');
+      feed.addEventListener('scroll', function () { if (ticking) return; ticking = true; requestAnimationFrame(function () { ticking = false; sync(); }); }, { passive: true });
+      feed.addEventListener('click', function (e) {
+        var slide = e.target.closest('.kc-slide');
+        if (!slide) { if (e.target === feed) hide(); return; }
+        if (e.target.closest('.kc-like')) { var it = itemOf(slide); setLike(slide, it.getAttribute('data-liked') !== '1'); return; }
+        var card = e.target.closest('.mcard');
+        if (!card) { hide(); return; }
+        e.preventDefault();
+        if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; setLike(slide, true); burst(slide); return; }
+        tapTimer = setTimeout(function () { tapTimer = null; location.href = card.href; }, 260);
+      });
+      ov.appendChild(top); ov.appendChild(feed);
       document.body.appendChild(ov);
     }
+
     function show() {
       if (!ov) build();
-      track.innerHTML = ''; slides = [];
-      var visible = Array.prototype.slice.call(grid.querySelectorAll('.pf-item')).filter(function (n) { return !n.hidden; });
-      if (!visible.length) { track.appendChild(el('p', 'kc-empty', 'No discussions to show as cards yet.')); counter.textContent = ''; }
-      visible.forEach(function (n) {
-        var d = function (k) { return n.getAttribute('data-' + k) || ''; };
-        var card = el('article', 'kc-card'), bg = el('div', 'kc-bg');
-        if (d('poster')) bg.style.backgroundImage = 'url("' + d('poster').replace(/"/g, '%22') + '")';
-        card.appendChild(bg); card.appendChild(el('div', 'kc-shade'));
-        if (d('badge')) card.appendChild(el('span', 'kc-rate', d('badge')));
-        var body = el('div', 'kc-body');
-        if (d('movie')) body.appendChild(el('span', 'kc-movie', d('movie')));
-        body.appendChild(el('h3', 'kc-title', d('title') || 'Discussion'));
-        if (d('text')) body.appendChild(el('p', 'kc-text', d('text')));
-        var a = el('a', 'kc-open', 'Open discussion'); a.href = d('href'); body.appendChild(a);
-        card.appendChild(body); track.appendChild(card); slides.push(card);
+      feed.innerHTML = ''; slides = [];
+      var visible = items.filter(function (it) { return !it.hidden; });
+      if (!visible.length) feed.appendChild(el('p', 'kc-empty', 'No discussions to show as cards yet.'));
+      visible.forEach(function (it) {
+        var src = it.querySelector('.mcard'); if (!src) return;
+        var slide = el('div', 'kc-slide'), card = src.cloneNode(true), poster = card.querySelector('.mcard-poster');
+        slide.setAttribute('data-id', it.getAttribute('data-id'));
+        if (poster) poster.appendChild(el('span', 'kc-heart', HEART));
+        var like = el('button', 'kc-like', HEART + '<span></span>'); like.type = 'button'; like.setAttribute('aria-label', 'Like');
+        slide.appendChild(card); slide.appendChild(like); feed.appendChild(slide); slides.push(slide); paint(slide);
       });
       lastFocus = document.activeElement; document.documentElement.style.overflow = 'hidden';
-      ov.hidden = false; track.scrollLeft = 0; idx = 0; sync();
-      var c = ov.querySelector('.kc-btn'); if (c) c.focus();
+      ov.hidden = false; feed.scrollTop = 0; sync();
+      ov.querySelector('.kc-close').focus();
     }
+
     document.addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('[data-cards-open]');
       if (b) { e.preventDefault(); e.stopImmediatePropagation(); show(); }
     }, true);
     document.addEventListener('keydown', function (e) {
       if (!ov || ov.hidden) return;
-      if (e.key === 'Escape') hide(); else if (e.key === 'ArrowRight') go(idx + 1); else if (e.key === 'ArrowLeft') go(idx - 1);
+      if (e.key === 'Escape') hide(); else if (e.key === 'ArrowDown') { e.preventDefault(); go(idx + 1); } else if (e.key === 'ArrowUp') { e.preventDefault(); go(idx - 1); }
     });
     apply();
   })();

@@ -4,8 +4,14 @@
   const trailer = m.videos.find((v) => v.type === 'Trailer') || m.videos[0];
   const regions = Object.keys(m.providers).filter((cc) => m.providers[cc].flatrate.length || m.providers[cc].rent.length || m.providers[cc].buy.length);
   const defaultRegion = regions.includes('IN') ? 'IN' : regions.includes('US') ? 'US' : regions[0];
-  const sortUrl = (s) => m.url + (s === 'latest' ? '' : '?sort=' + s) + '#discussions';
   const hasCollection = !!(collection && collection.parts.length > 1);
+
+  /* discussions: only a short preview lives here; the full list is its own page */
+  const PREVIEW = 4;
+  const shown = posts.slice(0, PREVIEW);
+  const more = total > shown.length;
+  const allUrl = m.url + '/discussions';
+
   /* page order: discussions → seasons → collection → cast → videos → where to watch → details → more like this → photos → reviews */
   const sections = [
     ['discussions', 'Discussions', true],
@@ -84,6 +90,8 @@
   /* ---------- section rhythm ---------- */
   .movie-page .movie-sections { display: grid; gap: 26px; padding-block: 20px 40px; }
   .movie-page .msec { margin: 0; scroll-margin-top: calc(var(--nav-h) + 54px); min-width: 0; }
+  /* below-the-fold sections are only rendered when scrolled near (keeps first paint fast) */
+  .movie-page .msec:not(#discussions) { content-visibility: auto; contain-intrinsic-size: auto 360px; }
   .movie-page .msec .section-head, .movie-page .collection .section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; }
   .movie-page .msec .section-head h2, .movie-page .collection .section-head h2 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -.012em; display: flex; align-items: center; gap: 9px; }
   .movie-page .msec .section-head h2::before, .movie-page .collection .section-head h2::before { content: ''; width: 3px; height: .95em; border-radius: 3px; background: linear-gradient(180deg, var(--accent-2), var(--accent)); flex: none; }
@@ -91,15 +99,10 @@
   .movie-page .msec .rail-track { gap: 10px; }
   .movie-page #photos > [data-rail] + [data-rail] { margin-top: 18px; }
 
-  /* ---------- discussions ---------- */
-  .movie-page .seg { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 0 0 12px; padding: 3px; width: max-content; max-width: 100%; border-radius: 999px; background: color-mix(in srgb, var(--text) 6%, transparent); }
-  .movie-page .seg::-webkit-scrollbar { display: none; }
-  .movie-page .seg a { flex: none; display: inline-flex; align-items: center; height: 28px; padding: 0 13px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; color: color-mix(in srgb, var(--text) 70%, transparent); }
-  .movie-page .seg a.on { color: #fff; background: var(--accent); }
+  /* ---------- discussions: a short preview, then "Show all" opens the full page ---------- */
   .movie-page .compose-teaser { margin: 0 0 12px; padding: 10px 12px; }
 
-  /* the user-written posts: two compact columns on laptop, one on phone.
-     The movie's TMDB rating (and genre line) is hidden here — only people's takes are shown. */
+  /* only people's takes are shown here: the movie's TMDB rating (and genre line) is hidden */
   .movie-page #feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; align-items: start; }
   .movie-page #feed .pcard { margin: 0; padding: 12px 14px; border-radius: 14px; min-width: 0; }
   .movie-page #feed .pcard .pcard-eyebrow { display: none; }
@@ -107,6 +110,10 @@
   .movie-page #feed .pcard .pcard-text { margin: 0 0 8px; font-size: 13px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .movie-page #feed .pcard .pcard-foot { margin: 0; padding-top: 8px; font-size: 12px; }
   .movie-page .empty { padding: 26px 16px; }
+
+  /* when there is more, the last row fades out and the button sits on the fade */
+  .movie-page .dprev.has-more #feed { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 96px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 96px), transparent); }
+  .movie-page .dprev-all { position: relative; z-index: 2; display: flex; width: fit-content; height: 42px; margin: -30px auto 0; padding: 0 24px; border-radius: 999px; font-size: 13.5px; box-shadow: 0 12px 28px -12px color-mix(in srgb, var(--accent) 80%, transparent); }
 
   /* ---------- cast ---------- */
   .movie-page .person { flex: 0 0 auto; width: 92px; display: grid; justify-items: center; gap: 3px; text-align: center; }
@@ -146,10 +153,6 @@
   .movie-page .facts > div { padding: 9px 11px; border-radius: 11px; background: color-mix(in srgb, var(--text) 4%, transparent); border: 1px solid color-mix(in srgb, var(--text) 7%, transparent); min-width: 0; }
   .movie-page .facts dt { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: color-mix(in srgb, var(--text) 52%, transparent); }
   .movie-page .facts dd { margin: 3px 0 0; font-size: 13px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
-  .movie-page .sub { margin: 16px 0 8px; font-size: 13px; font-weight: 700; }
-  .movie-page #details .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .movie-page #details .chip--static { height: 26px; padding: 0 11px; font-size: 12px; display: inline-flex; align-items: center; border-radius: 999px; }
-  .movie-page .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 
   /* ---------- reviews ---------- */
   .movie-page .reviews { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; align-items: start; }
@@ -195,7 +198,7 @@
     <div class="mhero-shade"></div>
     <div class="shell mhero-inner">
       <% if (m.poster) { %>
-        <img class="mhero-poster" src="<%= m.poster %>" alt="<%= m.title %> poster" data-lightbox="<%= m.posterLg %>" data-egg="poster">
+        <img class="mhero-poster" src="<%= m.poster %>" alt="<%= m.title %> poster" width="342" height="513" decoding="async" data-lightbox="<%= m.posterLg %>" data-egg="poster">
       <% } else { %>
         <div class="mhero-poster mhero-poster--none"><%- include('partials/icon', { n: 'film' }) %></div>
       <% } %>
@@ -248,11 +251,10 @@
 
   <div class="shell movie-sections">
 
-    <!-- ============ DISCUSSIONS ============ -->
+    <!-- ============ DISCUSSIONS (preview) ============ -->
     <section class="msec" id="discussions">
       <div class="section-head">
         <h2>Discussions <span class="count"><%= total %></span></h2>
-        <% if (posts.length) { %><button type="button" class="btn btn-ghost btn-sm" data-cards-open="#feed"><%- include('partials/icon', { n: 'cards' }) %> Kravn Cards</button><% } %>
       </div>
 
       <% if (!me) { %>
@@ -280,18 +282,11 @@
       </form>
       <% } %>
 
-      <div class="seg" role="tablist" aria-label="Sort discussions">
-        <a class="<%= sort === 'latest' ? 'on' : '' %>" href="<%= sortUrl('latest') %>">Latest</a>
-        <a class="<%= sort === 'top' ? 'on' : '' %>" href="<%= sortUrl('top') %>">Most liked</a>
-        <a class="<%= sort === 'hot' ? 'on' : '' %>" href="<%= sortUrl('hot') %>">Most talked about</a>
-        <a class="<%= sort === 'oldest' ? 'on' : '' %>" href="<%= sortUrl('oldest') %>">Oldest</a>
-      </div>
-
-      <% if (posts.length) { %>
-        <div class="stack" id="feed" data-post-list><%- include('partials/postCards', { posts, showMovie: false }) %></div>
-        <% if (hasMore) { %>
-          <div class="loader" data-infinite="/api<%= m.url %>/discussions?sort=<%= sort %>" data-next="2" data-target="#feed" data-bare data-end="End of the discussion — for now."><span class="spinner"></span></div>
-        <% } %>
+      <% if (shown.length) { %>
+        <div class="dprev<%= more ? ' has-more' : '' %>">
+          <div class="stack" id="feed" data-post-list><%- include('partials/postCards', { posts: shown, showMovie: false }) %></div>
+          <% if (more) { %><a class="btn btn-primary dprev-all" href="<%= allUrl %>">Show all <%= total %> discussions</a><% } %>
+        </div>
       <% } else { %>
         <div class="empty">
           <%- include('partials/icon', { n: 'chat', cls: 'ic--xl' }) %>
@@ -343,9 +338,9 @@
         <div class="rail-wrap">
           <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
           <div class="rail-track">
-            <% m.cast.forEach((c) => { %>
+            <% m.cast.slice(0, 24).forEach((c) => { %>
               <a class="person" href="/person/<%= c.id %>">
-                <span class="person-photo"><% if (c.photo) { %><img src="<%= c.photo %>" alt="<%= c.name %>" loading="lazy"><% } else { %><span style="--h:<%= hue(c.name) %>"><%= c.name.charAt(0) %></span><% } %></span>
+                <span class="person-photo"><% if (c.photo) { %><img src="<%= c.photo %>" alt="<%= c.name %>" width="72" height="72" loading="lazy" decoding="async"><% } else { %><span style="--h:<%= hue(c.name) %>"><%= c.name.charAt(0) %></span><% } %></span>
                 <strong><%= c.name %></strong>
                 <small><%= c.character %></small>
               </a>
@@ -370,9 +365,9 @@
         <div class="rail-wrap">
           <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
           <div class="rail-track">
-            <% m.videos.forEach((v) => { %>
+            <% m.videos.slice(0, 12).forEach((v) => { %>
               <button type="button" class="video" data-video="<%= v.key %>">
-                <span class="video-thumb"><img src="https://i.ytimg.com/vi/<%= v.key %>/hqdefault.jpg" alt="" loading="lazy"><i><%- include('partials/icon', { n: 'play' }) %></i></span>
+                <span class="video-thumb"><img src="https://i.ytimg.com/vi/<%= v.key %>/hqdefault.jpg" alt="" width="480" height="360" loading="lazy" decoding="async"><i><%- include('partials/icon', { n: 'play' }) %></i></span>
                 <strong><%= v.name %></strong><small><%= v.type %></small>
               </button>
             <% }) %>
@@ -395,7 +390,7 @@
           <div class="providers" data-region="<%= cc %>"<%= cc === defaultRegion ? '' : ' hidden' %>>
             <% [['flatrate', 'Stream'], ['rent', 'Rent'], ['buy', 'Buy']].forEach(([key, label]) => { if (p[key].length) { %>
               <div class="provider-group"><h3><%= label %></h3>
-                <div class="provider-list"><% p[key].forEach((x) => { %><span class="provider" title="<%= x.name %>"><% if (x.logo) { %><img src="<%= x.logo %>" alt="<%= x.name %>" loading="lazy"><% } %><small><%= x.name %></small></span><% }) %></div>
+                <div class="provider-list"><% p[key].forEach((x) => { %><span class="provider" title="<%= x.name %>"><% if (x.logo) { %><img src="<%= x.logo %>" alt="<%= x.name %>" width="44" height="44" loading="lazy" decoding="async"><% } %><small><%= x.name %></small></span><% }) %></div>
               </div>
             <% } }) %>
             <% if (p.link) { %><a class="more" href="<%= p.link %>" target="_blank" rel="noopener noreferrer">All options for <%= cc %> <%- include('partials/icon', { n: 'ext' }) %></a><% } %>
@@ -428,10 +423,9 @@
           <div><dt><%= label %></dt><dd><%= value %></dd></div>
         <% } }) %>
       </dl>
+    </section>
 
-     
-
-    <!-- ============ MORE LIKE THIS (moved up) ============ -->
+    <!-- ============ MORE LIKE THIS ============ -->
     <% if (m.recommendations.length || m.similar.length) { %>
       <section class="msec" id="more">
         <% [['Recommended for you', m.recommendations], ['More like this', m.similar]].forEach(([title, list]) => { if (list.length) { %>
@@ -448,7 +442,7 @@
             <div class="section-head"><h2>Photos</h2></div>
             <div class="rail-wrap">
               <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
-              <div class="rail-track"><% m.backdrops.forEach((p) => { %><button type="button" class="photo" data-lightbox="<%= p.full %>"><img src="<%= p.thumb %>" alt="Scene from <%= m.title %>" loading="lazy"></button><% }) %></div>
+              <div class="rail-track"><% m.backdrops.slice(0, 12).forEach((p) => { %><button type="button" class="photo" data-lightbox="<%= p.full %>"><img src="<%= p.thumb %>" alt="Scene from <%= m.title %>" loading="lazy" decoding="async"></button><% }) %></div>
               <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
             </div>
           </div>
@@ -458,7 +452,7 @@
             <div class="section-head"><h2>Posters</h2></div>
             <div class="rail-wrap">
               <button type="button" class="rail-btn prev" data-rail-btn="-1" aria-label="Scroll left"><%- include('partials/icon', { n: 'prev' }) %></button>
-              <div class="rail-track"><% m.posters.forEach((p) => { %><button type="button" class="photo photo--tall" data-lightbox="<%= p.full %>"><img src="<%= p.thumb %>" alt="<%= m.title %> poster" loading="lazy"></button><% }) %></div>
+              <div class="rail-track"><% m.posters.slice(0, 12).forEach((p) => { %><button type="button" class="photo photo--tall" data-lightbox="<%= p.full %>"><img src="<%= p.thumb %>" alt="<%= m.title %> poster" loading="lazy" decoding="async"></button><% }) %></div>
               <button type="button" class="rail-btn next" data-rail-btn="1" aria-label="Scroll right"><%- include('partials/icon', { n: 'next' }) %></button>
             </div>
           </div>
@@ -471,7 +465,7 @@
       <section class="msec" id="reviews">
         <div class="section-head"><h2>Reviews from TMDB</h2></div>
         <div class="reviews">
-          <% m.reviews.forEach((r) => { %>
+          <% m.reviews.slice(0, 6).forEach((r) => { %>
             <article class="review" data-collapse>
               <header>
                 <span class="avatar" style="--h:<%= hue(r.author) %>"><%= r.author.charAt(0).toUpperCase() %></span>

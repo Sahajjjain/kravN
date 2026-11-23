@@ -1,48 +1,59 @@
-<% const qs = (o) => { const p = new URLSearchParams(Object.assign({ genre, sort }, o)); if (!p.get('genre')) p.delete('genre'); if (p.get('sort') === 'latest') p.delete('sort'); const s = p.toString(); return '/discussions' + (s ? '?' + s : ''); }; %>
+<%
+  // Build a filter URL while keeping the other active filter. Defaults are dropped to keep URLs clean.
+  const qs = (o) => {
+    const p = new URLSearchParams({ genre, sort, ...o });
+    if (!p.get('genre')) p.delete('genre');
+    if (p.get('sort') === 'latest') p.delete('sort');
+    const s = p.toString();
+    return '/discussions' + (s ? '?' + s : '');
+  };
+  const sorts = [
+    { key: 'latest', long: 'Latest',            short: 'Latest' },
+    { key: 'top',    long: 'Most liked',        short: 'Liked' },
+    { key: 'hot',    long: 'Most talked about', short: 'Hot' }
+  ];
+%>
 <%- include('partials/head', { title: 'Latest discussions' }) %>
 <%- include('partials/nav') %>
 <style>
   /* =====================================================================
-     SHARED: compact poster tiles + slim genre pills
-     Used by the home page rail and the discussions grid.
+     SHARED: poster tiles + home genre pills (used by home rail + discussions)
      ===================================================================== */
 
-  /* ---------- genre pills (home "Browse by genre" + discussions filter chips) ---------- */
-  .kv-genres, .toolbar .chips--scroll {
+  /* home page "Browse by genre": one swipeable row */
+  .kv-genres {
     display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
     scroll-snap-type: x proximity; padding: 2px 0 6px;
     -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
             mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
   }
-  .kv-genres::-webkit-scrollbar, .toolbar .chips--scroll::-webkit-scrollbar { display: none; }
-  .kv-genre, .toolbar .chips--scroll .chip {
+  .kv-genres::-webkit-scrollbar { display: none; }
+  .kv-genre {
     flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; height: 32px; padding: 0 14px; margin: 0;
-    border-radius: 999px; font: 500 12.5px/1 var(--font); letter-spacing: .01em; color: color-mix(in srgb, var(--text) 82%, transparent);
-    white-space: nowrap; background: color-mix(in srgb, var(--text) 5%, transparent);
-    border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); box-shadow: none;
+    border-radius: 999px; font: 500 12.5px/1 var(--font); letter-spacing: .01em; text-decoration: none;
+    color: color-mix(in srgb, var(--text) 82%, transparent); white-space: nowrap;
+    background: color-mix(in srgb, var(--text) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
     transition: color .2s, background .2s, border-color .2s, transform .2s;
   }
-  .kv-genre:hover, .kv-genre:focus-visible,
-  .toolbar .chips--scroll .chip:hover, .toolbar .chips--scroll .chip:focus-visible {
-    color: #fff; border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent);
-  }
-  .toolbar .chips--scroll .chip.on { color: #fff; background: var(--accent); border-color: var(--accent); }
-  .kv-genre:active, .toolbar .chips--scroll .chip:active { transform: scale(.96); }
+  .kv-genre:hover, .kv-genre:focus-visible { color: #fff; border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+  .kv-genre:active { transform: scale(.96); }
 
-  /* ---------- discussions grid ---------- */
-  .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; align-items: start; }
+  /* poster grid */
+  .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; align-items: start; }
 
-  /* ---------- the tile itself ---------- */
+  /* tile */
   :is(.rail-track--posts, .pgrid) .pcard {
     display: flex; flex-direction: column; gap: 0; padding: 0; height: auto; position: relative; overflow: hidden; min-width: 0; margin: 0;
-    border-radius: 14px;
+    border-radius: 16px;
     background: linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, var(--surface)), var(--surface));
     border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
     transition: transform .25s ease, border-color .25s, box-shadow .25s;
   }
-  :is(.rail-track--posts, .pgrid) .pcard:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: 0 16px 36px -18px rgba(0, 0, 0, .7); }
+  .pgrid .pcard { content-visibility: auto; contain-intrinsic-size: auto 320px; } /* skip off-screen tiles */
+  :is(.rail-track--posts, .pgrid) .pcard:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: 0 18px 38px -18px rgba(0, 0, 0, .75); }
 
-  /* poster: the full 2:3 frame */
+  /* poster: 2:3 frame */
   :is(.rail-track--posts, .pgrid) .pcard .pcard-poster {
     position: relative; display: block; width: 100%; height: auto; aspect-ratio: 2/3; flex: none; margin: 0; border-radius: 0;
     background: color-mix(in srgb, var(--surface-2) 90%, #000); overflow: hidden;
@@ -52,17 +63,18 @@
   :is(.rail-track--posts, .pgrid) .pcard .pcard-poster::after { content: ''; position: absolute; inset: auto 0 0 0; height: 38%; background: linear-gradient(0deg, rgba(0,0,0,.55), transparent); pointer-events: none; }
   :is(.rail-track--posts, .pgrid) .pcard .pcard-poster-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--muted); }
 
-  /* rating chip over the poster (inline display:none keeps it hidden on other pages; forced on in tiles) */
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-badge {
+  /* rating chip: shown on the home rail only, never on the discussions grid */
+  .rail-track--posts .pcard .pcard-badge {
     display: inline-flex !important; position: absolute; z-index: 2; top: 8px; left: 8px; align-items: center; gap: 4px;
     padding: 3px 8px 3px 6px; border-radius: 999px; font: 700 11px/1 var(--font); color: #fff;
     background: rgba(10, 10, 14, .62); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, .14);
   }
   .pcard-badge svg { width: 11px; height: 11px; color: #f5c518; fill: currentColor; }
+  .pgrid .pcard .pcard-badge, .pgrid .pcard .rate { display: none !important; }
 
   /* text block */
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-body { padding: 10px 11px 11px; display: grid; gap: 5px; min-width: 0; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-body { padding: 11px 12px 12px; display: grid; gap: 5px; min-width: 0; }
   :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow { margin: 0; display: block; }
   :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow .rate,
   :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow .muted { display: none; }
@@ -70,12 +82,12 @@
     display: block; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
     color: var(--accent-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; z-index: 2;
   }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-title { margin: 0; font-size: 13.5px; font-weight: 650; line-height: 1.3; letter-spacing: -.005em; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-title a { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: inherit; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-title { margin: 0; font-size: 13.5px; font-weight: 650; line-height: 1.32; letter-spacing: -.005em; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-title a { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: inherit; }
   :is(.rail-track--posts, .pgrid) .pcard .pcard-text { display: none; }
 
   /* footer: author left, like + comment right */
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-foot { margin: 3px 0 0; padding: 8px 0 0; border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent); display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: nowrap; }
+  :is(.rail-track--posts, .pgrid) .pcard .pcard-foot { margin: 3px 0 0; padding: 9px 0 0; border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent); display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: nowrap; }
   :is(.rail-track--posts, .pgrid) .pcard .pcard-author { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 11.5px; color: color-mix(in srgb, var(--text) 70%, transparent); position: relative; z-index: 2; }
   :is(.rail-track--posts, .pgrid) .pcard .pcard-author span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 62px; }
   :is(.rail-track--posts, .pgrid) .pcard .avatar--sm { width: 20px; height: 20px; font-size: 10px; flex: none; }
@@ -85,50 +97,80 @@
   :is(.rail-track--posts, .pgrid) .pcard .act { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; padding: 0; min-height: 0; background: none; border: 0; }
   :is(.rail-track--posts, .pgrid) .pcard .act svg { width: 13px; height: 13px; }
 
-  /* ---------- home rail sizing ---------- */
+  /* home rail sizing */
   .rail-track--posts { gap: 14px; align-items: flex-start; padding-block: 4px 10px; }
   .rail-track--posts .pcard { flex: 0 0 auto; width: clamp(150px, 14vw, 184px); max-width: 184px; scroll-snap-align: start; }
 
-  /* ---------- phones ---------- */
+  @media (min-width: 900px) { .pgrid { grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 18px; } }
+
   @media (max-width: 640px) {
-    .kv-genres, .toolbar .chips--scroll { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; gap: 7px; }
-    .kv-genre, .toolbar .chips--scroll .chip { height: 30px; padding: 0 12px; font-size: 12px; }
-    .pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    :is(.rail-track--posts, .pgrid) .pcard { border-radius: 12px; }
-    :is(.rail-track--posts, .pgrid) .pcard .pcard-body { padding: 8px 9px 9px; gap: 4px; }
+    .kv-genres { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; gap: 7px; }
+    .kv-genre { height: 30px; padding: 0 12px; font-size: 12px; }
+    .pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    :is(.rail-track--posts, .pgrid) .pcard { border-radius: 14px; }
+    :is(.rail-track--posts, .pgrid) .pcard .pcard-body { padding: 9px 10px 10px; gap: 4px; }
     :is(.rail-track--posts, .pgrid) .pcard .pcard-title { font-size: 12.5px; }
     :is(.rail-track--posts, .pgrid) .pcard .pcard-movie { font-size: 9.5px; }
     :is(.rail-track--posts, .pgrid) .pcard .pcard-author span:last-child { max-width: 44px; }
     .rail-track--posts { gap: 10px; }
     .rail-track--posts .pcard { width: 132px; max-width: 132px; }
   }
-  @media (min-width: 900px) { .pgrid { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); } }
+
   @media (hover: none) { :is(.rail-track--posts, .pgrid) .pcard:hover { transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    :is(.rail-track--posts, .pgrid) .pcard, :is(.rail-track--posts, .pgrid) .pcard .pcard-poster img, .kv-genre { transition: none; }
+    :is(.rail-track--posts, .pgrid) .pcard:hover, :is(.rail-track--posts, .pgrid) .pcard:hover .pcard-poster img { transform: none; }
+  }
 </style>
 
 <style>
   /* =====================================================================
-     DISCUSSIONS PAGE: compact head -> composer -> genre chips -> sort -> grid
+     DISCUSSIONS PAGE: header -> compose bar -> genre row -> sort -> grid
      ===================================================================== */
-  .page .shell--narrow.kv-disc { max-width: min(1100px, 100% - 32px); }
+  .page .shell--narrow.kv-disc { max-width: min(1120px, 100% - 32px); position: relative; isolation: isolate; padding-bottom: 32px; }
+
+  /* soft accent glow behind the header */
+  .kv-disc::before {
+    content: ''; position: absolute; z-index: -1; pointer-events: none; top: -70px; left: -60px; width: min(560px, 90%); height: 300px;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 24%, transparent), transparent);
+    opacity: .75; filter: blur(8px);
+  }
 
   /* ---------- header ---------- */
-  .kv-disc .page-head { display: grid; gap: 6px; justify-items: start; margin: 0 0 14px; padding: 0; }
-  .kv-disc .page-head h1 { margin: 0; font-size: clamp(24px, 3.4vw, 34px); font-weight: 700; letter-spacing: -.03em; line-height: 1.1; }
-  .kv-disc .page-head .muted { margin: 0; max-width: 560px; font-size: 13.5px; line-height: 1.5; }
+  .kv-disc .page-head { display: grid; gap: 8px; justify-items: start; margin: 0 0 20px; padding: 0; }
+  .kv-disc .page-head h1 { margin: 0; font-size: clamp(28px, 4.2vw, 44px); font-weight: 750; letter-spacing: -.035em; line-height: 1.05; }
+  .kv-disc .page-head .muted { margin: 0; max-width: 520px; font-size: 14.5px; line-height: 1.55; }
 
-  /* ---------- composer teaser ---------- */
-  .kv-disc .compose-teaser {
-    display: flex; align-items: center; gap: 12px; margin: 0 0 16px; padding: 10px 10px 10px 12px; border-radius: 999px; min-width: 0;
-    color: color-mix(in srgb, var(--text) 62%, transparent); text-decoration: none; font-size: 13.5px;
-    background: color-mix(in srgb, var(--text) 4%, var(--surface)); border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
-    transition: border-color .2s ease, background .2s ease;
+  /* ---------- compose bar ---------- */
+  .kv-disc .compose {
+    position: relative; display: flex; align-items: center; gap: 14px; margin: 0 0 22px; padding: 12px 12px 12px 14px;
+    border-radius: 20px; min-width: 0; text-decoration: none; color: var(--text);
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent 55%),
+      color-mix(in srgb, var(--text) 4%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 11%, transparent);
+    box-shadow: 0 10px 30px -22px rgba(0, 0, 0, .8);
+    transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
   }
-  .kv-disc .compose-teaser:hover { border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: color-mix(in srgb, var(--text) 6%, var(--surface)); }
-  .kv-disc .compose-teaser .avatar { width: 32px; height: 32px; font-size: 14px; flex: none; }
-  .kv-disc .compose-teaser > span:nth-child(2) { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kv-disc .compose:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); box-shadow: 0 16px 36px -20px color-mix(in srgb, var(--accent) 60%, #000); transform: translateY(-1px); }
+  .kv-disc .compose .avatar {
+    width: 42px; height: 42px; font-size: 17px; flex: none; border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  .kv-disc .compose-copy { flex: 1; min-width: 0; display: grid; gap: 2px; }
+  .kv-disc .compose-copy strong { font-size: 14.5px; font-weight: 650; letter-spacing: -.01em; line-height: 1.2; }
+  .kv-disc .compose-copy small { font-size: 12.5px; line-height: 1.3; color: color-mix(in srgb, var(--text) 58%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kv-disc .compose-cta {
+    flex: none; display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 18px; border-radius: 999px;
+    font: 600 13px/1 var(--font); color: #fff; background: var(--accent);
+    box-shadow: 0 8px 20px -10px var(--accent);
+    transition: transform .2s ease, filter .2s ease;
+  }
+  .kv-disc .compose-cta svg { width: 15px; height: 15px; }
+  .kv-disc .compose:hover .compose-cta { filter: brightness(1.1); }
+  .kv-disc .compose:active .compose-cta { transform: scale(.96); }
 
-  /* hollow pill buttons */
+  /* buttons used by the empty state */
   .kv-disc .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin: 0; border-radius: 999px;
     font: 500 12.5px/1 var(--font); letter-spacing: .03em; color: #fff; white-space: nowrap; background: transparent; box-shadow: none;
@@ -137,49 +179,101 @@
   }
   .kv-disc .btn:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
   .kv-disc .btn:active { transform: scale(.97); }
-  .kv-disc .btn-sm { height: 32px; padding: 0 16px; flex: none; }
+  .kv-disc .empty { text-align: center; padding: 56px 0; display: grid; gap: 16px; justify-items: center; color: color-mix(in srgb, var(--text) 65%, transparent); }
   .kv-disc .empty .btn { height: 40px; padding: 0 22px; }
 
-  /* ---------- toolbar: genres on one swipeable row, sort below ---------- */
-  .kv-disc .toolbar { display: grid; gap: 10px; margin: 0 0 16px; min-width: 0; }
-  .kv-disc .toolbar .chips--scroll {
-    margin: 0; padding: 2px 0 6px; cursor: grab; touch-action: pan-x; -webkit-overflow-scrolling: touch;
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent 100%);
-            mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent 100%);
+  /* ---------- toolbar ---------- */
+  .kv-disc .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 22px; min-width: 0; }
+
+  /* genre: one pill that opens a dropdown (native <details>, works without JS) */
+  .kv-disc .genre-menu { position: relative; z-index: 40; }
+  .kv-disc .genre-pill {
+    list-style: none; display: inline-flex; align-items: center; gap: 9px; height: 40px; padding: 0 14px 0 16px; border-radius: 999px;
+    max-width: 100%; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+    font: 600 13px/1 var(--font); letter-spacing: .005em; color: var(--text);
+    background: color-mix(in srgb, var(--text) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+    transition: background .2s, border-color .2s, box-shadow .2s;
   }
-  .kv-disc .toolbar .chips--scroll.at-end { -webkit-mask-image: none; mask-image: none; }
-  .kv-disc .toolbar .chips--scroll.is-drag { cursor: grabbing; user-select: none; -webkit-user-select: none; }
-  .kv-disc .toolbar .chips--scroll .chip { cursor: pointer; text-decoration: none; }
+  .kv-disc .genre-pill::-webkit-details-marker { display: none; }
+  .kv-disc .genre-pill:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .kv-disc .genre-pill > svg { width: 15px; height: 15px; flex: none; opacity: .75; }
+  .kv-disc .genre-pill .chev { width: 14px; height: 14px; opacity: .7; transition: transform .25s ease; }
+  .kv-disc .genre-pill-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .kv-disc .genre-menu[open] .genre-pill { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .kv-disc .genre-menu[open] .chev { transform: rotate(180deg); }
+  .kv-disc .genre-menu.has-value .genre-pill { background: color-mix(in srgb, var(--accent) 20%, transparent); border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+
+  .kv-disc .genre-panel {
+    position: absolute; top: calc(100% + 10px); left: 0; width: min(440px, calc(100vw - 32px)); padding: 10px; border-radius: 20px;
+    background: color-mix(in srgb, var(--text) 5%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 13%, transparent);
+    box-shadow: 0 28px 60px -20px rgba(0, 0, 0, .85), 0 0 0 1px rgba(0, 0, 0, .15);
+    -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    transform-origin: top left; animation: genre-pop .18s ease-out;
+  }
+  @keyframes genre-pop { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+
+  .kv-disc .genre-list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 4px;
+    max-height: min(56vh, 340px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--text) 25%, transparent) transparent;
+  }
+  .kv-disc .genre-opt {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; height: 40px; padding: 0 12px; border-radius: 12px;
+    font: 500 13px/1 var(--font); text-decoration: none; white-space: nowrap;
+    color: color-mix(in srgb, var(--text) 82%, transparent); transition: background .15s, color .15s;
+  }
+  .kv-disc .genre-opt span { overflow: hidden; text-overflow: ellipsis; }
+  .kv-disc .genre-opt svg { width: 14px; height: 14px; flex: none; opacity: 0; }
+  .kv-disc .genre-opt:hover, .kv-disc .genre-opt:focus-visible { background: color-mix(in srgb, var(--accent) 16%, transparent); color: #fff; }
+  .kv-disc .genre-opt.on { background: var(--accent); color: #fff; font-weight: 600; }
+  .kv-disc .genre-opt.on svg { opacity: 1; }
+  .kv-disc .genre-opt--all { grid-column: 1 / -1; margin-bottom: 4px; border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent); border-radius: 12px; }
 
   /* sort: segmented pill */
   .kv-disc .toolbar .seg {
     display: inline-flex; align-items: center; gap: 2px; justify-self: start; padding: 3px; margin: 0; border-radius: 999px;
-    background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+    background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
   }
   .kv-disc .toolbar .seg a {
-    display: inline-flex; align-items: center; justify-content: center; height: 30px; padding: 0 16px; border-radius: 999px; margin: 0;
-    font: 500 12.5px/1 var(--font); letter-spacing: .01em; white-space: nowrap; text-decoration: none; border: 0; background: transparent;
+    display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 18px; border-radius: 999px; margin: 0;
+    font: 500 13px/1 var(--font); letter-spacing: .01em; white-space: nowrap; text-decoration: none; border: 0; background: transparent;
     color: color-mix(in srgb, var(--text) 66%, transparent); transition: background .2s ease, color .2s ease;
   }
   .kv-disc .toolbar .seg a:hover { color: var(--text); }
   .kv-disc .toolbar .seg a.on { background: var(--accent); color: #fff; }
   .kv-disc .toolbar .seg .sm { display: none; }
 
-  .kv-disc .loader { padding: 22px 0; }
-  .kv-disc .end { text-align: center; padding: 22px 0 8px; font-size: 13px; color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .kv-disc .loader { padding: 26px 0; }
+  .kv-disc .end { text-align: center; padding: 28px 0 8px; font-size: 13px; color: color-mix(in srgb, var(--text) 55%, transparent); }
+
+  /* keyboard focus */
+  .kv-disc :is(.genre-pill, .genre-opt, .seg a, .compose):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* ---------- phone ---------- */
   @media (max-width: 640px) {
-    .kv-disc .page-head { margin-bottom: 12px; gap: 4px; }
-    .kv-disc .page-head .muted { font-size: 13px; }
-    .kv-disc .compose-teaser { margin-bottom: 12px; padding: 8px 8px 8px 10px; gap: 10px; font-size: 13px; }
-    .kv-disc .compose-teaser .avatar { width: 30px; height: 30px; font-size: 13px; }
-    .kv-disc .toolbar { gap: 8px; margin-bottom: 14px; }
-    .kv-disc .toolbar .chips--scroll { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; }
-    .kv-disc .toolbar .seg { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; justify-self: stretch; }
+    .kv-disc::before { top: -50px; left: -40px; height: 220px; }
+    .kv-disc .page-head { margin-bottom: 14px; gap: 6px; }
+    .kv-disc .page-head .muted { font-size: 13.5px; }
+    .kv-disc .compose { margin-bottom: 16px; padding: 10px 10px 10px 12px; gap: 11px; border-radius: 18px; }
+    .kv-disc .compose .avatar { width: 36px; height: 36px; font-size: 15px; }
+    .kv-disc .compose-copy strong { font-size: 13.5px; }
+    .kv-disc .compose-copy small { font-size: 12px; }
+    .kv-disc .compose-cta { height: 36px; padding: 0 14px; }
+    .kv-disc .toolbar { gap: 10px; margin-bottom: 16px; }
+    .kv-disc .genre-pill { height: 38px; padding: 0 12px 0 14px; max-width: 150px; }
+    .kv-disc .genre-panel { border-radius: 18px; }
+    .kv-disc .genre-list { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 52vh; }
+    .kv-disc .toolbar .seg { display: grid; grid-template-columns: repeat(3, 1fr); flex: 1 1 180px; min-width: 0; }
     .kv-disc .toolbar .seg a { height: 34px; padding: 0 6px; font-size: 12.5px; }
     .kv-disc .toolbar .seg .lg { display: none; }
     .kv-disc .toolbar .seg .sm { display: inline; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kv-disc .compose, .kv-disc .compose-cta, .kv-disc .genre-pill, .kv-disc .genre-pill .chev, .kv-disc .genre-opt { transition: none; } .kv-disc .genre-panel { animation: none; }
+    .kv-disc .compose:hover { transform: none; }
   }
 </style>
 
@@ -191,21 +285,35 @@
       <p class="muted">Theories, reviews and hot takes across every movie, newest first.</p>
     </header>
 
-    <a class="compose-teaser" href="<%= me ? '/posts/new' : '/login?next=/posts/new' %>">
+    <a class="compose" href="<%= me ? '/posts/new' : '/login?next=/posts/new' %>">
       <span class="avatar" style="--h:<%= me ? hue(me.username) : 260 %>"><%= me ? me.username.charAt(0).toUpperCase() : '?' %></span>
-      <span><%= me ? 'Pick a movie and start a discussion…' : 'Log in to start a discussion…' %></span>
-      <span class="btn btn-primary btn-sm"><%= me ? 'Post' : 'Log in' %></span>
+      <span class="compose-copy">
+        <strong><%= me ? 'Start a discussion' : 'Join the conversation' %></strong>
+        <small><%= me ? 'Pick a movie and share your take…' : 'Log in to post your own take' %></small>
+      </span>
+      <span class="compose-cta">
+        <% if (me) { %><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><% } %>
+        <%= me ? 'Post' : 'Log in' %>
+      </span>
     </a>
 
     <div class="toolbar">
-      <div class="chips chips--scroll" data-filter-genres>
-        <a class="chip<%= genre ? '' : ' on' %>" href="<%= qs({ genre: '' }) %>">All</a>
-        <% genres.forEach((g) => { %><a class="chip<%= genre === g.name ? ' on' : '' %>" href="<%= qs({ genre: g.name }) %>"><%= g.name %></a><% }) %>
-      </div>
+      <details class="genre-menu<%= genre ? ' has-value' : '' %>" data-genre-menu>
+        <summary class="genre-pill" aria-label="Filter by genre">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <span class="genre-pill-label"><%= genre || 'All genres' %></span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </summary>
+        <div class="genre-panel">
+          <div class="genre-list">
+            <a class="genre-opt genre-opt--all<%= genre ? '' : ' on' %>" href="<%= qs({ genre: '' }) %>"<%- genre ? '' : ' aria-current="true"' %>><span>All genres</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></a>
+            <% genres.forEach((g) => { %><a class="genre-opt<%= genre === g.name ? ' on' : '' %>" href="<%= qs({ genre: g.name }) %>"<%- genre === g.name ? ' aria-current="true"' : '' %>><span><%= g.name %></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></a><% }) %>
+          </div>
+        </div>
+      </details>
+
       <div class="seg" role="group" aria-label="Sort">
-        <a class="<%= sort === 'latest' ? 'on' : '' %>" href="<%= qs({ sort: 'latest' }) %>"<%- sort === 'latest' ? ' aria-current="true"' : '' %>>Latest</a>
-        <a class="<%= sort === 'top' ? 'on' : '' %>" href="<%= qs({ sort: 'top' }) %>"<%- sort === 'top' ? ' aria-current="true"' : '' %>><span class="lg">Most liked</span><span class="sm">Liked</span></a>
-        <a class="<%= sort === 'hot' ? 'on' : '' %>" href="<%= qs({ sort: 'hot' }) %>"<%- sort === 'hot' ? ' aria-current="true"' : '' %>><span class="lg">Most talked about</span><span class="sm">Hot</span></a>
+        <% sorts.forEach((s) => { %><a class="<%= sort === s.key ? 'on' : '' %>" href="<%= qs({ sort: s.key }) %>"<%- sort === s.key ? ' aria-current="true"' : '' %>><% if (s.long === s.short) { %><%= s.long %><% } else { %><span class="lg"><%= s.long %></span><span class="sm"><%= s.short %></span><% } %></a><% }) %>
       </div>
     </div>
 
@@ -221,31 +329,19 @@
 </main>
 
 <script>
-  /* genre chips: centre the selected chip on load, drag-to-scroll with mouse, drop the edge fade at the end */
+  /* genre dropdown: close on outside click or Esc, keep the selected genre in view */
   (function () {
-    var row = document.querySelector('[data-filter-genres]');
-    if (!row) return;
-    function edge() { row.classList.toggle('at-end', row.scrollLeft + row.clientWidth >= row.scrollWidth - 4); }
-    row.addEventListener('scroll', edge, { passive: true });
-    window.addEventListener('resize', edge);
-
-    var on = row.querySelector('.chip.on');
-    if (on) row.scrollLeft = Math.max(0, on.offsetLeft - (row.clientWidth - on.offsetWidth) / 2);
-    edge();
-
-    var down = false, moved = false, startX = 0, startLeft = 0;
-    row.addEventListener('mousedown', function (e) { down = true; moved = false; startX = e.pageX; startLeft = row.scrollLeft; });
-    window.addEventListener('mousemove', function (e) {
-      if (!down) return;
-      var dx = e.pageX - startX;
-      if (Math.abs(dx) > 4) { moved = true; row.classList.add('is-drag'); }
-      if (moved) row.scrollLeft = startLeft - dx;
+    var menu = document.querySelector('[data-genre-menu]');
+    if (!menu) return;
+    menu.addEventListener('toggle', function () {
+      if (!menu.open) return;
+      var on = menu.querySelector('.genre-opt.on');
+      if (on) on.scrollIntoView({ block: 'nearest' });
     });
-    window.addEventListener('mouseup', function () { down = false; row.classList.remove('is-drag'); });
-    row.addEventListener('click', function (e) {
-      if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; }
-    }, true);
-    row.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    document.addEventListener('click', function (e) { if (menu.open && !menu.contains(e.target)) menu.open = false; });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); }
+    });
   })();
 </script>
 <%- include('partials/foot') %>

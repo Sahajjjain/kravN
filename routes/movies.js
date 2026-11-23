@@ -8,6 +8,7 @@ const { sendPage } = require('../lib/render');
 const { toInt } = require('../lib/util');
 
 const PAGE = 10;
+const PREVIEW = 4; // discussions shown on the movie page itself
 
 const notFound = (res, message) => res.status(404).render('error', { code: 404, message });
 
@@ -33,9 +34,11 @@ router.get(['/movie/:id', '/tv/:id'], async (req, res) => {
   if (!movie) return notFound(res, missing(type));
 
   const { where, params } = movieWhere(movie);
-  const sort = sortKey(req.query.sort);
+  const posted = toInt(req.query.posted, 0, 0);
+  // preview = most liked; right after posting, newest first so your own post is visible
+  const sort = posted ? 'latest' : 'top';
   const [list, total, collection] = await Promise.all([
-    listPosts({ userId: req.session.userId, where, params, sort, limit: PAGE }),
+    listPosts({ userId: req.session.userId, where, params, sort, limit: PREVIEW }),
     countWhere(where, params),
     movie.collection ? tmdb.getCollection(movie.collection.id) : null,
   ]);
@@ -45,12 +48,28 @@ router.get(['/movie/:id', '/tv/:id'], async (req, res) => {
     movie,
     collection,
     posts: list.posts,
-    hasMore: list.hasMore,
     total,
-    sort,
     compose: req.query.compose === '1',
-    posted: toInt(req.query.posted, 0, 0),
+    posted,
   });
+});
+
+/* ------------------------- all discussions of a title ------------------------- */
+
+router.get(['/movie/:id/discussions', '/tv/:id/discussions'], async (req, res) => {
+  const type = typeOf(req);
+  if (!tmdb.isReady()) return notFound(res, 'Movie data is not connected yet (TMDB_API_KEY is missing).');
+  const movie = await tmdb.getTitle(type, req.params.id);
+  if (!movie) return notFound(res, missing(type));
+
+  const { where, params } = movieWhere(movie);
+  const sort = sortKey(req.query.sort);
+  const [list, total] = await Promise.all([
+    listPosts({ userId: req.session.userId, where, params, sort, limit: PAGE }),
+    countWhere(where, params),
+  ]);
+
+  res.render('movie-discussions', { nav: 'home', movie, posts: list.posts, hasMore: list.hasMore, total, sort });
 });
 
 // Infinite scroll for one title's discussions
