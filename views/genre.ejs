@@ -1,22 +1,182 @@
 <%- include('partials/head', { title: genre.name + ' movies & series' }) %>
 <%- include('partials/nav') %>
 
-<main class="page">
-  <div class="shell">
-    <header class="page-head">
-      <span class="eyebrow"><span class="dot"></span> Genre</span>
-      <h1><%= genre.name %></h1>
-    </header>
+<%
+  /* Backdrop posters come from the movies already on this page */
+  const gSeen = new Set();
+  const gPool = (movies || []).map((m) => m && m.poster).filter((p) => p && !gSeen.has(p) && gSeen.add(p)).slice(0, 24);
+  const gCols = gPool.length >= 12 ? 6 : (gPool.length >= 6 ? 3 : 0);
+  const gCol = Array.from({ length: gCols }, (_, c) => gPool.filter((_, i) => i % gCols === c)).filter((c) => c.length);
+  const gLoop = (col) => { let b = col.slice(); while (b.length < 5) b = b.concat(col); return b.concat(b); };
+  const labels = { popular: 'Popular', rated: 'Top rated', newest: 'Newest', revenue: 'Box office' };
+%>
 
-    <div class="toolbar">
-      <div class="chips chips--scroll"><% genres.forEach((g) => { %><a class="chip<%= g.id === genre.id ? ' on' : '' %>" href="/genre/<%= g.id %>"><%= g.name %></a><% }) %></div>
-      <div class="seg">
-        <% const labels = { popular: 'Popular', rated: 'Top rated', newest: 'Newest', revenue: 'Box office' }; sorts.forEach((s) => { %><a class="<%= s === sort ? 'on' : '' %>" href="/genre/<%= genre.id %>?sort=<%= s %>"><%= labels[s] %></a><% }) %>
+<style>
+  /* ---------- hero ---------- */
+  .gn-hero {
+    position: relative; isolation: isolate; overflow: hidden;
+    margin-top: calc(var(--nav-h) * -1); padding-top: var(--nav-h);
+    min-height: clamp(230px, 34vh, 340px); display: flex; align-items: flex-end;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg-2) 88%, #000), var(--bg-2));
+  }
+  .gn-stage { position: absolute; inset: 0; z-index: 0; overflow: hidden; perspective: 1200px; perspective-origin: 70% 30%; pointer-events: none; }
+  .gn-wall {
+    position: absolute; inset: -40% -10%; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 12px;
+    transform: rotateX(22deg) rotateY(-16deg) rotateZ(-6deg) scale(1.15); opacity: .38; filter: saturate(.85);
+    user-select: none; -webkit-user-select: none;
+  }
+  .gn-col { display: grid; gap: 12px; align-content: start; animation: gnDrift var(--d, 100s) linear infinite var(--dir, normal); will-change: transform; }
+  .gn-col img {
+    width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 9px; background: var(--surface-2);
+    pointer-events: none; -webkit-user-drag: none; border: 1px solid rgba(255, 255, 255, .08);
+  }
+  @keyframes gnDrift { to { transform: translateY(-50%); } }
+  .gn-shade {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      linear-gradient(90deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 84%, transparent) 40%, color-mix(in srgb, var(--bg) 20%, transparent) 95%),
+      linear-gradient(0deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 35%, transparent) 28%, transparent 55%),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg) 75%, transparent) 0%, transparent 35%);
+  }
+  .gn-inner { position: relative; z-index: 2; width: min(1400px, 100% - 96px); margin: 0 auto; }
+  .gn-head { padding: 40px 0 26px; display: grid; gap: 10px; justify-items: start; }
+  .gn-title {
+    margin: 0; font-size: clamp(34px, 6vw, 64px); font-weight: 700; letter-spacing: -.035em; line-height: 1.04; overflow-wrap: anywhere;
+    background: linear-gradient(180deg, #fff 30%, color-mix(in srgb, var(--text) 60%, transparent));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .gn-sub { margin: 0; max-width: 46ch; font-size: 15px; line-height: 1.5; color: color-mix(in srgb, var(--text) 66%, transparent); }
+
+  /* ---------- toolbar ---------- */
+  .gn-bar { display: grid; gap: 10px; padding: 12px 0 14px; margin-bottom: 6px; }
+  .gn-chips {
+    display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity; padding: 2px 0 4px;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
+  }
+  .gn-chips::-webkit-scrollbar { display: none; }
+  .gn-chip {
+    flex: none; scroll-snap-align: center; display: inline-flex; align-items: center; height: 32px; padding: 0 14px;
+    border-radius: 999px; font: 500 12.5px/1 var(--font); letter-spacing: .01em; white-space: nowrap;
+    color: color-mix(in srgb, var(--text) 82%, transparent);
+    background: color-mix(in srgb, var(--text) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+    transition: color .2s, background .2s, border-color .2s, transform .2s;
+  }
+  .gn-chip:hover, .gn-chip:focus-visible { color: #fff; border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+  .gn-chip.on { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .gn-chip:active { transform: scale(.96); }
+
+  .gn-sort {
+    display: flex; align-items: center; gap: 4px; padding: 4px; width: fit-content; max-width: 100%; overflow-x: auto; scrollbar-width: none;
+    border-radius: 999px; background: color-mix(in srgb, var(--text) 5%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  }
+  .gn-sort::-webkit-scrollbar { display: none; }
+  .gn-sort a {
+    flex: none; display: inline-flex; align-items: center; height: 30px; padding: 0 14px; border-radius: 999px;
+    font: 500 12.5px/1 var(--font); white-space: nowrap; color: color-mix(in srgb, var(--text) 72%, transparent);
+    transition: background .2s, color .2s;
+  }
+  .gn-sort a:hover { color: #fff; }
+  .gn-sort a.on { color: #fff; background: var(--accent); box-shadow: 0 8px 20px -12px color-mix(in srgb, var(--accent) 90%, transparent); }
+
+  /* ---------- poster grid ---------- */
+  .gn-grid.grid-posters { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 18px 14px; align-items: start; padding-bottom: 24px; }
+  .gn-grid > * { min-width: 0; transition: transform .25s ease; }
+  .gn-grid > *:hover { transform: translateY(-4px); }
+  .gn-grid img { border-radius: 12px; }
+
+  /* ---------- laptop: bar sticks under the nav ---------- */
+  @media (min-width: 900px) {
+    .gn-bar {
+      grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px;
+      position: sticky; top: var(--nav-h); z-index: 20; margin-inline: -12px; padding-inline: 12px;
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+      border-bottom: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+    }
+    .gn-grid.grid-posters { grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 22px 16px; }
+  }
+  @media (min-width: 1600px) { .gn-inner { width: min(1560px, 100% - 144px); } }
+
+  /* ---------- tablet + phone ---------- */
+  @media (max-width: 1099px) {
+    .gn-col:nth-child(n+5) { display: none; }
+    .gn-inner { width: calc(100% - 48px); }
+  }
+  @media (max-width: 640px) {
+    .gn-hero { min-height: 27svh; }
+    .gn-wall { gap: 6px; inset: -24% -34%; opacity: .4; transform: rotateX(16deg) rotateY(-10deg) rotateZ(-7deg) scale(1); }
+    .gn-col { gap: 6px; } .gn-col img { border-radius: 6px; }
+    .gn-shade {
+      background:
+        linear-gradient(0deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 88%, transparent) 40%, color-mix(in srgb, var(--bg) 20%, transparent) 100%),
+        linear-gradient(180deg, color-mix(in srgb, var(--bg) 70%, transparent) 0%, transparent 25%);
+    }
+    .gn-inner { width: calc(100% - 32px); }
+    .gn-head { padding: 22px 0 18px; gap: 8px; }
+    .gn-sub { font-size: 14px; max-width: 34ch; }
+    .gn-chips { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; gap: 7px; }
+    .gn-chip { height: 30px; padding: 0 12px; font-size: 12px; }
+    .gn-sort { width: 100%; justify-content: space-between; }
+    .gn-sort a { flex: 1 1 auto; justify-content: center; padding: 0 10px; }
+    .gn-grid.grid-posters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 10px; }
+    .gn-grid img { border-radius: 10px; }
+  }
+  @media (hover: none) { .gn-grid > *:hover { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .gn-col { animation: none !important; } }
+</style>
+
+<main class="page page--flush">
+
+  <!-- ============ HERO ============ -->
+  <section class="gn-hero">
+    <% if (gCol.length) { %>
+      <div class="gn-stage" aria-hidden="true">
+        <div class="gn-wall">
+          <% gCol.forEach((col, c) => { %>
+            <div class="gn-col" style="--d:<%= 90 + c * 14 %>s;--dir:<%= c % 2 ? 'reverse' : 'normal' %>"><% gLoop(col).forEach((src) => { %><img src="<%= src %>" alt="" loading="lazy" decoding="async" draggable="false"><% }) %></div>
+          <% }) %>
+        </div>
       </div>
+    <% } %>
+    <div class="gn-shade" aria-hidden="true"></div>
+
+    <div class="gn-inner">
+      <header class="gn-head">
+        <span class="eyebrow"><span class="dot"></span> Genre</span>
+        <h1 class="gn-title"><%= genre.name %></h1>
+        <p class="gn-sub">Movies &amp; series in <%= genre.name %>, sorted your way.</p>
+      </header>
+    </div>
+  </section>
+
+  <div class="shell">
+
+    <!-- ============ TOOLBAR ============ -->
+    <div class="gn-bar">
+      <nav class="gn-chips" aria-label="Genres">
+        <% genres.forEach((g) => { %><a class="gn-chip<%= g.id === genre.id ? ' on' : '' %>" href="/genre/<%= g.id %>?sort=<%= sort %>"<%- g.id === genre.id ? ' aria-current="page"' : '' %>><%= g.name %></a><% }) %>
+      </nav>
+      <nav class="gn-sort" aria-label="Sort by">
+        <% sorts.forEach((s) => { %><a class="<%= s === sort ? 'on' : '' %>" href="/genre/<%= genre.id %>?sort=<%= s %>"><%= labels[s] || s %></a><% }) %>
+      </nav>
     </div>
 
-    <div class="grid-posters" id="movie-grid"><%- include('partials/movieCards', { movies }) %></div>
+    <!-- ============ GRID ============ -->
+    <div class="grid-posters gn-grid" id="movie-grid"><%- include('partials/movieCards', { movies }) %></div>
     <% if (hasMore) { %><div class="loader" data-infinite="/api/grid?src=genre&id=<%= genre.id %>&sort=<%= sort %>" data-next="2" data-target="#movie-grid"><span class="spinner"></span></div><% } %>
   </div>
 </main>
+
+<script>
+  /* bring the active genre pill into view on load (important on phones, where the list is long) */
+  (function () {
+    var on = document.querySelector('.gn-chip.on'), box = document.querySelector('.gn-chips');
+    if (on && box) box.scrollLeft = on.offsetLeft - (box.clientWidth - on.offsetWidth) / 2;
+  })();
+</script>
+
 <%- include('partials/foot') %>
