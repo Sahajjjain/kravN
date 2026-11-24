@@ -1,7 +1,7 @@
 {
   "name": "kravn",
   "version": "1.0.0",
-  "description": "KravN \u2014 movie & series discussions",
+  "description": "KravN — movie & series discussions",
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
@@ -18,8 +18,11 @@
     "dotenv": "^17.4.2",
     "ejs": "^6.0.1",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.5",
     "express-session": "^1.19.0",
-    "mysql2": "^3.22.5"
+    "google-auth-library": "^11.3.4",
+    "mysql2": "^3.22.5",
+    "nodemailer": "^10.6.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
