@@ -1,0 +1,51 @@
+<%- include('partials/head', { title: mode === 'verify' ? 'Verify email' : mode === 'reset' ? 'New password' : 'Forgot password', bodyClass: 'auth' }) %>
+<%- include('partials/posterwall', { posters }) %>
+<div class="landing-shade"></div>
+<main class="auth-wrap">
+  <a class="brand brand--lg" href="/feed">Krav<span>N</span></a>
+  <section class="auth-card">
+
+    <% if (mode === 'verify') { %>
+      <h1>Check your inbox.</h1>
+      <p class="muted">We sent a 6-digit code to <strong><%= email %></strong>. It expires in 10 minutes.</p>
+    <% } else if (mode === 'reset') { %>
+      <h1>Choose a new password.</h1>
+    <% } else { %>
+      <h1>Forgot your password?</h1>
+      <p class="muted">Enter your email and we'll send you a reset link.</p>
+    <% } %>
+
+    <% if (notice) { %><p class="auth-notice" role="status"><%= notice %></p><% } %>
+    <% if (error) { %><p class="auth-error" role="alert"><%= error %></p><% } %>
+
+    <% if (mode === 'verify') { %>
+      <form action="/verify" method="POST" class="form">
+        <label>Verification code<input type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" minlength="6" autocomplete="one-time-code" placeholder="123456" required autofocus></label>
+        <button type="submit" class="btn btn-primary btn-block">Verify &amp; create account</button>
+      </form>
+      <form action="/verify/resend" method="POST" class="form">
+        <button type="submit" class="btn btn-block">Resend code</button>
+      </form>
+      <p class="auth-switch"><a href="/register">Use a different email</a></p>
+
+    <% } else if (mode === 'reset') { %>
+      <form action="/reset-password" method="POST" class="form">
+        <input type="hidden" name="token" value="<%= token %>">
+        <label>New password<input type="password" name="password" required minlength="8" maxlength="72" autocomplete="new-password"></label>
+        <label>Confirm password<input type="password" name="confirm" required minlength="8" maxlength="72" autocomplete="new-password"></label>
+        <button type="submit" class="btn btn-primary btn-block">Update password</button>
+      </form>
+
+    <% } else { %>
+      <% if (!done) { %>
+        <form action="/forgot-password" method="POST" class="form">
+          <label>Email<input type="email" name="email" placeholder="you@gmail.com" required autocomplete="email" maxlength="100"></label>
+          <button type="submit" class="btn btn-primary btn-block">Send reset link</button>
+        </form>
+      <% } %>
+      <p class="auth-switch"><a href="/login">Back to log in</a></p>
+    <% } %>
+
+  </section>
+</main>
+<%- include('partials/foot', { bare: true }) %>

@@ -498,6 +498,7 @@ input:focus, textarea:focus { outline: 0; border-color: var(--accent); box-shado
 .auth-card { width: min(420px, 100%); background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: 20px; padding: 32px; display: grid; gap: 8px; box-shadow: 0 40px 100px -30px #000; }
 .auth-card h1 { font-size: 34px; margin-top: 6px; }
 .auth-error { background: rgba(255,93,108,.12); border: 1px solid rgba(255,93,108,.4); color: #ffb3bb; padding: 10px 14px; border-radius: 10px; font-size: 14px; margin-top: 8px; }
+.auth-notice{background:rgba(46,160,67,.15);border:1px solid rgba(46,160,67,.5);color:#7ee787;padding:.6rem .8rem;border-radius:8px;font-size:.9rem;margin:0 0 1rem}
 .auth-switch { text-align: center; color: var(--muted); font-size: 14px; margin-top: 10px; }
 .auth-switch a { color: var(--accent-2); font-weight: 700; }
 
@@ -746,4 +747,112 @@ img { height: auto; }
 @media (prefers-reduced-motion: reduce) {
   .hero-img { animation: none; }
   .rail { content-visibility: visible; }
+}
+/* ===== KravN auth card ===== */
+.k-card{
+  --k-accent: var(--accent, #e50914);   /* change this one value to match your brand color */
+  --k-text: #f4f4f6;
+  --k-muted: #9a9aa6;
+  --k-line: rgba(255,255,255,.10);
+  width: min(100%, 420px);
+  margin-inline: auto;
+  padding: clamp(1.25rem, 5vw, 2.25rem);
+  border-radius: 20px;
+  background: rgba(16,16,20,.72);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid var(--k-line);
+  box-shadow: 0 30px 80px -24px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.06);
+  color: var(--k-text);
+  text-align: left;
+}
+.k-title{ margin: .6rem 0 .25rem; font-size: clamp(1.6rem, 6vw, 2rem); line-height: 1.15; letter-spacing: -.02em; }
+.k-sub{ margin: 0 0 1.25rem; color: var(--k-muted); font-size: .95rem; }
+
+/* buttons */
+.k-btn{
+  display: flex; align-items: center; justify-content: center; gap: .6rem;
+  width: 100%; min-height: 48px; padding: .75rem 1rem;
+  border-radius: 12px; border: 1px solid transparent;
+  font: inherit; font-weight: 600; font-size: .98rem; line-height: 1;
+  text-decoration: none; cursor: pointer; user-select: none;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, filter .2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-btn:active{ transform: scale(.98); }
+.k-btn:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
+
+.k-btn--google{ background: #fff; color: #1f1f1f; border-color: #fff; }
+.k-btn--google:hover{ background: #f3f3f3; box-shadow: 0 6px 20px -8px rgba(255,255,255,.35); }
+
+.k-btn--primary{
+  margin-top: .35rem; color: #fff;
+  background: linear-gradient(135deg, var(--k-accent), color-mix(in srgb, var(--k-accent) 70%, #000));
+  box-shadow: 0 10px 28px -10px var(--k-accent);
+}
+.k-btn--primary:hover{ filter: brightness(1.1); box-shadow: 0 14px 34px -10px var(--k-accent); }
+.k-btn--primary:disabled{ opacity: .7; cursor: wait; transform: none; }
+.k-btn--primary.is-loading span::after{
+  content: ""; display: inline-block; width: 14px; height: 14px; margin-left: .6rem; vertical-align: -2px;
+  border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%;
+  animation: k-spin .7s linear infinite;
+}
+@keyframes k-spin{ to{ transform: rotate(360deg); } }
+
+/* divider */
+.k-divider{ display: flex; align-items: center; gap: .75rem; margin: 1.2rem 0; color: var(--k-muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; }
+.k-divider::before, .k-divider::after{ content: ""; flex: 1; height: 1px; background: var(--k-line); }
+
+/* form */
+.k-form{ display: grid; gap: .95rem; }
+.k-field{ display: grid; gap: .4rem; }
+.k-label{ font-size: .82rem; font-weight: 600; color: #cfcfd8; }
+.k-label--row{ display: flex; justify-content: space-between; align-items: baseline; }
+.k-hint{ font-size: .78rem; color: var(--k-muted); }
+
+.k-card input{
+  width: 100%; min-height: 48px; padding: .7rem .9rem;
+  font: inherit; font-size: 16px;              /* 16px stops iOS from zooming on focus */
+  color: var(--k-text); background: rgba(255,255,255,.05);
+  border: 1px solid var(--k-line); border-radius: 12px;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.k-card input::placeholder{ color: #6f6f7b; }
+.k-card input:hover{ background: rgba(255,255,255,.07); }
+.k-card input:focus{
+  outline: none; background: rgba(255,255,255,.08);
+  border-color: var(--k-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--k-accent) 28%, transparent);
+}
+
+/* password show/hide */
+.k-pw{ position: relative; display: block; }
+.k-pw input{ padding-right: 3rem; }
+.k-eye{
+  position: absolute; top: 50%; right: .35rem; transform: translateY(-50%);
+  width: 40px; height: 40px; display: grid; place-items: center;
+  background: none; border: 0; border-radius: 10px; color: var(--k-muted); cursor: pointer;
+}
+.k-eye:hover{ color: #fff; background: rgba(255,255,255,.06); }
+.k-eye .k-eye-slash{ opacity: 0; }
+.k-eye.is-on .k-eye-slash{ opacity: 1; }
+
+/* links */
+.k-link{ color: #fff; font-weight: 600; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.3); }
+.k-label .k-link{ font-size: .8rem; font-weight: 500; color: var(--k-muted); border-bottom-color: transparent; }
+.k-link:hover{ border-bottom-color: currentColor; }
+.k-switch{ margin: 1.25rem 0 0; text-align: center; color: var(--k-muted); font-size: .92rem; }
+
+/* messages inside the card */
+.k-card .auth-error, .k-card .auth-notice{ margin: 0 0 1rem; padding: .7rem .85rem; border-radius: 10px; font-size: .9rem; }
+.k-card .auth-error{ background: rgba(255,69,58,.12); border: 1px solid rgba(255,69,58,.45); color: #ff9a93; }
+
+/* phones */
+@media (max-width: 480px){
+  .k-card{ border-radius: 18px; }
+  .auth-wrap{ padding-inline: 1rem; }
+}
+@media (prefers-reduced-motion: reduce){
+  .k-btn, .k-card input{ transition: none; }
+  .k-btn--primary.is-loading span::after{ animation: none; }
 }

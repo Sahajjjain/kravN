@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const fs = require('fs');
 const path = require('path');
 const session = require('express-session');
 
@@ -10,6 +11,10 @@ const format = require('./lib/format');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+if (!process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET is missing from environment variables');
+}
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1); // behind Render's proxy
@@ -31,7 +36,8 @@ Object.assign(app.locals, format, {
 
 app.use(
   express.static(path.join(__dirname, 'public'), {
-    maxAge: '7d',
+    // no long caching while developing, so edits show up on a normal refresh
+    maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
     setHeaders(res, file) {
       if (/(sw\.js|manifest\.json)$/.test(file)) res.setHeader('Cache-Control', 'no-cache');
     },
@@ -41,17 +47,34 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// CSS version = the file's last-modified time, so any edit to kravn.css busts the browser cache.
+// res.locals beats app.locals, so head.ejs keeps using <%= assetV %> unchanged.
+const cssFile = path.join(__dirname, 'public', 'css', 'kravn.css');
+let cssVersionCache = null;
+function cssVersion() {
+  // in production the file only changes on deploy (which restarts the server), so read it once
+  if (process.env.NODE_ENV === 'production' && cssVersionCache) return cssVersionCache;
+  try { cssVersionCache = fs.statSync(cssFile).mtimeMs.toString(36); } catch (e) { /* keep old value */ }
+  return cssVersionCache;
+}
+app.use((req, res, next) => {
+  const v = cssVersion();
+  if (v) res.locals.assetV = v;
+  next();
+});
+
 /* -------------------------------- session -------------------------------- */
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'kravn_secret_change_this_later',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
       httpOnly: true,
       sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
     },
   })
 );
