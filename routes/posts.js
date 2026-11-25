@@ -13,6 +13,15 @@ const notFound = (res, message = 'That page could not be found.') =>
 
 const isAjax = (req) => req.get('x-requested-with') === 'fetch';
 
+// Notification that also remembers which comment caused it (comments and replies)
+async function notifyComment(toUserId, actorId, postId, type, commentId) {
+  if (Number(toUserId) === Number(actorId)) return;
+  await pool.query(
+    'INSERT INTO notifications (user_id, actor_id, post_id, type, comment_id) VALUES (?, ?, ?, ?, ?)',
+    [toUserId, actorId, postId, type, commentId]
+  );
+}
+
 // Numeric ids only — anything else is a plain 404
 router.param('id', (req, res, next, id) => (/^\d+$/.test(id) ? next() : notFound(res)));
 
@@ -66,7 +75,15 @@ router.get('/posts/:id', async (req, res) => {
     ),
   ]);
 
-  res.render('post', { nav: 'discussions', post, comments, likers, more: more.posts, movie });
+  // group replies under their parent comment (one level deep); orphans fall back to top level
+  const byId = new Map(comments.map((c) => [c.id, Object.assign(c, { replies: [] })]));
+  const threads = [];
+  comments.forEach((c) => {
+    const parent = c.parent_id ? byId.get(c.parent_id) : null;
+    if (parent) parent.replies.push(c); else threads.push(c);
+  });
+
+  res.render('post', { nav: 'discussions', post, comments, threads, likers, more: more.posts, movie });
 });
 
 router.get('/posts/:id/likes', async (req, res) => {
@@ -105,6 +122,11 @@ router.post('/posts/:id/like', requireLogin, async (req, res) => {
     }
   } else if (!shouldLike && hasLiked) {
     await pool.query('DELETE FROM likes WHERE post_id = ? AND user_id = ?', [postId, userId]);
+    // take back the "liked your discussion" notification too
+    await pool.query(
+      "DELETE FROM notifications WHERE type = 'like' AND actor_id = ? AND post_id = ?",
+      [userId, postId]
+    );
   }
 
   if (!isAjax(req)) return res.redirect(req.get('referer') || `/posts/${postId}`);
@@ -124,8 +146,33 @@ router.post('/posts/:id/comments', requireLogin, async (req, res) => {
   const [owner] = await pool.query('SELECT user_id FROM posts WHERE id = ?', [postId]);
   if (!owner.length) return notFound(res, 'That discussion could not be found.');
 
-  const [result] = await pool.query('INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)', [postId, userId, content]);
-  await notify(owner[0].user_id, userId, postId, 'comment');
+  // replying? the target must be a comment on this same post
+  let parentId = null;
+  let target = null;
+  const replyTo = Number(req.body && req.body.parent_id);
+  if (Number.isInteger(replyTo) && replyTo > 0) {
+    const [found] = await pool.query('SELECT id, user_id, parent_id FROM comments WHERE id = ? AND post_id = ?', [replyTo, postId]);
+    if (found.length) {
+      target = found[0];
+      parentId = target.parent_id || target.id; // replies to a reply attach to the top-level comment
+    }
+  }
+
+  const [result] = await pool.query(
+    'INSERT INTO comments (post_id, user_id, content, parent_id) VALUES (?, ?, ?, ?)',
+    [postId, userId, content, parentId]
+  );
+
+  if (target) {
+    // the person you replied to
+    await notifyComment(target.user_id, userId, postId, 'reply', result.insertId);
+    // the post owner still hears about it, unless they are the person already notified
+    if (Number(owner[0].user_id) !== Number(target.user_id)) {
+      await notifyComment(owner[0].user_id, userId, postId, 'comment', result.insertId);
+    }
+  } else {
+    await notifyComment(owner[0].user_id, userId, postId, 'comment', result.insertId);
+  }
 
   res.redirect(`/posts/${postId}#c-${result.insertId}`);
 });
@@ -158,7 +205,15 @@ router.post('/comments/:id/edit', requireLogin, async (req, res) => {
 router.post('/comments/:id/delete', requireLogin, async (req, res) => {
   const comment = await ownComment(req, res);
   if (!comment) return;
-  await pool.query('DELETE FROM comments WHERE id = ?', [comment.id]);
+
+  // deleting a top-level comment also removes its replies; deleting a reply removes only itself
+  const [doomed] = await pool.query('SELECT id FROM comments WHERE id = ? OR parent_id = ?', [comment.id, comment.id]);
+  const ids = doomed.map((r) => r.id);
+
+  // remove the notifications caused by those comments first, so none are left pointing at nothing
+  if (ids.length) await pool.query('DELETE FROM notifications WHERE comment_id IN (?)', [ids]);
+  await pool.query('DELETE FROM comments WHERE id = ? OR parent_id = ?', [comment.id, comment.id]);
+
   res.redirect(`/posts/${comment.post_id}#comments`);
 });
 
@@ -170,6 +225,8 @@ router.post('/posts/:id/delete', requireLogin, async (req, res) => {
   if (rows[0].user_id !== req.session.userId) {
     return res.status(403).render('error', { code: 403, message: 'You can only delete your own posts.' });
   }
+  // clear this discussion's notifications (likes, comments, replies) along with it
+  await pool.query('DELETE FROM notifications WHERE post_id = ?', [req.params.id]);
   await pool.query('DELETE FROM posts WHERE id = ?', [req.params.id]);
   res.redirect('/dashboard');
 });

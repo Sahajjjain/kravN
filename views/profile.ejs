@@ -1,7 +1,7 @@
 <%
   const u = profileUser;
   const yearOf = (d) => (String(d || '').match(/(?:19|20)\d{2}/) || [''])[0];
-  const items = posts.map((p) => {
+  const mapPost = (p) => {
     const rating = Number(p.rating) || 0;
     return {
       id: p.id,
@@ -17,7 +17,12 @@
       badge: rating ? '★ ' + (Math.round(rating * 10) / 10) : '',
       ts: new Date(p.created_at || 0).getTime() || 0
     };
-  });
+  };
+  const items = posts.map(mapPost);
+  // Likes tab: pass `likedPosts` (same row shape as `posts`) from your route. If it is missing, the tab is hidden.
+  const hasLikes = typeof likedPosts !== 'undefined' && Array.isArray(likedPosts);
+  const likedItems = hasLikes ? likedPosts.map(mapPost) : [];
+  const commentList = (typeof recentComments !== 'undefined' && Array.isArray(recentComments)) ? recentComments : [];
   const allGenres = [...new Set(items.flatMap((i) => i.genres))].sort((a, b) => String(a).localeCompare(String(b)));
 
   // Filter + sort dropdowns share one component (markup, styles and script).
@@ -37,27 +42,31 @@
 <%- include('partials/nav') %>
 
 <style>
-  /* PROFILE: header -> stats -> filter pills -> poster grid (cards come from partials/movieCard + movie-card.css) */
+  /* PROFILE: header -> stats -> favourite genres -> tabs (discussions / comments / likes)
+     (cards come from partials/movieCard + movie-card.css) */
 
   /* ---------- header ---------- */
   .page .profile-head {
-    display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 18px 20px; margin: 0 0 12px; border-radius: 18px;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 20px 22px; margin: 0 0 12px; border-radius: 20px;
     background:
-      radial-gradient(90% 160% at 0% 0%, hsl(var(--h, 260) 70% 50% / .22), transparent 62%),
+      radial-gradient(90% 160% at 0% 0%, hsl(var(--h, 260) 70% 50% / .24), transparent 62%),
       linear-gradient(180deg, color-mix(in srgb, var(--text) 5%, var(--surface)), var(--surface));
     border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
   }
-  .page .profile-head .avatar--xl { width: 60px; height: 60px; font-size: 25px; font-weight: 700; flex: none; box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px color-mix(in srgb, var(--text) 18%, transparent); }
+  .page .profile-head .avatar--xl {
+    width: 64px; height: 64px; font-size: 27px; font-weight: 700; flex: none;
+    box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px hsl(var(--h, 260) 70% 58% / .6);
+  }
   .profile-id { flex: 1 1 220px; display: grid; gap: 3px; justify-items: start; min-width: 0; }
   .profile-id .eyebrow { display: none; }
-  .profile-id h1 { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; font-size: clamp(20px, 2.6vw, 26px); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; overflow-wrap: anywhere; }
+  .profile-id h1 { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; font-size: clamp(21px, 2.6vw, 30px); font-weight: 700; letter-spacing: -.025em; line-height: 1.15; overflow-wrap: anywhere; }
   .profile-id h1 .pill { font-size: 10.5px; padding: 2px 8px; }
   .profile-id .muted { margin: 0; font-size: 12.5px; }
 
   .profile-actions { display: flex; gap: 8px; flex: none; }
   .profile-actions .btn {
     display: inline-flex !important; visibility: visible !important; opacity: 1 !important; align-items: center; justify-content: center; gap: 8px;
-    height: 38px; padding: 0 18px; margin: 0; border-radius: 999px; font: 600 12.5px/1 var(--font); letter-spacing: .03em; white-space: nowrap; text-decoration: none; cursor: pointer;
+    height: 40px; padding: 0 18px; margin: 0; border-radius: 999px; font: 600 12.5px/1 var(--font); letter-spacing: .03em; white-space: nowrap; text-decoration: none; cursor: pointer;
     transition: transform .2s ease, background .2s ease, border-color .2s ease, filter .2s ease;
   }
   .profile-actions .btn svg { width: 15px; height: 15px; flex: none; }
@@ -70,15 +79,21 @@
   .profile-actions .btn-glass:hover { background: color-mix(in srgb, var(--text) 8%, transparent); border-color: color-mix(in srgb, var(--text) 55%, transparent); }
 
   /* ---------- stats ---------- */
-  .page .stats { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0 0 4px; padding: 0; overflow: hidden; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); background: color-mix(in srgb, var(--text) 3%, var(--surface)); }
-  .page .stats .stat { display: flex; align-items: baseline; justify-content: center; gap: 7px; padding: 13px 8px; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; min-width: 0; }
+  .page .stats { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0 0 4px; padding: 0; overflow: hidden; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); background: color-mix(in srgb, var(--text) 3%, var(--surface)); }
+  .page .stats .stat { display: flex; align-items: baseline; justify-content: center; gap: 8px; padding: 15px 8px; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; min-width: 0; }
   .page .stats .stat + .stat { border-left: 1px solid color-mix(in srgb, var(--text) 8%, transparent); }
-  .page .stats .stat strong { font-size: 19px; font-weight: 700; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text); }
+  .page .stats .stat strong { font-size: 21px; font-weight: 700; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text); }
   .page .stats .stat span { font-size: 11px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; color: color-mix(in srgb, var(--text) 55%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .page .sprocket { margin: 12px 0 0; opacity: .5; }
+  .page .sprocket { margin: 14px 0 0; opacity: .5; }
+
+  /* ---------- section headings ---------- */
+  .pf-h { display: flex; align-items: center; gap: 10px; margin: 0; font-size: clamp(16px, 1.8vw, 19px); font-weight: 700; letter-spacing: -.015em; }
+  .pf-h i { width: 3px; height: 1em; border-radius: 3px; background: linear-gradient(180deg, var(--accent-2, var(--accent)), var(--accent)); flex: none; }
+  .pf-count { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font: 600 11.5px/1 var(--font); font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--text) 75%, transparent); background: color-mix(in srgb, var(--text) 7%, transparent); border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
+  .pf-sec { display: flex; align-items: center; gap: 10px; margin: 20px 0 0; }
 
   /* ---------- toolbar: genre + sort dropdown pills ---------- */
-  .page .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 20px; min-width: 0; }
+  .page .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0 20px; min-width: 0; }
 
   .dd { position: relative; z-index: 40; min-width: 0; }
   .dd--sort { margin-left: auto; }
@@ -128,6 +143,7 @@
 
   /* ---------- poster grid ---------- */
   .pf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; align-items: start; }
+  .pf-item { min-width: 0; }
   .pf-item[hidden] { display: none; }
   .pf-empty { text-align: center; padding: 36px 0; }
 
@@ -164,20 +180,34 @@
   .kc-like.on { background: color-mix(in srgb, var(--accent) 28%, transparent); border-color: var(--accent); }
   .kc-like.on svg { fill: currentColor; }
 
+  /* ---------- laptop / large screens ---------- */
+  @media (min-width: 900px) {
+    .page .profile-head { gap: 24px; padding: 26px 30px; border-radius: 22px; margin-bottom: 14px; }
+    .page .profile-head .avatar--xl { width: 80px; height: 80px; font-size: 34px; }
+    .page .stats { border-radius: 18px; }
+    .page .stats .stat { padding: 18px 8px; gap: 10px; }
+    .page .stats .stat strong { font-size: 25px; }
+    .page .stats .stat span { font-size: 11.5px; }
+    .pf-grid { grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 22px 18px; }
+    .page .toolbar { margin: 14px 0 24px; }
+  }
+  @media (min-width: 1400px) { .pf-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 26px 20px; } }
+
   /* ---------- phone ---------- */
   @media (max-width: 640px) {
     .page .profile-head { display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; padding: 14px; border-radius: 16px; margin-bottom: 10px; }
-    .page .profile-head .avatar--xl { width: 52px; height: 52px; font-size: 22px; }
+    .page .profile-head .avatar--xl { width: 54px; height: 54px; font-size: 23px; }
     .profile-id { flex: none; }
     .profile-id h1 { font-size: 20px; }
     .profile-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr; gap: 8px; }
     .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr 1fr; }
     .profile-actions .btn { width: 100%; padding: 0 10px; }
-    .page .stats { border-radius: 12px; }
-    .page .stats .stat { flex-direction: column; align-items: center; gap: 4px; padding: 11px 2px; }
-    .page .stats .stat strong { font-size: 17px; }
+    .page .stats { border-radius: 14px; }
+    .page .stats .stat { flex-direction: column; align-items: center; gap: 4px; padding: 12px 2px; }
+    .page .stats .stat strong { font-size: 18px; }
     .page .stats .stat span { font-size: 9.5px; letter-spacing: .04em; max-width: 100%; }
-    .page .toolbar { margin: 12px 0 16px; }
+    .pf-sec { margin-top: 16px; }
+    .page .toolbar { margin: 10px 0 16px; }
     .dd-pill { height: 38px; padding: 0 12px 0 14px; }
     .dd--genre { max-width: calc(100% - 140px); }
     .dd-list { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 52vh; }
@@ -194,10 +224,117 @@
   }
 </style>
 
+<style>
+  /* favourite genres + tabs + comments + likes */
+
+  /* favourite genres: a soft panel; chips filter the grid below when the genre exists in this user's posts */
+  .pf-genres {
+    margin: 12px 0 0; padding: 14px 16px; border-radius: 16px; display: grid; gap: 10px; min-width: 0;
+    background:
+      radial-gradient(80% 140% at 100% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%),
+      color-mix(in srgb, var(--text) 3%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+  }
+  .pf-genres-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
+  .pf-genres-title { margin: 0; font: 700 12px/1.2 var(--font); letter-spacing: .09em; text-transform: uppercase; color: color-mix(in srgb, var(--text) 70%, transparent); }
+  .pf-genres-hint { font-size: 11.5px; color: color-mix(in srgb, var(--text) 45%, transparent); white-space: nowrap; }
+  .pf-genres-row { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+  .pf-genre {
+    display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; margin: 0; border-radius: 999px; flex: none;
+    font: 500 13px/1 var(--font); letter-spacing: .005em; white-space: nowrap; text-decoration: none;
+    color: color-mix(in srgb, var(--text) 90%, transparent);
+    background: color-mix(in srgb, var(--accent) 13%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+    transition: color .2s, background .2s, border-color .2s, transform .2s;
+  }
+  .pf-genre::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; opacity: .85; }
+  button.pf-genre { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button.pf-genre:hover, button.pf-genre:focus-visible { color: #fff; background: color-mix(in srgb, var(--accent) 28%, transparent); border-color: color-mix(in srgb, var(--accent) 75%, transparent); }
+  button.pf-genre:active { transform: scale(.96); }
+  button.pf-genre:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .pf-genre.on { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .pf-genre.on::before { background: #fff; }
+
+  /* ---------- tabs ---------- */
+  .pf-tabs {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; margin: 18px 0 0; padding: 4px; border-radius: 999px; max-width: 520px;
+    background: color-mix(in srgb, var(--text) 5%, var(--surface)); border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  }
+  .pf-tab {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; height: 42px; padding: 0 14px; margin: 0; border: 0; border-radius: 999px;
+    cursor: pointer; white-space: nowrap; font: 600 13px/1 var(--font); letter-spacing: .01em; background: none; -webkit-tap-highlight-color: transparent;
+    color: color-mix(in srgb, var(--text) 62%, transparent); transition: background .2s, color .2s, box-shadow .2s, transform .2s;
+  }
+  .pf-tab svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .pf-tab:hover { color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); }
+  .pf-tab:active { transform: scale(.97); }
+  .pf-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .pf-tab.on { color: #fff; background: var(--accent); box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--accent) 80%, transparent); }
+  .pf-tab em {
+    font: 600 11px/1 var(--font); font-style: normal; font-variant-numeric: tabular-nums; padding: 3px 7px; border-radius: 999px;
+    background: color-mix(in srgb, var(--text) 10%, transparent);
+  }
+  .pf-tab.on em { background: rgba(255, 255, 255, .22); }
+
+  .pf-panel { margin-top: 4px; animation: pf-in .25s ease-out; }
+  .pf-panel[hidden] { display: none; }
+  @keyframes pf-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- comments ---------- */
+  .pf-comments-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 12px; margin: 20px 0 0; }
+  .pf-comment {
+    position: relative; display: grid; gap: 10px; align-content: space-between; min-width: 0; padding: 16px 18px 14px; border-radius: 16px; text-decoration: none; color: inherit; overflow: hidden;
+    background:
+      radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%),
+      color-mix(in srgb, var(--text) 3%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+    transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+  }
+  .pf-comment::before { content: '“'; position: absolute; top: -6px; right: 14px; font: 700 64px/1 Georgia, serif; color: color-mix(in srgb, var(--accent) 28%, transparent); pointer-events: none; }
+  .pf-comment:hover { border-color: color-mix(in srgb, var(--accent) 50%, transparent); transform: translateY(-2px); box-shadow: 0 18px 36px -22px rgba(0, 0, 0, .8); }
+  .pf-comment:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .pf-comment p { margin: 0; padding-right: 18px; font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+  .pf-comment-meta { display: flex; align-items: center; gap: 8px; min-width: 0; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent); font-size: 12px; color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .pf-comment-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .pf-comment-meta b { font-weight: 600; color: color-mix(in srgb, var(--text) 85%, transparent); }
+  .pf-comment-meta time { flex: none; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .pf-liked-grid { margin-top: 20px; }
+
+  @media (min-width: 900px) {
+    .pf-tabs { margin-top: 22px; }
+    .pf-comments-list { gap: 14px; margin-top: 24px; }
+    .pf-liked-grid { margin-top: 24px; }
+  }
+  @media (max-width: 640px) {
+    .profile-actions .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    /* genres become one swipeable row so the panel stays compact */
+    .pf-genres { padding: 12px 14px; border-radius: 14px; gap: 8px; }
+    .pf-genres-row {
+      flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; padding: 2px 14px 4px; margin-inline: -14px;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 22px), transparent 100%);
+              mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 22px), transparent 100%);
+    }
+    .pf-genres-row::-webkit-scrollbar { display: none; }
+    .pf-genre { height: 32px; padding: 0 12px; font-size: 12.5px; }
+    .pf-tabs { max-width: none; margin-top: 14px; }
+    .pf-tab { height: 40px; padding: 0 6px; gap: 6px; font-size: 12.5px; }
+    .pf-tab svg { display: none; }
+    .pf-comments-list { grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
+    .pf-comment { padding: 14px 15px 12px; }
+    .pf-liked-grid { margin-top: 14px; }
+  }
+  @media (hover: none) { .pf-comment:hover { transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .pf-genre, .pf-tab, .pf-comment { transition: none; }
+    .pf-panel { animation: none; }
+    .pf-comment:hover, button.pf-genre:active, .pf-tab:active { transform: none; }
+  }
+</style>
+
 <main class="page">
   <div class="shell">
 
-    <header class="profile-head">
+    <header class="profile-head" style="--h:<%= hue(u.username) %>">
       <span class="avatar avatar--xl" style="--h:<%= hue(u.username) %>"><%= u.username.charAt(0).toUpperCase() %></span>
       <div class="profile-id">
         <span class="eyebrow"><span class="dot"></span> <%= isOwn ? 'Your dashboard' : 'Profile' %></span>
@@ -207,6 +344,7 @@
       <div class="profile-actions">
         <% if (items.length) { %><button type="button" class="btn btn-primary" data-cards-open="#feed"><svg class="kv-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="13" height="14" rx="2"/><path d="M8 3.5h11a2 2 0 0 1 2 2V17"/></svg> Kravn Cards</button><% } %>
         <% if (isOwn) { %><a class="btn btn-glass" href="/posts/new"><%- include('partials/icon', { n: 'plus' }) %> New discussion</a><% } %>
+        <button type="button" class="btn btn-glass" data-share-profile data-title="<%= u.username %> on KravN" data-url="/users/<%= encodeURIComponent(u.username) %>"><%- include('partials/icon', { n: 'share' }) %> <span>Share</span></button>
       </div>
     </header>
 
@@ -217,14 +355,52 @@
       <div class="stat" title="Movies discussed"><strong data-count="<%= stats.movies %>"><%= stats.movies %></strong><span>Movies</span></div>
     </div>
 
+    <% if (typeof topGenres !== 'undefined' && topGenres.length) { %>
+      <section class="pf-genres" aria-label="Favourite genres">
+        <div class="pf-genres-head">
+          <h2 class="pf-genres-title">Favourite genres</h2>
+          <% if (items.length && allGenres.some((g) => topGenres.includes(g))) { %><span class="pf-genres-hint">Tap one to filter</span><% } %>
+        </div>
+        <div class="pf-genres-row">
+          <% topGenres.forEach((g) => { %>
+            <% if (items.length && allGenres.includes(g)) { %><button type="button" class="pf-genre" data-genre-pick="<%= g %>" aria-pressed="false"><%= g %></button><% } else { %><span class="pf-genre"><%= g %></span><% } %>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
     <div class="sprocket" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
 
+    <div class="pf-tabs" role="tablist" aria-label="Profile sections">
+      <button type="button" class="pf-tab on" role="tab" id="tab-discussions" aria-controls="panel-discussions" aria-selected="true" data-tab="discussions">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Discussions <em><%= items.length %></em>
+      </button>
+      <button type="button" class="pf-tab" role="tab" id="tab-comments" aria-controls="panel-comments" aria-selected="false" tabindex="-1" data-tab="comments">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Comments <em><%= commentList.length %></em>
+      </button>
+      <% if (hasLikes) { %>
+      <button type="button" class="pf-tab" role="tab" id="tab-likes" aria-controls="panel-likes" aria-selected="false" tabindex="-1" data-tab="likes">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        Likes <em><%= likedItems.length %></em>
+      </button>
+      <% } %>
+    </div>
+
+    <!-- ===== Discussions ===== -->
+    <section class="pf-panel" id="panel-discussions" role="tabpanel" aria-labelledby="tab-discussions" data-panel="discussions">
     <% if (!items.length) { %>
       <div class="empty">
         <p><%= isOwn ? "You haven't posted anything yet." : u.username + " hasn't posted anything yet." %></p>
         <% if (isOwn) { %><a class="btn btn-primary" href="/posts/new">Start your first discussion</a><% } %>
       </div>
     <% } else { %>
+      <div class="pf-sec">
+        <h2 class="pf-h"><i></i>Discussions</h2>
+        <span class="pf-count"><%= items.length %></span>
+      </div>
+
       <div class="toolbar">
         <% menus.forEach((m) => { %>
           <details class="dd dd--<%= m.key %>" data-dd="<%= m.key %>" data-default="<%= m.def %>">
@@ -252,6 +428,48 @@
       </div>
       <p class="muted pf-empty" id="pf-empty" hidden>No discussions in that genre yet.</p>
     <% } %>
+    </section>
+
+    <!-- ===== Comments ===== -->
+    <section class="pf-panel" id="panel-comments" role="tabpanel" aria-labelledby="tab-comments" data-panel="comments" hidden>
+      <% if (commentList.length) { %>
+        <div class="pf-comments-list">
+          <% commentList.forEach((c) => { const txt = String(c.content || ''); %>
+            <a class="pf-comment" href="/posts/<%= c.post_id %>#c-<%= c.id %>">
+              <p><%= txt.length > 220 ? txt.slice(0, 220) + '…' : txt %></p>
+              <div class="pf-comment-meta">
+                <span>on <b><%= c.post_title || c.movie_name || 'a discussion' %></b></span>
+                <time><%= timeAgo(c.created_at) %></time>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="muted pf-empty"><%= isOwn ? "You haven't commented yet." : u.username + " hasn't commented yet." %></p>
+      <% } %>
+    </section>
+
+    <!-- ===== Likes ===== -->
+    <% if (hasLikes) { %>
+    <section class="pf-panel" id="panel-likes" role="tabpanel" aria-labelledby="tab-likes" data-panel="likes" hidden>
+      <% if (likedItems.length) { %>
+        <div class="pf-grid pf-liked-grid">
+          <% likedItems.forEach((it) => { %>
+            <div class="pf-item">
+              <%- include('partials/movieCard', {
+                m: { id: it.id, title: it.title, year: it.year, poster: it.poster, percent: null, url: it.href, type: '' },
+                href: it.href,
+                badge: it.badge,
+                sub: it.movie && it.movie !== it.title ? it.movie : ''
+              }) %>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="muted pf-empty"><%= isOwn ? "You haven't liked anything yet." : u.username + " hasn't liked anything yet." %></p>
+      <% } %>
+    </section>
+    <% } %>
   </div>
 </main>
 
@@ -264,6 +482,7 @@
     var items = Array.prototype.slice.call(grid.querySelectorAll('.pf-item'));
     var emptyMsg = document.getElementById('pf-empty');
     var state = { genre: '', sort: 'latest' };
+    var picks = Array.prototype.slice.call(document.querySelectorAll('[data-genre-pick]'));
     var HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>';
     function num(el, k) { return parseFloat(el.getAttribute('data-' + k)) || 0; }
     function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html) e.innerHTML = html; return e; }
@@ -276,6 +495,12 @@
       likes:  function (a, b) { return num(b, 'likes') - num(a, 'likes'); },
       random: function () { return Math.random() - .5; }
     };
+    function syncPicks() {
+      picks.forEach(function (p) {
+        var on = p.getAttribute('data-genre-pick') === state.genre;
+        p.classList.toggle('on', on); p.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
     function apply() {
       var shown = items.filter(function (it) {
         var ok = !state.genre || (it.getAttribute('data-genres') || '').split('|').indexOf(state.genre) > -1;
@@ -283,6 +508,7 @@
       });
       shown.sort(by[state.sort] || by.latest).forEach(function (it) { grid.appendChild(it); });
       if (emptyMsg) emptyMsg.hidden = shown.length > 0;
+      syncPicks();
     }
 
     /* ----- dropdown pills ----- */
@@ -307,6 +533,20 @@
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       menus.forEach(function (m) { if (m.open) { m.open = false; m.querySelector('summary').focus(); } });
+    });
+
+    /* ----- favourite-genre chips: drive the genre dropdown (tap again to clear) ----- */
+    picks.forEach(function (p) {
+      p.addEventListener('click', function () {
+        var g = p.getAttribute('data-genre-pick'), target = state.genre === g ? '' : g;
+        var gm = document.querySelector('[data-dd="genre"]'); if (!gm) return;
+        var opts = gm.querySelectorAll('.dd-opt'), hit = null, i;
+        for (i = 0; i < opts.length; i++) { if (opts[i].getAttribute('data-value') === target) { hit = opts[i]; break; } }
+        if (!hit) return;
+        hit.click();
+        var tb = document.querySelector('.pf-sec') || document.querySelector('.toolbar');
+        if (tb && tb.scrollIntoView) tb.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     });
 
     /* ----- likes (shared by the double-tap and the heart button) ----- */
@@ -390,5 +630,54 @@
     });
     apply();
   })();
+</script>
+
+<script>
+  /* Profile tabs: Discussions / Comments / Likes (keyboard + #hash aware) */
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-tab]'));
+    var panels = Array.prototype.slice.call(document.querySelectorAll('[data-panel]'));
+    if (!tabs.length) return;
+    function show(name, focus) {
+      if (!tabs.some(function (t) { return t.getAttribute('data-tab') === name; })) name = 'discussions';
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('data-tab') === name;
+        t.classList.toggle('on', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1;
+        if (on && focus) t.focus();
+      });
+      panels.forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== name; });
+      try { history.replaceState(null, '', name === 'discussions' ? location.pathname + location.search : '#' + name); } catch (e) {}
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('data-tab')); });
+      t.addEventListener('keydown', function (e) {
+        var n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : -1;
+        if (n < 0) return;
+        e.preventDefault(); show(tabs[(n + tabs.length) % tabs.length].getAttribute('data-tab'), true);
+      });
+    });
+    /* tapping a favourite-genre chip must land on Discussions */
+    document.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('[data-genre-pick]')) show('discussions');
+    }, true);
+    var h = (location.hash || '').replace('#', '');
+    if (h === 'comments' || h === 'likes') show(h);
+  })();
+</script>
+
+<script>
+  /* Share profile: native share sheet on phones, copy link elsewhere */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-share-profile]');
+    if (!b) return;
+    e.preventDefault();
+    var url = location.origin + b.getAttribute('data-url');
+    var title = b.getAttribute('data-title');
+    var label = b.querySelector('span');
+    if (navigator.share) { navigator.share({ title: title, url: url }).catch(function () {}); return; }
+    function done() { if (!label) return; var old = label.textContent; label.textContent = 'Link copied'; setTimeout(function () { label.textContent = old; }, 1800); }
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, function () { window.prompt('Copy this link', url); });
+    else window.prompt('Copy this link', url);
+  });
 </script>
 <%- include('partials/foot') %>

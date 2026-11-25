@@ -1,0 +1,59 @@
+<%
+  // YouTube-style: a top-level comment, with all replies tucked under "View N replies".
+  // Called for top-level comments (isReply: false) and, from here, for each reply (isReply: true).
+  // NOTE: the incoming flag is read from `locals` and stored under a different name,
+  // otherwise `const isReply = ... isReply ...` hits the temporal dead zone.
+  const asReply = locals.isReply === true;
+  const list = asReply ? [] : (c.flat || []);
+  const n = list.length;
+  const text = String(c.content == null ? '' : c.content);
+  const mm = asReply ? text.match(/^(@\S+)([\s\S]*)$/) : null;
+%>
+<div class="cm<%= asReply ? ' cm--reply' : '' %><%= n > 0 ? ' cm--threaded' : '' %>" id="c-<%= c.id %>">
+  <a class="avatar" style="--h:<%= hue(c.username) %>" href="/users/<%= encodeURIComponent(c.username) %>"><%= c.username.charAt(0).toUpperCase() %></a>
+  <div class="cm-main">
+    <div class="cm-body">
+      <div class="comment-top">
+        <a href="/users/<%= encodeURIComponent(c.username) %>"><strong>@<%= c.username %></strong></a>
+        <% if (c.username === post.username) { %><span class="pill">Author</span><% } %>
+        <time class="muted" title="<%= fmtDate(c.created_at, true) %>"><%= timeAgo(c.created_at) %></time>
+        <% if (me && c.user_id === me.id) { %>
+          <span class="comment-owner">
+            <a class="icon-btn icon-btn--sm" href="/comments/<%= c.id %>/edit" aria-label="Edit comment"><%- include('icon', { n: 'edit' }) %></a>
+            <form action="/comments/<%= c.id %>/delete" method="POST" onsubmit="return confirm('<%= n > 0 ? 'Delete this comment and all its replies?' : 'Delete this comment?' %>');"><button type="submit" class="icon-btn icon-btn--sm" aria-label="Delete comment"><%- include('icon', { n: 'trash' }) %></button></form>
+          </span>
+        <% } %>
+      </div>
+      <% if (asReply && c.replyTo && text.indexOf('@') !== 0) { %><span class="cm-to">Replying to @<%= c.replyTo %></span><% } %>
+      <p><% if (mm) { %><span class="mention"><%= mm[1] %></span><%= mm[2] %><% } else { %><%= text %><% } %></p>
+    </div>
+
+    <% if (me) { %>
+      <details class="reply-box">
+        <summary class="reply-btn">Reply</summary>
+        <form class="reply-form" action="/posts/<%= post.id %>/comments" method="POST">
+          <input type="hidden" name="parent_id" value="<%= c.id %>">
+          <span class="avatar" style="--h:<%= hue(me.username) %>"><%= me.username.charAt(0).toUpperCase() %></span>
+          <div class="cf-field">
+            <textarea name="content" rows="1" maxlength="2000" required placeholder="Add a reply…"><%= asReply ? '@' + c.username + ' ' : '' %></textarea>
+            <div class="reply-actions">
+              <button type="button" class="reply-cancel" data-reply-cancel>Cancel</button>
+              <button type="submit" class="btn btn-primary btn-sm">Reply</button>
+            </div>
+          </div>
+        </form>
+      </details>
+    <% } else { %>
+      <a class="reply-btn" href="/login?next=<%= encodeURIComponent('/posts/' + post.id + '#c-' + c.id) %>">Reply</a>
+    <% } %>
+
+    <% if (n > 0) { %>
+      <details class="replies">
+        <summary><%= n %> <%= n === 1 ? 'reply' : 'replies' %></summary>
+        <div class="replies-list">
+          <% list.forEach((r) => { %><%- include('commentItem', { c: r, isReply: true }) %><% }) %>
+        </div>
+      </details>
+    <% } %>
+  </div>
+</div>

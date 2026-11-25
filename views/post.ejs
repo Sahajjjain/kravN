@@ -6,6 +6,33 @@
   const backdrop = movie && movie.backdrop;
   const others = Math.max(0, d.likes - likers.length);
   const mins = Math.max(1, Math.round(String(post.content || '').trim().split(/\s+/).length / 200));
+
+  // Group comments into YouTube-style threads: each top-level comment gets a flat list of all its
+  // replies (replies to replies included, oldest first), built here from `comments` using parent_id.
+  // (The route's own `threads` uses a `replies` property, so it is deliberately not used.)
+  const toTime = (v) => { const t = new Date(v).getTime(); return isNaN(t) ? 0 : t; };
+  const buildThreads = (all) => {
+    const byId = new Map(all.map((x) => [String(x.id), x]));
+    const rootOf = (x) => {
+      let cur = x, guard = 0;
+      while (cur.parent_id != null && byId.has(String(cur.parent_id)) && guard++ < 50) cur = byId.get(String(cur.parent_id));
+      return cur;
+    };
+    const roots = new Map();
+    all.forEach((x) => { if (rootOf(x) === x) roots.set(String(x.id), Object.assign({}, x, { flat: [] })); });
+    all.forEach((x) => {
+      const r = rootOf(x);
+      if (r === x) return;
+      const parent = byId.get(String(x.parent_id));
+      const bucket = roots.get(String(r.id));
+      if (!bucket) return;
+      bucket.flat.push(Object.assign({}, x, { replyTo: parent && parent !== r ? parent.username : '' }));
+    });
+    const out = Array.from(roots.values());
+    out.forEach((r) => r.flat.sort((a, b) => toTime(a.created_at) - toTime(b.created_at)));
+    return out;
+  };
+  const commentThreads = buildThreads(comments);
 %>
 <%- include('partials/head', { title: post.title, description: post.content.slice(0, 160) }) %>
 <%- include('partials/nav') %>
@@ -13,7 +40,7 @@
 <style>
   /* =====================================================================
      THREAD PAGE — compact + a little cinematic
-     ticket-stub movie chip · pull-quote post · chat-bubble comments ·
+     ticket-stub movie chip · pull-quote post · YouTube-style comments ·
      avatar-stack likes · swipeable "more on this movie" rail
      (scoped to .kv-th so nothing else on the site is affected)
      ===================================================================== */
@@ -141,32 +168,103 @@
   .kv-th .thread-card { margin: 0; padding: 12px 14px 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); background: color-mix(in srgb, var(--text) 3%, var(--surface)); }
   .kv-th .thread-card .section-head { margin-bottom: 10px; }
 
-  /* ---------- comments: chat bubbles ---------- */
-  .kv-th .comments { margin: 0; padding: 12px 14px 8px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); background: color-mix(in srgb, var(--text) 3%, var(--surface)); }
-  .kv-th .comment-form { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: 8px 10px; margin: 0 0 10px; }
-  .kv-th .comment-form .avatar { width: 30px; height: 30px; font-size: 12px; margin-bottom: 4px; }
-  .kv-th .comment-form textarea { width: 100%; min-height: 40px; padding: 9px 12px; font-size: 14px; line-height: 1.4; resize: vertical; border-radius: 14px; }
-  .kv-th .comment-form .btn { height: 34px; padding: 0 16px; border-radius: 999px; margin-bottom: 3px; }
-  .kv-th .comments .compose-teaser { margin: 0 0 10px; padding: 10px 12px; }
+  /* =====================================================================
+     COMMENTS — YouTube style
+     big round avatar · @name + time · text · "Reply" pill · "N replies" toggle ·
+     underline "Add a comment" box whose Cancel/Comment buttons appear on focus
+     ===================================================================== */
+  .kv-th .comments { margin: 0; padding: 16px 16px 18px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); background: color-mix(in srgb, var(--text) 3%, var(--surface)); }
+  .kv-th .comments .section-head { margin: 0 0 16px; }
+  .kv-th .comments .section-head h2 { font-size: 17px; font-weight: 700; }
+  .kv-th .comments .section-head h2::before { display: none; }
+  .kv-th .comments .compose-teaser { margin: 0 0 20px; padding: 10px 12px; }
   .kv-th .empty-line { margin: 6px 0 10px; font-size: 13px; }
 
-  .kv-th .comment-list { display: grid; gap: 10px; }
-  .kv-th .comment { display: flex; align-items: flex-start; gap: 9px; padding: 0; border: 0; position: relative; }
-  .kv-th .comment > .avatar { width: 30px; height: 30px; font-size: 12px; flex: none; margin-top: 2px; }
-  .kv-th .comment-body {
-    flex: 0 1 auto; min-width: 0; max-width: 100%; padding: 7px 12px 9px; border-radius: 4px 14px 14px 14px;
-    background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+  /* the shared underline textarea (new comment + replies) */
+  .kv-th .cf-field { min-width: 0; display: grid; gap: 10px; }
+  .kv-th .cf-field textarea {
+    display: block; width: 100%; min-height: 32px; max-height: 240px; margin: 0; padding: 6px 0 7px; resize: none; overflow: hidden;
+    font: 400 14px/1.45 var(--font); color: var(--text); outline: 0;
+    background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 30%, transparent) !important;
+    transition: border-color .2s, box-shadow .2s;
   }
-  .kv-th .comment--author .comment-body { background: color-mix(in srgb, var(--accent) 13%, transparent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
-  .kv-th .comment-top { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 2px; font-size: 12.5px; }
-  .kv-th .comment-top strong { font-weight: 600; }
-  .kv-th .comment-top time { font-size: 11px; }
-  .kv-th .comment-top .pill { font-size: 9.5px; padding: 1px 7px; border-radius: 999px; line-height: 1.5; letter-spacing: .04em; text-transform: uppercase; }
-  .kv-th .comment-body p { margin: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-line; }
-  .kv-th .comment-owner { display: flex; gap: 0; flex: none; align-self: center; margin-left: 0; opacity: .75; }
+  .kv-th .cf-field textarea::placeholder { color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .kv-th .cf-field textarea:focus { border-bottom-color: var(--text) !important; box-shadow: 0 1px 0 0 var(--text) !important; }
+
+  /* add-a-comment box */
+  .kv-th .comment-form { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 0 14px; align-items: start; margin: 0 0 26px; }
+  .kv-th .comment-form > .avatar { width: 40px; height: 40px; font-size: 16px; }
+  .kv-th .cf-actions { display: none; align-items: center; justify-content: flex-end; gap: 8px; }
+  .kv-th .comment-form:focus-within .cf-actions,
+  .kv-th .cf-field textarea:not(:placeholder-shown) ~ .cf-actions { display: flex; }
+  .kv-th .cf-actions .btn, .kv-th .reply-actions .btn { height: 36px; padding: 0 16px; margin: 0; border-radius: 999px; font-size: 13.5px; font-weight: 600; min-height: 0; }
+  .kv-th .reply-cancel {
+    height: 36px; padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer; background: none;
+    font: 600 13.5px/1 var(--font); color: var(--text); transition: background .15s;
+  }
+  .kv-th .reply-cancel:hover { background: color-mix(in srgb, var(--text) 10%, transparent); }
+
+  .kv-th .comment-list { display: grid; gap: 24px; }
+
+  /* one comment = [avatar | content]; replies live inside a collapsible "N replies" */
+  .kv-th .cm { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; min-width: 0; scroll-margin-top: calc(var(--nav-h, 60px) + 12px); }
+  /* the curved thread line: from under the avatar, down and round into the "N replies" row */
+  .kv-th .cm--threaded::before {
+    content: ''; position: absolute; left: 19px; top: 48px; bottom: 18px; width: 28px; pointer-events: none;
+    border-left: 2px solid color-mix(in srgb, var(--text) 24%, transparent);
+    border-bottom: 2px solid color-mix(in srgb, var(--text) 24%, transparent);
+    border-bottom-left-radius: 14px;
+  }
+  .kv-th .cm > .avatar { width: 40px; height: 40px; font-size: 16px; margin-top: 0; }
+  .kv-th .cm--reply { grid-template-columns: 24px minmax(0, 1fr); gap: 12px; }
+  .kv-th .cm--reply > .avatar { width: 24px; height: 24px; font-size: 11px; }
+  .kv-th .cm-main { min-width: 0; display: grid; gap: 2px; align-content: start; }
+  .kv-th .cm-body { min-width: 0; border-radius: 8px; }
+  /* the comment you just posted / jumped to */
+  .kv-th .cm:target > .cm-main > .cm-body { background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent); }
+
+  .kv-th .comment-top { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; margin-bottom: 2px; font-size: 13px; }
+  .kv-th .comment-top strong { font-weight: 600; font-size: 13px; }
+  .kv-th .comment-top time { font-size: 12px; color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .kv-th .comment-top .pill {
+    font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; line-height: 1.5; letter-spacing: 0; text-transform: none;
+    color: var(--text); background: color-mix(in srgb, var(--text) 16%, transparent);
+  }
+  .kv-th .cm-body > p { margin: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-line; color: var(--text); }
+  .kv-th .cm-body .mention { color: var(--accent-2); font-weight: 500; }
+  .kv-th .cm-to { display: block; margin-bottom: 1px; font-size: 12px; color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .kv-th .comment-owner { display: inline-flex; align-items: center; margin-left: auto; opacity: .7; }
+  .kv-th .comment-owner:hover { opacity: 1; }
   .kv-th .comment-owner form { margin: 0; }
-  .kv-th .comment-owner .icon-btn { width: 26px; height: 26px; }
+  .kv-th .comment-owner .icon-btn { width: 24px; height: 24px; }
   .kv-th .comment-owner .icon-btn svg { width: 13px; height: 13px; }
+
+  /* "Reply" is a pill button; it opens a small form right under that comment (works without JavaScript) */
+  .kv-th .reply-box, .kv-th .replies { display: block; }
+  .kv-th .reply-box > summary, .kv-th .replies > summary { list-style: none; cursor: pointer; user-select: none; -webkit-user-select: none; }
+  .kv-th .reply-box > summary::-webkit-details-marker, .kv-th .replies > summary::-webkit-details-marker { display: none; }
+  .kv-th .reply-btn {
+    display: inline-flex; align-items: center; width: fit-content; height: 32px; padding: 0 12px; margin: 0 0 0 -12px; border: 0; border-radius: 999px;
+    background: none; cursor: pointer; font: 600 13px/1 var(--font); color: var(--text); text-decoration: none; transition: background .15s;
+  }
+  .kv-th .reply-btn:hover { background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); }
+  .kv-th .reply-form { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 0 12px; align-items: start; margin: 6px 0 10px; padding: 0; background: none; border: 0; }
+  .kv-th .reply-form > .avatar { width: 24px; height: 24px; font-size: 11px; }
+  .kv-th .reply-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+
+  /* "N replies ⌄" toggle, YouTube style: bold text, chevron after it, flips up when open */
+  .kv-th .replies > summary {
+    display: inline-flex; align-items: center; gap: 8px; width: fit-content; height: 36px; margin: 2px 0 0 -12px; padding: 0 12px; border-radius: 999px;
+    font: 600 14px/1 var(--font); color: var(--text); transition: background .15s;
+  }
+  .kv-th .replies > summary:hover { background: color-mix(in srgb, var(--text) 10%, transparent); }
+  .kv-th .replies > summary::after {
+    content: ''; width: 8px; height: 8px; flex: none; margin: -4px 0 0 2px;
+    border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .2s;
+  }
+  .kv-th .replies[open] > summary::after { transform: rotate(-135deg); margin-top: 4px; }
+  .kv-th .replies-list { display: grid; gap: 18px; margin-top: 6px; min-width: 0; }
 
   /* ---------- more on this movie: swipeable rail ---------- */
   .kv-th .more-talk { margin: 0; min-width: 0; }
@@ -197,9 +295,13 @@
     .kv-th .thread-card, .kv-th .comments { border-radius: 14px; }
     .kv-th .thread-card { padding: 10px 10px 12px; }
     .kv-th .thread-card .section-head .small { display: none; }
-    .kv-th .comments { padding: 10px 12px 6px; }
-    .kv-th .comment-form { grid-template-columns: auto minmax(0, 1fr); }
-    .kv-th .comment-form .btn { grid-column: 1 / -1; justify-self: end; margin: 0; }
+    .kv-th .comments { padding: 14px 12px 14px; }
+    .kv-th .comment-form { grid-template-columns: 36px minmax(0, 1fr); gap: 0 12px; }
+    .kv-th .comment-form > .avatar, .kv-th .cm > .avatar { width: 36px; height: 36px; font-size: 14px; }
+    .kv-th .cm { grid-template-columns: 36px minmax(0, 1fr); gap: 12px; }
+    .kv-th .cm--reply { grid-template-columns: 24px minmax(0, 1fr); gap: 10px; }
+    .kv-th .cm--reply > .avatar { width: 24px; height: 24px; font-size: 11px; }
+    .kv-th .cm--threaded::before { left: 17px; top: 44px; width: 24px; }
     .kv-th .thread-actions .btn { flex: 1 1 auto; justify-content: center; padding: 0 12px; }
     .kv-th .more-talk .pcard { flex-basis: 78%; }
   }
@@ -275,15 +377,20 @@
       <div class="kcard-mount" data-kcard-mount data-post="<%= json(d) %>"></div>
     </section>
 
-    <!-- Comments -->
+    <!-- Comments (YouTube style: anyone logged in can reply to any comment, the post author included) -->
     <section class="comments" id="comments">
-      <div class="section-head"><h2>Comments <span class="count"><%= comments.length %></span></h2></div>
+      <div class="section-head"><h2><%= comments.length %> <%= comments.length === 1 ? 'Comment' : 'Comments' %></h2></div>
 
       <% if (me) { %>
       <form class="comment-form" action="/posts/<%= post.id %>/comments" method="POST">
         <span class="avatar" style="--h:<%= hue(me.username) %>"><%= me.username.charAt(0).toUpperCase() %></span>
-        <textarea name="content" rows="2" maxlength="2000" required placeholder="Add to the discussion…"></textarea>
-        <button type="submit" class="btn btn-primary btn-sm">Comment</button>
+        <div class="cf-field">
+          <textarea name="content" rows="1" maxlength="2000" required placeholder="Add a comment…"></textarea>
+          <div class="cf-actions">
+            <button type="button" class="reply-cancel" data-cf-cancel>Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm">Comment</button>
+          </div>
+        </div>
       </form>
       <% } else { %>
       <a class="compose-teaser" href="/login?next=<%= encodeURIComponent('/posts/' + post.id + '#comments') %>">
@@ -294,26 +401,11 @@
       <% if (!comments.length) { %><p class="muted empty-line">No comments yet. Say something.</p><% } %>
 
       <div class="comment-list">
-        <% comments.forEach((c) => { %>
-          <div class="comment<%= c.username === post.username ? ' comment--author' : '' %>" id="c-<%= c.id %>">
-            <a class="avatar" style="--h:<%= hue(c.username) %>" href="/users/<%= encodeURIComponent(c.username) %>"><%= c.username.charAt(0).toUpperCase() %></a>
-            <div class="comment-body">
-              <div class="comment-top">
-                <a href="/users/<%= encodeURIComponent(c.username) %>"><strong><%= c.username %></strong></a>
-                <% if (c.username === post.username) { %><span class="pill">Author</span><% } %>
-                <time class="muted" title="<%= fmtDate(c.created_at, true) %>"><%= timeAgo(c.created_at) %></time>
-              </div>
-              <p><%= c.content %></p>
-            </div>
-            <% if (me && c.user_id === me.id) { %>
-              <div class="comment-owner">
-                <a class="icon-btn icon-btn--sm" href="/comments/<%= c.id %>/edit" aria-label="Edit comment"><%- include('partials/icon', { n: 'edit' }) %></a>
-                <form action="/comments/<%= c.id %>/delete" method="POST" onsubmit="return confirm('Delete this comment?');"><button type="submit" class="icon-btn icon-btn--sm" aria-label="Delete comment"><%- include('partials/icon', { n: 'trash' }) %></button></form>
-              </div>
-            <% } %>
-          </div>
+        <% commentThreads.forEach((c) => { %>
+          <%- include('partials/commentItem', { c: c, isReply: false }) %>
         <% }) %>
       </div>
+
     </section>
 
     <% if (more.length) { %>
@@ -325,4 +417,61 @@
 
   </div>
 </main>
+
+<script>
+  /* YouTube-style comments: Reply boxes and "N replies" are plain <details> elements.
+     This only adds polish: auto-growing boxes, focus on open, close others, and open the replies
+     when a link points at one. */
+  (function () {
+    var root = document.getElementById('comments');
+    if (!root) return;
+
+    function grow(ta) {
+      if (!ta) return;
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 240) + 'px';
+    }
+
+    root.addEventListener('input', function (e) {
+      if (e.target && e.target.tagName === 'TEXTAREA') grow(e.target);
+    });
+
+    root.addEventListener('toggle', function (e) {
+      var d = e.target;
+      if (!d || !d.classList || !d.classList.contains('reply-box') || !d.open) return;
+      root.querySelectorAll('details.reply-box[open]').forEach(function (o) { if (o !== d) o.open = false; });
+      var ta = d.querySelector('textarea');
+      if (ta) { grow(ta); ta.focus(); var n = ta.value.length; ta.setSelectionRange(n, n); }
+    }, true);
+
+    root.addEventListener('click', function (e) {
+      if (e.target.closest('[data-reply-cancel]')) {
+        var box = e.target.closest('details');
+        if (box) box.open = false;
+        return;
+      }
+      if (e.target.closest('[data-cf-cancel]')) {
+        var form = e.target.closest('form');
+        if (form) {
+          form.reset();
+          var t = form.querySelector('textarea');
+          if (t) t.style.height = '';
+        }
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      }
+    });
+
+    function revealHash() {
+      var id = (location.hash || '').slice(1);
+      if (!id) return;
+      var el;
+      try { el = document.getElementById(decodeURIComponent(id)); } catch (err) { return; }
+      if (!el || !root.contains(el)) return;
+      var wrap = el.closest('details.replies');
+      if (wrap) { wrap.open = true; el.scrollIntoView({ block: 'center' }); }
+    }
+    revealHash();
+    window.addEventListener('hashchange', revealHash);
+  })();
+</script>
 <%- include('partials/foot') %>

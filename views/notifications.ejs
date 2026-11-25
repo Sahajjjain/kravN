@@ -1,48 +1,52 @@
 <%
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const hrefOf = (n) => '/posts/' + n.post_id + (n.comment_id ? '#c-' + n.comment_id : ((n.type === 'comment' || n.type === 'reply') ? '#comments' : ''));
+  const actionOf = (n) => n.type === 'like' ? 'liked your discussion' : n.type === 'reply' ? 'replied to your comment on' : 'commented on your discussion';
 %>
 <%- include('partials/head', { title: 'Notifications' }) %>
 <%- include('partials/nav') %>
 
 <style>
   /* =====================================================================
-     NOTIFICATIONS: compact head -> clean activity rows
+     NOTIFICATIONS: compact head -> clean activity rows (phone + laptop)
      ===================================================================== */
-  .page .shell--narrow.kv-notifs { max-width: min(720px, 100% - 32px); }
+  .page .shell--narrow.kv-notifs { max-width: min(760px, 100% - 32px); }
 
   /* ---------- header ---------- */
-  .kv-notifs .page-head { display: grid; gap: 6px; justify-items: start; margin: 0 0 14px; padding: 0; }
-  .kv-notifs .page-head h1 { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0; font-size: clamp(24px, 3.4vw, 32px); font-weight: 700; letter-spacing: -.03em; line-height: 1.1; }
+  .kv-notifs .page-head { display: grid; gap: 6px; justify-items: start; margin: 0 0 16px; padding: 0; }
+  .kv-notifs .page-head h1 { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0; font-size: clamp(24px, 3.4vw, 34px); font-weight: 700; letter-spacing: -.03em; line-height: 1.1; }
   .kv-notifs .new-pill {
-    display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px;
+    display: inline-flex; align-items: center; height: 22px; padding: 0 10px; border-radius: 999px;
     font: 600 11px/1 var(--font); letter-spacing: .04em; color: #fff; background: var(--accent);
+    box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--accent) 80%, transparent);
   }
 
   /* ---------- list ---------- */
   .kv-notifs .notif-list { display: grid; gap: 8px; }
   .kv-notifs .notif {
-    position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; min-width: 0;
-    padding: 12px 14px; margin: 0; border-radius: 16px; text-decoration: none; color: var(--text);
+    position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; min-width: 0;
+    padding: 13px 16px; margin: 0; border-radius: 16px; text-decoration: none; color: var(--text);
     background: color-mix(in srgb, var(--text) 3%, var(--surface)); border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
     transition: transform .2s ease, border-color .2s ease, background .2s ease;
+    -webkit-tap-highlight-color: transparent;
+    /* skip rendering off-screen rows: faster on long lists */
+    content-visibility: auto; contain-intrinsic-size: auto 84px;
   }
-  .kv-notifs .notif:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: color-mix(in srgb, var(--text) 5%, var(--surface)); }
-  .kv-notifs .notif:active { transform: scale(.995); }
+  .kv-notifs .notif:active { transform: scale(.99); }
+  .kv-notifs .notif:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  /* unread: soft accent tint + dot */
+  /* unread: soft tint + slim accent bar (works with or without a poster) */
   .kv-notifs .notif.unread {
-    background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), color-mix(in srgb, var(--text) 3%, var(--surface)) 70%);
-    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 13%, var(--surface)), color-mix(in srgb, var(--text) 3%, var(--surface)) 75%);
+    border-color: color-mix(in srgb, var(--accent) 32%, transparent);
   }
   .kv-notifs .notif.unread::before {
-    content: ''; position: absolute; top: 14px; right: 14px; width: 8px; height: 8px; border-radius: 50%;
-    background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+    content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent);
   }
-  .kv-notifs .notif.unread:has(.notif-poster)::before { right: auto; left: 8px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; box-shadow: none; }
 
   /* avatar + type badge */
   .kv-notifs .notif-av { position: relative; flex: none; display: block; }
-  .kv-notifs .notif-av .avatar { width: 42px; height: 42px; font-size: 17px; }
+  .kv-notifs .notif-av .avatar { width: 44px; height: 44px; font-size: 17px; }
   .kv-notifs .notif-badge {
     position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%;
     color: #fff; border: 2px solid var(--surface); background: var(--accent);
@@ -52,40 +56,68 @@
 
   /* text */
   .kv-notifs .notif-text { display: grid; gap: 4px; min-width: 0; font-size: 14px; line-height: 1.45; }
-  .kv-notifs .notif-text > span { color: color-mix(in srgb, var(--text) 74%, transparent); overflow-wrap: anywhere; }
+  .kv-notifs .notif-text > span { color: color-mix(in srgb, var(--text) 70%, transparent); overflow-wrap: anywhere; }
   .kv-notifs .notif-text strong { font-weight: 650; color: var(--text); }
   .kv-notifs .notif-text em { font-style: normal; font-weight: 600; color: var(--text); }
+  .kv-notifs .notif.unread .notif-text > span { color: color-mix(in srgb, var(--text) 82%, transparent); }
   .kv-notifs .notif-text q {
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; quotes: none; margin: 2px 0 0; padding: 2px 0 2px 10px;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; quotes: none; margin: 2px 0 0; padding: 3px 0 3px 10px;
     font-size: 13px; line-height: 1.45; color: color-mix(in srgb, var(--text) 62%, transparent); border-left: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
   }
-  .kv-notifs .notif-text time { font-size: 11.5px; letter-spacing: .02em; color: color-mix(in srgb, var(--text) 48%, transparent); }
+  .kv-notifs .notif-text time { font-size: 11.5px; letter-spacing: .02em; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--text) 48%, transparent); }
 
   /* poster thumb */
-  .kv-notifs .notif-poster { flex: none; width: 42px; height: 62px; object-fit: cover; object-position: center top; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--text) 12%, transparent); background: var(--surface-2); }
+  .kv-notifs .notif-poster { flex: none; width: 44px; height: 64px; object-fit: cover; object-position: center top; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--text) 12%, transparent); background: var(--surface-2); }
 
   /* ---------- empty state ---------- */
-  .kv-notifs .empty { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 48px 20px; border-radius: 20px; border: 1px dashed color-mix(in srgb, var(--text) 16%, transparent); }
+  .kv-notifs .empty { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 52px 20px; border-radius: 20px; border: 1px dashed color-mix(in srgb, var(--text) 16%, transparent); }
   .kv-notifs .empty p { margin: 0; max-width: 34ch; font-size: 14px; line-height: 1.55; color: color-mix(in srgb, var(--text) 62%, transparent); text-wrap: balance; }
   .kv-notifs .empty svg { opacity: .55; }
-  .kv-notifs .empty .btn {
-    display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 22px; margin-top: 4px; border-radius: 999px;
+  .kv-notifs .empty .btn, .kv-notifs .notif-more {
+    display: inline-flex; align-items: center; justify-content: center; height: 42px; padding: 0 22px; border-radius: 999px;
     font: 500 12.5px/1 var(--font); letter-spacing: .03em; color: #fff; text-decoration: none; background: transparent; box-shadow: none;
     border: 1px solid color-mix(in srgb, var(--accent) 85%, #fff 10%); transition: transform .2s ease, background .2s ease, border-color .2s ease;
   }
-  .kv-notifs .empty .btn:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+  .kv-notifs .empty .btn { margin-top: 4px; }
+  .kv-notifs .notif-more { margin: 16px auto 0; width: fit-content; display: flex; }
+  .kv-notifs .notif-more.is-loading { opacity: .6; pointer-events: none; }
+  .kv-notifs .empty .btn:focus-visible, .kv-notifs .notif-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* hover only where a real pointer exists (no sticky hover on phones) */
+  @media (hover: hover) {
+    .kv-notifs .notif:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--text) 5%, var(--surface)); }
+    .kv-notifs .notif.unread:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 17%, var(--surface)), color-mix(in srgb, var(--text) 5%, var(--surface)) 75%); }
+    .kv-notifs .empty .btn:hover, .kv-notifs .notif-more:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+  }
+
+  /* ---------- laptop / large ---------- */
+  @media (min-width: 900px) {
+    .kv-notifs .page-head { margin-bottom: 20px; }
+    .kv-notifs .notif-list { gap: 10px; }
+    .kv-notifs .notif { gap: 16px; padding: 15px 20px; border-radius: 18px; }
+    .kv-notifs .notif-av .avatar { width: 48px; height: 48px; font-size: 19px; }
+    .kv-notifs .notif-text { font-size: 14.5px; }
+    .kv-notifs .notif-text q { font-size: 13.5px; }
+    .kv-notifs .notif-poster { width: 50px; height: 74px; border-radius: 9px; }
+  }
 
   /* ---------- phone ---------- */
   @media (max-width: 640px) {
     .kv-notifs .page-head { margin-bottom: 12px; }
     .kv-notifs .notif-list { gap: 6px; }
-    .kv-notifs .notif { gap: 11px; padding: 11px 12px; border-radius: 14px; }
-    .kv-notifs .notif-av .avatar { width: 38px; height: 38px; font-size: 15px; }
+    .kv-notifs .notif { gap: 11px; padding: 12px 12px 12px 14px; border-radius: 14px; contain-intrinsic-size: auto 76px; }
+    .kv-notifs .notif.unread::before { top: 12px; bottom: 12px; }
+    .kv-notifs .notif-av .avatar { width: 40px; height: 40px; font-size: 16px; }
     .kv-notifs .notif-badge { width: 18px; height: 18px; right: -3px; bottom: -3px; }
     .kv-notifs .notif-text { font-size: 13.5px; gap: 3px; }
     .kv-notifs .notif-text q { font-size: 12.5px; }
     .kv-notifs .notif-poster { width: 38px; height: 56px; border-radius: 7px; }
-    .kv-notifs .notif.unread::before { top: 12px; right: 12px; }
+    .kv-notifs .notif-more { width: 100%; }
+  }
+  @media (max-width: 360px) { .kv-notifs .notif-poster { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .kv-notifs .notif, .kv-notifs .empty .btn, .kv-notifs .notif-more { transition: none; }
+    .kv-notifs .notif:hover, .kv-notifs .notif:active { transform: none; }
   }
 </style>
 
@@ -93,7 +125,7 @@
   <div class="shell shell--narrow kv-notifs">
     <header class="page-head">
       <span class="eyebrow"><span class="dot"></span> Activity</span>
-      <h1>Notifications<% if (unreadCount) { %><span class="new-pill"><%= unreadCount %> new</span><% } %></h1>
+      <h1>Notifications<% if (unreadCount) { %><span class="new-pill" aria-label="<%= unreadCount %> unread"><%= unreadCount %> new</span><% } %></h1>
     </header>
 
     <% if (!notifications.length) { %>
@@ -104,9 +136,9 @@
       </div>
     <% } %>
 
-    <div class="notif-list">
+    <div class="notif-list" id="notif-list">
       <% notifications.forEach((n) => { const actor = n.actor_username || 'Someone'; %>
-        <a class="notif<%= n.is_read ? '' : ' unread' %>" href="/posts/<%= n.post_id %><%= n.type === 'comment' ? '#comments' : '' %>">
+        <a class="notif<%= n.is_read ? '' : ' unread' %>" href="<%= hrefOf(n) %>">
           <span class="notif-av">
             <span class="avatar" style="--h:<%= hue(actor) %>"><%= actor.charAt(0).toUpperCase() %></span>
             <% if (n.type === 'like') { %>
@@ -116,14 +148,68 @@
             <% } %>
           </span>
           <span class="notif-text">
-            <span><strong><%= actor %></strong> <%= n.type === 'like' ? 'liked' : 'commented on' %> your discussion <em><%= n.post_title || n.movie_name || '(deleted)' %></em></span>
-            <% if (n.type === 'comment' && n.comment_content) { %><q><%= n.comment_content.length > 140 ? n.comment_content.slice(0, 140) + '…' : n.comment_content %></q><% } %>
+            <span><strong><%= actor %></strong> <%= actionOf(n) %> <em><%= n.post_title || n.movie_name || '(deleted)' %></em></span>
+            <% if ((n.type === 'comment' || n.type === 'reply') && n.comment_content) { %><q><%= n.comment_content.length > 140 ? n.comment_content.slice(0, 140) + '…' : n.comment_content %></q><% } %>
             <time class="muted"><%= timeAgo(n.created_at) %></time>
           </span>
-          <% if (posterOf({ poster_url: n.poster_url })) { %><img class="notif-poster" src="<%= n.poster_url %>" alt="" loading="lazy"><% } %>
+          <% if (posterOf({ poster_url: n.poster_url })) { %><img class="notif-poster" src="<%= n.poster_url %>" alt="" width="50" height="74" loading="lazy" decoding="async"><% } %>
         </a>
       <% }) %>
     </div>
+
+    <% if (typeof hasMore !== 'undefined' && hasMore) { %>
+      <a class="notif-more" id="notif-more" href="/notifications?page=<%= page + 1 %>">Older notifications</a>
+    <% } %>
   </div>
 </main>
+
+<script>
+  /* Infinite feed: older notifications load below the list (auto on scroll, or tap the button).
+     Without JS the button is still a normal link to the next page. */
+  (function () {
+    var list = document.getElementById('notif-list');
+    var more = document.getElementById('notif-more');
+    if (!list || !more || !window.fetch || !window.DOMParser) return;
+    var loading = false, io = null;
+
+    function load() {
+      if (loading || !more) return;
+      loading = true;
+      if (io) io.unobserve(more);
+      more.classList.add('is-loading');
+      more.textContent = 'Loading…';
+      fetch(more.getAttribute('href'), { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+        .then(function (r) { if (!r.ok) throw r; return r.text(); })
+        .then(function (html) {
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          var frag = document.createDocumentFragment();
+          doc.querySelectorAll('#notif-list .notif').forEach(function (row) { frag.appendChild(document.importNode(row, true)); });
+          list.appendChild(frag);
+          var next = doc.getElementById('notif-more');
+          if (next) {
+            more.setAttribute('href', next.getAttribute('href'));
+            more.textContent = 'Older notifications';
+            more.classList.remove('is-loading');
+            if (io) io.observe(more);
+          } else {
+            if (io) io.disconnect();
+            more.remove(); more = null;
+          }
+        })
+        .catch(function () {
+          more.textContent = 'Couldn\u2019t load. Tap to retry';
+          more.classList.remove('is-loading');
+        })
+        .then(function () { loading = false; });
+    }
+
+    more.addEventListener('click', function (e) { e.preventDefault(); load(); });
+    if ('IntersectionObserver' in window) {
+      io = new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting) load();
+      }, { rootMargin: '400px 0px' });
+      io.observe(more);
+    }
+  })();
+</script>
 <%- include('partials/foot') %>
