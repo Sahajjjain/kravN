@@ -57,9 +57,21 @@ function cssVersion() {
   try { cssVersionCache = fs.statSync(cssFile).mtimeMs.toString(36); } catch (e) { /* keep old value */ }
   return cssVersionCache;
 }
+
+// Same idea for the watchlist script (used as <%= wlV %> in the nav)
+const wlFiles = [path.join(__dirname, 'public', 'js', 'watchlist.js')];
+let wlVersionCache = null;
+function wlVersion() {
+  if (process.env.NODE_ENV === 'production' && wlVersionCache) return wlVersionCache;
+  try { wlVersionCache = Math.max(...wlFiles.map((f) => fs.statSync(f).mtimeMs)).toString(36); } catch (e) { /* keep old value */ }
+  return wlVersionCache;
+}
+
 app.use((req, res, next) => {
   const v = cssVersion();
   if (v) res.locals.assetV = v;
+  const w = wlVersion();
+  if (w) res.locals.wlV = w;
   next();
 });
 
@@ -108,6 +120,7 @@ app.use('/', require('./routes/auth'));
 app.use('/', require('./routes/browse'));
 app.use('/', require('./routes/movies'));
 app.use('/', require('./routes/posts'));
+app.use('/', require('./routes/watchlist')); // before users, so /users/:name/watchlist is never shadowed
 app.use('/', require('./routes/users'));
 
 /* ------------------------------ 404 + errors ------------------------------ */
@@ -136,3 +149,6 @@ pool
   .query('SELECT 1 + 1 AS result')
   .then(([rows]) => console.log('DB connected. Test query result:', rows[0].result))
   .catch((err) => console.error('DB connection failed:', err));
+
+// create the watchlist tables once at startup (safe to run every time)
+require('./routes/watchlist').ready().then(() => console.log('Watchlist tables ready.')).catch((err) => console.error('Watchlist setup failed:', err));

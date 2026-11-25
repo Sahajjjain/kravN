@@ -1,8 +1,10 @@
+<%# Watchlist: one script (its styles are inside it) loads on every page that shows the nav %>
+<script src="/js/watchlist.js?v=<%= locals.wlV || assetV %>" defer data-watchlist data-me="<%= me ? 1 : 0 %>"></script>
 <style>
   /* =====================================================================
      NAV — one controlled breakpoint (820px) so nothing goes missing on phones.
      Desktop: refined glass top bar.  Phone: slim top bar (search · alerts · profile menu)
-     + a glass bottom bar (Home · Talk · New · Alerts · Me).
+     + a glass bottom bar (Home · Talk · New · Watchlist · Me).
      ===================================================================== */
 
   /* ---------- top bar finish (all sizes) ---------- */
@@ -12,7 +14,7 @@
   }
   #topnav .brand { font-weight: 800; letter-spacing: -.03em; text-decoration: none; -webkit-tap-highlight-color: transparent; white-space: nowrap; }
 
-  /* ADDED: back button + brand grouped on the left */
+  /* back button + brand grouped on the left */
   #topnav .topnav-left { display: flex; align-items: center; gap: 10px; flex: none; }
 
   /* round icon buttons */
@@ -100,7 +102,7 @@
 
   /* ---------- phone / small tablet (≤ 820px) ---------- */
   @media (max-width: 820px) {
-    #topnav .topnav-left { gap: 8px; }                     /* ADDED */
+    #topnav .topnav-left { gap: 8px; }
     #topnav .topnav-links { display: none; }
     #topnav .topnav-new { display: none; }                 /* the + in the bottom bar replaces it */
     #topnav .topnav-right { display: flex; align-items: center; gap: 2px; margin-left: auto; }
@@ -132,7 +134,7 @@
       -webkit-tap-highlight-color: transparent; transition: color .2s ease, transform .15s ease;
     }
     .bottomnav a svg { width: 21px; height: 21px; transition: color .2s ease; }
-    .bottomnav a span { line-height: 1; }
+    .bottomnav a span { line-height: 1; white-space: nowrap; }
     .bottomnav a.on { color: var(--text); }
     .bottomnav a.on svg { color: var(--accent); }
     /* active: soft accent pill behind the icon */
@@ -153,16 +155,12 @@
 
     .bottomnav .bn-av { width: 24px; height: 24px; font-size: 11px; display: grid; place-items: center; box-shadow: 0 0 0 2px transparent; transition: box-shadow .2s ease; }
     .bottomnav a.on .bn-av { box-shadow: 0 0 0 2px var(--accent); }
-    .bottomnav .badge-dot {
-      position: absolute; top: 2px; left: calc(50% + 4px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; text-align: center;
-      font: 700 10px/16px var(--font); font-style: normal; color: #fff; background: var(--accent); box-shadow: 0 0 0 2px var(--bg);
-    }
 
     /* keep page content clear of the fixed bar */
     body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
   }
 
-  /* ADDED: very small phones, keep the header from overflowing (Log in also lives in the bottom bar) */
+  /* very small phones: keep the header from overflowing (Log in also lives in the bottom bar) */
   @media (max-width: 400px) {
     #topnav .topnav-left { gap: 6px; }
     #topnav .topnav-login { display: none; }
@@ -170,7 +168,6 @@
 </style>
 
 <header class="topnav" id="topnav">
-  <!-- ADDED: back button (hidden on Home) grouped with the brand -->
   <div class="topnav-left">
     <%- include('back-button') %>
     <a class="brand" href="/feed" aria-label="KravN home" data-egg="logo">Krav<span>N</span></a>
@@ -179,6 +176,7 @@
   <nav class="topnav-links" aria-label="Main">
     <a href="/feed" class="<%= nav === 'home' ? 'on' : '' %>"<%- nav === 'home' ? ' aria-current="page"' : '' %>>Home</a>
     <a href="/discussions" class="<%= nav === 'discussions' ? 'on' : '' %>"<%- nav === 'discussions' ? ' aria-current="page"' : '' %>>Discussions</a>
+    <% if (me) { %><a href="/watchlist" class="<%= nav === 'watchlist' ? 'on' : '' %>"<%- nav === 'watchlist' ? ' aria-current="page"' : '' %>>Watchlist</a><% } %>
     <% if (me) { %><a href="/dashboard" class="<%= nav === 'dashboard' ? 'on' : '' %>"<%- nav === 'dashboard' ? ' aria-current="page"' : '' %>>Dashboard</a><% } %>
     <a href="/about" class="<%= nav === 'about' ? 'on' : '' %>"<%- nav === 'about' ? ' aria-current="page"' : '' %>>About</a>
   </nav>
@@ -186,7 +184,7 @@
   <div class="topnav-right<%= me ? ' has-me' : '' %>">
     <button type="button" class="icon-btn" data-act="search" aria-label="Search movies, series, people and discussions"><%- include('icon', { n: 'search' }) %></button>
     <a class="btn btn-primary btn-sm topnav-new" href="<%= me ? '/posts/new' : '/login?next=/posts/new' %>"><%- include('icon', { n: 'plus' }) %><span>Start a discussion</span></a>
-    <% if (me) { %><a class="icon-btn topnav-bell<%= nav === 'notifications' ? ' on' : '' %>" href="/notifications" aria-label="Notifications">
+    <% if (me) { %><a class="icon-btn topnav-bell<%= nav === 'notifications' ? ' on' : '' %>" href="/notifications" aria-label="Notifications"<%- nav === 'notifications' ? ' aria-current="page"' : '' %>>
       <%- include('icon', { n: 'bell' }) %><% if (unread > 0) { %><i class="badge-dot"><%= unread > 9 ? '9+' : unread %></i><% } %>
     </a><% } %>
     <button type="button" class="icon-btn topnav-theme" data-act="theme" aria-label="Switch theme"><span class="theme-sun"><%- include('icon', { n: 'sun' }) %></span><span class="theme-moon"><%- include('icon', { n: 'moon' }) %></span></button>
@@ -200,6 +198,7 @@
         <div class="menu-pop" role="menu">
           <div class="menu-who">@<%= me.username %></div>
           <a href="/users/<%= encodeURIComponent(me.username) %>" role="menuitem"><%- include('icon', { n: 'user' }) %> My profile</a>
+          <a href="/watchlist" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1z"/></svg> My watchlist</a>
           <a href="/dashboard" role="menuitem"><%- include('icon', { n: 'home' }) %> My dashboard</a>
           <a href="/notifications" role="menuitem"><%- include('icon', { n: 'bell' }) %> Notifications<% if (unread > 0) { %><span class="menu-badge"><%= unread > 9 ? '9+' : unread %></span><% } %></a>
           <a href="/posts/new" role="menuitem"><%- include('icon', { n: 'plus' }) %> Start a discussion</a>
@@ -231,7 +230,7 @@
   <a href="/discussions" class="<%= nav === 'discussions' ? 'on' : '' %>"<%- nav === 'discussions' ? ' aria-current="page"' : '' %>><%- include('icon', { n: 'chat' }) %><span>Talk</span></a>
   <a href="<%= me ? '/posts/new' : '/login?next=/posts/new' %>" class="bottomnav-new" aria-label="Start a discussion"><%- include('icon', { n: 'plus' }) %></a>
   <% if (me) { %>
-  <a href="/notifications" class="<%= nav === 'notifications' ? 'on' : '' %>"<%- nav === 'notifications' ? ' aria-current="page"' : '' %>><%- include('icon', { n: 'bell' }) %><span>Alerts</span><% if (unread > 0) { %><i class="badge-dot"><%= unread > 9 ? '9+' : unread %></i><% } %></a>
+  <a href="/watchlist" class="<%= nav === 'watchlist' ? 'on' : '' %>"<%- nav === 'watchlist' ? ' aria-current="page"' : '' %>><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1z"/></svg><span>Watchlist</span></a>
   <a href="/dashboard" class="<%= nav === 'dashboard' ? 'on' : '' %>"<%- nav === 'dashboard' ? ' aria-current="page"' : '' %>><span class="avatar bn-av" style="--h:<%= hue(me.username) %>"><%= me.username.charAt(0).toUpperCase() %></span><span>Me</span></a>
   <% } else { %>
   <a href="/about" class="<%= nav === 'about' ? 'on' : '' %>"<%- nav === 'about' ? ' aria-current="page"' : '' %>><%- include('icon', { n: 'info' }) %><span>About</span></a>

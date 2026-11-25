@@ -1,0 +1,184 @@
+<%- include('partials/head', { title: title, bodyClass: 'watchlist-page' }) %>
+<%- include('partials/nav') %>
+<%
+  const _total = lists.reduce((n, l) => n + l.count, 0);
+  const _link = (l) => baseUrl + '?list=' + l.id;
+  const _share = '/users/' + encodeURIComponent(ownerName) + '/watchlist?list=' + current.id;
+  const _mine = typeof me !== 'undefined' && !!me && me.username === ownerName;
+  const _seenN = owner ? items.filter((i) => i.watched).length : 0;
+  const _pct = items.length ? Math.round((_seenN / items.length) * 100) : 0;
+  const _bookmark = '<svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1z"/></svg>';
+  const _sorts = [
+    ['recent', 'Recently added'],
+    ['oldest', 'Oldest added'],
+    ['title', 'Title A–Z'],
+    ['year-new', 'Year: newest'],
+    ['year-old', 'Year: oldest'],
+  ];
+%>
+<main class="page">
+<div class="wl-page" id="wl-page"
+  data-owner="<%= owner ? 1 : 0 %>" data-list="<%= current.id %>" data-list-name="<%= current.name %>"
+  data-list-count="<%= items.length %>" data-list-public="<%= current.isPublic ? 1 : 0 %>" data-share="<%= _share %>" data-base="<%= baseUrl %>">
+
+  <header class="wl-head">
+    <h1><%= owner ? 'My Watchlist' : ownerName + '’s watchlist' %></h1>
+    <p class="wl-sub"><span class="wl-total"><%= _total %></span> <%= _total === 1 ? 'title' : 'titles' %> in <%= lists.length %> <%= lists.length === 1 ? 'list' : 'lists' %></p>
+  </header>
+
+  <nav class="wl-tabs" aria-label="Lists">
+    <% lists.forEach(function (l) { %>
+      <a class="wl-tab<%= l.id === current.id ? ' on' : '' %>" href="<%= _link(l) %>" data-id="<%= l.id %>" data-name="<%= l.name %>"<%- l.id === current.id ? ' aria-current="page"' : '' %>>
+        <span class="wl-tab-name"><%= l.name %></span><span class="wl-tab-n"><%= l.count %></span>
+      </a>
+    <% }) %>
+    <% if (owner) { %><button type="button" class="wl-tab wl-tab--new" data-wl-new>+ New list</button><% } %>
+  </nav>
+
+  <div class="wl-listbar">
+    <div class="wl-listbar-main">
+      <h2 class="wl-list-title"><%= current.name %></h2>
+      <% if (owner) { %>
+        <p class="wl-vis<%= current.isPublic ? ' wl-vis--public' : '' %>">
+          <%= current.isPublic ? 'Public · anyone with the link can view this list. They can’t edit it.' : 'Private · only you can see this list.' %>
+        </p>
+        <% if (items.length) { %>
+        <div class="wl-progress" id="wl-progress">
+          <div class="wl-progress-bar" role="progressbar" aria-label="Watched" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= _pct %>"><i style="width:<%= _pct %>%"></i></div>
+          <span class="wl-progress-text"><%= _seenN %> of <%= items.length %> watched</span>
+        </div>
+        <% } %>
+      <% } %>
+    </div>
+    <div class="wl-manage">
+      <% if (current.isPublic || owner) { %>
+        <button type="button" class="wl-link wl-link--primary" data-wl-share>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+          Share
+        </button>
+      <% } %>
+      <% if (!owner && !_mine) { %>
+        <button type="button" class="wl-link wl-link--pill" data-wl-save title="Save a copy of this list to your own lists">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1z"/><path d="M12 8v5M9.5 10.5h5"/></svg>
+          Save to my lists
+        </button>
+      <% } %>
+      <% if (owner) { %>
+        <button type="button" class="wl-link wl-link--pill" data-wl-public aria-pressed="<%= current.isPublic ? 'true' : 'false' %>" title="<%= current.isPublic ? 'Tap to make this list private' : 'Tap to make this list public' %>">
+          <% if (current.isPublic) { %>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg> Public
+          <% } else { %>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Private
+          <% } %>
+        </button>
+        <% if (current.isPublic) { %><button type="button" class="wl-link" data-wl-copy data-url="<%= _share %>">Copy link</button><% } %>
+        <button type="button" class="wl-link" data-wl-rename>Rename</button>
+        <% if (!current.isDefault) { %><button type="button" class="wl-link wl-link--danger" data-wl-delete>Delete</button><% } %>
+      <% } %>
+    </div>
+  </div>
+
+  <% if (items.length) { %>
+  <div class="wl-toolbar">
+    <div class="wl-chips" role="group" aria-label="Filter">
+      <button type="button" class="wl-chip" data-wl-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="wl-chip" data-wl-filter="movie" aria-pressed="false">Movies</button>
+      <button type="button" class="wl-chip" data-wl-filter="tv" aria-pressed="false">Series</button>
+      <% if (owner) { %>
+      <button type="button" class="wl-chip" data-wl-filter="todo" aria-pressed="false">To watch</button>
+      <button type="button" class="wl-chip" data-wl-filter="watched" aria-pressed="false">Watched</button>
+      <% } %>
+    </div>
+    <div class="wl-tools">
+      <div class="wl-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="wl-q" placeholder="<%= owner ? 'Search all your lists' : 'Search this list' %>" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="<%= owner ? 'Search all your lists' : 'Search this list' %>">
+        <button type="button" class="wl-qclear" data-wl-qclear hidden aria-label="Clear search">×</button>
+        <div class="wl-sugg" id="wl-sugg" hidden></div>
+      </div>
+      <div class="wl-dd" id="wl-sort" data-value="recent">
+        <button type="button" class="wl-dd-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Sort by">
+          <span class="wl-dd-label">Recently added</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <ul class="wl-dd-menu" role="listbox" aria-label="Sort by" hidden>
+          <% _sorts.forEach(function (s, i) { %>
+          <li role="option" data-value="<%= s[0] %>" aria-selected="<%= i === 0 ? 'true' : 'false' %>"><%= s[1] %></li>
+          <% }) %>
+        </ul>
+      </div>
+      <button type="button" class="wl-iconbtn" data-wl-view data-mode="grid" aria-label="Switch to list view" title="Switch to list view">
+        <svg class="ic-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <svg class="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
+      </button>
+      <button type="button" class="wl-iconbtn" data-wl-surprise aria-label="Pick something for me" title="Pick something for me">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><circle cx="9" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/></svg>
+      </button>
+      <% if (owner) { %>
+      <button type="button" class="wl-iconbtn" data-wl-select aria-pressed="false" aria-label="Select titles" title="Select titles (or press and hold a title)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>
+      </button>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="wl-grid" id="wl-grid">
+    <% items.forEach(function (it, idx) { const seen = owner && it.watched; %>
+    <article class="wl-card<%= seen ? ' is-watched' : '' %>" data-type="<%= it.type %>" data-id="<%= it.id %>" data-pos="<%= idx %>" data-title="<%= it.title %>" data-sort="<%= String(it.title).toLowerCase() %>" data-year="<%= Number(it.year) || 0 %>"<% if (owner) { %> data-watched="<%= seen ? 1 : 0 %>"<% } %>>
+      <a class="wl-poster" href="<%= it.url %>" aria-label="<%= it.title %>">
+        <% if (it.poster) { %><img src="<%= it.poster %>" alt="" width="342" height="513" loading="lazy" decoding="async"><% } else { %><span class="wl-poster-fallback"><%= it.title %></span><% } %>
+        <% if (it.type === 'tv') { %><span class="wl-tag">Series</span><% } %>
+        <% if (owner) { %><span class="wl-seen">✓ Watched</span><% } %>
+      </a>
+      <div class="wl-info">
+        <a class="wl-title" href="<%= it.url %>"><%= it.title %></a>
+        <span class="wl-year"><%= it.year || ' ' %><span class="wl-kind"><%= it.year ? ' · ' : '' %><%= it.type === 'tv' ? 'Series' : 'Movie' %></span></span>
+      </div>
+      <% if (owner) { %>
+      <div class="wl-actions">
+        <button type="button" class="wl-act wl-act--watch" data-wl-watch aria-pressed="<%= seen ? 'true' : 'false' %>"><%= seen ? '✓ Watched' : 'Mark watched' %></button>
+        <button type="button" class="wl-act" data-wl-lists data-type="<%= it.type %>" data-id="<%= it.id %>" data-title="<%= it.title %>">Lists</button>
+        <button type="button" class="wl-act wl-act--remove" data-wl-remove>Remove</button>
+      </div>
+      <% } %>
+    </article>
+    <% }) %>
+  </div>
+
+  <div class="wl-nomatch" hidden>
+    <h3>No matches</h3>
+    <p>Try a different search or filter.</p>
+    <button type="button" class="wl-cta" data-wl-reset>Clear search &amp; filters</button>
+  </div>
+  <% } %>
+
+  <div class="wl-empty"<%- items.length ? ' hidden' : '' %>>
+    <%- _bookmark %>
+    <% if (owner) { %>
+      <h3>Nothing saved here yet</h3>
+      <p>Tap the bookmark on any movie, series or discussion to save it to this list.</p>
+      <a class="wl-cta" href="/feed">Find something to watch</a>
+    <% } else { %>
+      <h3>This list is empty</h3>
+    <% } %>
+  </div>
+
+  <% if (owner) { %>
+  <div class="wl-bulk" id="wl-bulk" hidden role="region" aria-label="Selected titles">
+    <div class="wl-bulk-top">
+      <strong class="wl-bulk-n">0 selected</strong>
+      <button type="button" class="wl-link" data-wl-selall>Select all</button>
+      <button type="button" class="wl-link" data-wl-selcancel>Cancel</button>
+    </div>
+    <div class="wl-bulk-actions">
+      <button type="button" class="wl-bulk-btn" data-wl-bulk="watched" disabled>Watched</button>
+      <button type="button" class="wl-bulk-btn" data-wl-bulk="unwatched" disabled>To watch</button>
+      <button type="button" class="wl-bulk-btn" data-wl-bulk="move" disabled>Move</button>
+      <button type="button" class="wl-bulk-btn" data-wl-bulk="copy" disabled>Copy</button>
+      <button type="button" class="wl-bulk-btn wl-bulk-btn--danger" data-wl-bulk="remove" disabled>Remove</button>
+    </div>
+  </div>
+  <% } %>
+</div>
+</main>
+<%- include('partials/foot') %>
