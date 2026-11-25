@@ -349,7 +349,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 });
 
 router.get('/logout', (req, res) => {
-  req.session.destroy(() => res.redirect('/login'));
+  req.session.destroy(() => res.redirect('/feed'));
 });
 
 /* ------------------------------ Google login ------------------------------ */
