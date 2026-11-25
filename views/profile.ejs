@@ -331,6 +331,68 @@
   }
 </style>
 
+<style>
+  /* Share -> KravN QR card */
+  .qr {
+    position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 16px;
+    background: rgba(6, 6, 10, .72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    animation: qr-fade .2s ease-out;
+  }
+  .qr[hidden] { display: none !important; }
+  .qr-card {
+    position: relative; width: min(360px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain;
+    display: grid; gap: 14px; justify-items: center; padding: 22px 22px 20px; border-radius: 24px; text-align: center;
+    background:
+      radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 65%),
+      color-mix(in srgb, var(--text) 4%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+    box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .9);
+    animation: qr-pop .22s ease-out;
+  }
+  @supports (height: 100dvh) { .qr-card { max-height: calc(100dvh - 32px); } }
+  .qr-x {
+    position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; margin: 0; border-radius: 50%; cursor: pointer;
+    color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); transition: background .2s;
+  }
+  .qr-x:hover { background: color-mix(in srgb, var(--text) 15%, transparent); }
+  .qr-x svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .qr-brand { display: inline-flex; align-items: center; gap: 9px; font: 700 18px/1 var(--font); letter-spacing: -.02em; color: var(--text); }
+  .qr-mark {
+    width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px; color: #fff; font: 800 16px/1 var(--font);
+    background: linear-gradient(135deg, var(--accent-2, var(--accent)), var(--accent)); box-shadow: 0 8px 20px -10px var(--accent);
+  }
+  .qr-name { margin: 0; max-width: 100%; font: 700 20px/1.2 var(--font); letter-spacing: -.02em; overflow-wrap: anywhere; color: var(--text); }
+  .qr-sub { margin: -6px 0 0; font-size: 12.5px; color: color-mix(in srgb, var(--text) 60%, transparent); }
+  .qr-frame {
+    line-height: 0; padding: 10px; border-radius: 22px; background: #fff;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 22px 44px -22px color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+  .qr-frame[hidden] { display: none; }
+  .qr-canvas { display: block; width: min(248px, 62vw); height: min(248px, 62vw); border-radius: 12px; }
+  .qr-fail { margin: 0; padding: 14px 6px; font-size: 13px; line-height: 1.5; color: color-mix(in srgb, var(--text) 70%, transparent); }
+  .qr-fail[hidden] { display: none; }
+  .qr-url {
+    max-width: 100%; box-sizing: border-box; padding: 8px 14px; border-radius: 999px; font-size: 12px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: color-mix(in srgb, var(--text) 70%, transparent); background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  }
+  .qr-actions { width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; }
+  .qr-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 42px; padding: 0 12px; margin: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+    font: 600 12.5px/1 var(--font); color: var(--text); background: transparent; border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+    transition: background .2s, border-color .2s, transform .2s, filter .2s;
+  }
+  .qr-btn svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .qr-btn:hover { background: color-mix(in srgb, var(--text) 8%, transparent); border-color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .qr-btn:active { transform: scale(.97); }
+  .qr-btn--primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .qr-btn--primary:hover { background: var(--accent); border-color: var(--accent); filter: brightness(1.08); }
+  .qr-btn[hidden] { display: none; }
+  .qr :is(.qr-btn, .qr-x):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @keyframes qr-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes qr-pop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .qr, .qr-card { animation: none; } .qr-btn, .qr-x { transition: none; } }
+</style>
+
 <main class="page">
   <div class="shell">
 
@@ -344,7 +406,7 @@
       <div class="profile-actions">
         <% if (items.length) { %><button type="button" class="btn btn-primary" data-cards-open="#feed"><svg class="kv-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="13" height="14" rx="2"/><path d="M8 3.5h11a2 2 0 0 1 2 2V17"/></svg> Kravn Cards</button><% } %>
         <% if (isOwn) { %><a class="btn btn-glass" href="/posts/new"><%- include('partials/icon', { n: 'plus' }) %> New discussion</a><% } %>
-        <button type="button" class="btn btn-glass" data-share-profile data-title="<%= u.username %> on KravN" data-url="/users/<%= encodeURIComponent(u.username) %>"><%- include('partials/icon', { n: 'share' }) %> <span>Share</span></button>
+        <button type="button" class="btn btn-glass" aria-haspopup="dialog" data-share-profile data-name="<%= u.username %>" data-title="<%= u.username %> on KravN" data-url="/users/<%= encodeURIComponent(u.username) %>"><%- include('partials/icon', { n: 'share' }) %> <span>Share</span></button>
       </div>
     </header>
 
@@ -666,18 +728,370 @@
 </script>
 
 <script>
-  /* Share profile: native share sheet on phones, copy link elsewhere */
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-share-profile]');
-    if (!b) return;
-    e.preventDefault();
-    var url = location.origin + b.getAttribute('data-url');
-    var title = b.getAttribute('data-title');
-    var label = b.querySelector('span');
-    if (navigator.share) { navigator.share({ title: title, url: url }).catch(function () {}); return; }
-    function done() { if (!label) return; var old = label.textContent; label.textContent = 'Link copied'; setTimeout(function () { label.textContent = old; }, 1800); }
-    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, function () { window.prompt('Copy this link', url); });
-    else window.prompt('Copy this link', url);
-  });
+  /* Share profile: opens a KravN-branded QR card (scan it to open the profile) with Copy link / Share / Save image.
+     The QR code is generated right here in the browser: no library, no external request. */
+  (function () {
+
+    /* ===== tiny QR encoder (byte mode, error-correction Q/H, versions 1-15) ===== */
+    var KravQR = (function () {
+      var CW  = { Q: [0, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30], H: [0, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24] };
+      var BLK = { Q: [0, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12],            H: [0, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18] };
+      var FMT = { Q: 3, H: 2 };
+      var MAXV = 15;
+
+      function rawModules(v) {
+        var r = (16 * v + 128) * v + 64;
+        if (v >= 2) { var a = Math.floor(v / 7) + 2; r -= (25 * a - 10) * a - 55; if (v >= 7) r -= 36; }
+        return r;
+      }
+      function dataWords(v, e) { return Math.floor(rawModules(v) / 8) - CW[e][v] * BLK[e][v]; }
+
+      function utf8(s) {
+        var out = [], b = unescape(encodeURIComponent(s)), i;
+        for (i = 0; i < b.length; i++) out.push(b.charCodeAt(i));
+        return out;
+      }
+      function gfMul(x, y) {
+        var z = 0, i;
+        for (i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; }
+        return z;
+      }
+      function rsDivisor(d) {
+        var r = [], i, j, root = 1;
+        for (i = 0; i < d - 1; i++) r.push(0);
+        r.push(1);
+        for (i = 0; i < d; i++) {
+          for (j = 0; j < d; j++) { r[j] = gfMul(r[j], root); if (j + 1 < d) r[j] ^= r[j + 1]; }
+          root = gfMul(root, 2);
+        }
+        return r;
+      }
+      function rsRemainder(data, div) {
+        var r = div.map(function () { return 0; });
+        data.forEach(function (b) {
+          var f = b ^ r.shift(); r.push(0);
+          div.forEach(function (c, i) { r[i] ^= gfMul(c, f); });
+        });
+        return r;
+      }
+
+      function encode(text, ecl) {
+        ecl = ecl || 'H';
+        var bytes = utf8(text), ver, bits = [];
+        function put(val, len) { for (var i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1); }
+        for (ver = 1; ver <= MAXV; ver++) {
+          if (4 + (ver < 10 ? 8 : 16) + bytes.length * 8 <= dataWords(ver, ecl) * 8) break;
+        }
+        if (ver > MAXV) throw new Error('too long');
+        var cap = dataWords(ver, ecl) * 8, i;
+        put(4, 4); put(bytes.length, ver < 10 ? 8 : 16);
+        bytes.forEach(function (b) { put(b, 8); });
+        put(0, Math.min(4, cap - bits.length));
+        while (bits.length % 8) bits.push(0);
+        for (var pad = 0xEC; bits.length < cap; pad ^= 0xEC ^ 0x11) put(pad, 8);
+        var data = [];
+        for (i = 0; i < bits.length; i += 8) { var v = 0, k; for (k = 0; k < 8; k++) v = (v << 1) | bits[i + k]; data.push(v); }
+
+        /* error correction + interleave */
+        var nb = BLK[ecl][ver], eccLen = CW[ecl][ver], raw = Math.floor(rawModules(ver) / 8);
+        var nShort = nb - raw % nb, shortLen = Math.floor(raw / nb), blocks = [], div = rsDivisor(eccLen), at = 0;
+        for (i = 0; i < nb; i++) {
+          var dat = data.slice(at, at + shortLen - eccLen + (i < nShort ? 0 : 1)); at += dat.length;
+          var ecc = rsRemainder(dat, div);
+          if (i < nShort) dat.push(0);
+          blocks.push(dat.concat(ecc));
+        }
+        var all = [], j;
+        for (i = 0; i < blocks[0].length; i++) {
+          for (j = 0; j < nb; j++) { if (i !== shortLen - eccLen || j >= nShort) all.push(blocks[j][i]); }
+        }
+
+        /* matrix */
+        var n = ver * 4 + 17, m = [], fn = [], y, x;
+        for (y = 0; y < n; y++) { m.push([]); fn.push([]); for (x = 0; x < n; x++) { m[y].push(false); fn[y].push(false); } }
+        function setFn(px, py, dark) { m[py][px] = dark; fn[py][px] = true; }
+        for (i = 0; i < n; i++) { setFn(6, i, i % 2 === 0); setFn(i, 6, i % 2 === 0); }
+        function finder(cx, cy) {
+          var dx, dy;
+          for (dy = -4; dy <= 4; dy++) for (dx = -4; dx <= 4; dx++) {
+            var d = Math.max(Math.abs(dx), Math.abs(dy)), xx = cx + dx, yy = cy + dy;
+            if (xx >= 0 && xx < n && yy >= 0 && yy < n) setFn(xx, yy, d !== 2 && d !== 4);
+          }
+        }
+        finder(3, 3); finder(n - 4, 3); finder(3, n - 4);
+        var pos = [];
+        if (ver > 1) {
+          var na = Math.floor(ver / 7) + 2, step = ver === 32 ? 26 : Math.ceil((ver * 4 + 4) / (na * 2 - 2)) * 2;
+          pos = [6];
+          for (var p = n - 7; pos.length < na; p -= step) pos.splice(1, 0, p);
+        }
+        for (i = 0; i < pos.length; i++) for (j = 0; j < pos.length; j++) {
+          if ((i === 0 && j === 0) || (i === 0 && j === pos.length - 1) || (i === pos.length - 1 && j === 0)) continue;
+          var dx2, dy2;
+          for (dy2 = -2; dy2 <= 2; dy2++) for (dx2 = -2; dx2 <= 2; dx2++) setFn(pos[i] + dx2, pos[j] + dy2, Math.max(Math.abs(dx2), Math.abs(dy2)) !== 1);
+        }
+        function bit(v, k) { return ((v >>> k) & 1) !== 0; }
+        function formatBits(mask) {
+          var d = (FMT[ecl] << 3) | mask, r = d, k;
+          for (k = 0; k < 10; k++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+          var b = ((d << 10) | r) ^ 0x5412;
+          for (k = 0; k <= 5; k++) setFn(8, k, bit(b, k));
+          setFn(8, 7, bit(b, 6)); setFn(8, 8, bit(b, 7)); setFn(7, 8, bit(b, 8));
+          for (k = 9; k < 15; k++) setFn(14 - k, 8, bit(b, k));
+          for (k = 0; k < 8; k++) setFn(n - 1 - k, 8, bit(b, k));
+          for (k = 8; k < 15; k++) setFn(8, n - 15 + k, bit(b, k));
+          setFn(8, n - 8, true);
+        }
+        formatBits(0);
+        if (ver >= 7) {
+          var r2 = ver, k2;
+          for (k2 = 0; k2 < 12; k2++) r2 = (r2 << 1) ^ ((r2 >>> 11) * 0x1F25);
+          var vb = (ver << 12) | r2;
+          for (k2 = 0; k2 < 18; k2++) { var a2 = n - 11 + k2 % 3, b2 = Math.floor(k2 / 3); setFn(a2, b2, bit(vb, k2)); setFn(b2, a2, bit(vb, k2)); }
+        }
+        /* place data */
+        var bi = 0, right, vert, jj, upward;
+        for (right = n - 1; right >= 1; right -= 2) {
+          if (right === 6) right = 5;
+          for (vert = 0; vert < n; vert++) for (jj = 0; jj < 2; jj++) {
+            x = right - jj; upward = ((right + 1) & 2) === 0; y = upward ? n - 1 - vert : vert;
+            if (!fn[y][x] && bi < all.length * 8) { m[y][x] = bit(all[bi >>> 3], 7 - (bi & 7)); bi++; }
+          }
+        }
+        /* masks */
+        var MASKS = [
+          function (a, b) { return (a + b) % 2 === 0; }, function (a, b) { return b % 2 === 0; },
+          function (a, b) { return a % 3 === 0; }, function (a, b) { return (a + b) % 3 === 0; },
+          function (a, b) { return (Math.floor(a / 3) + Math.floor(b / 2)) % 2 === 0; },
+          function (a, b) { return a * b % 2 + a * b % 3 === 0; },
+          function (a, b) { return (a * b % 2 + a * b % 3) % 2 === 0; },
+          function (a, b) { return ((a + b) % 2 + a * b % 3) % 2 === 0; }
+        ];
+        function applyMask(k) { for (y = 0; y < n; y++) for (x = 0; x < n; x++) if (!fn[y][x] && MASKS[k](x, y)) m[y][x] = !m[y][x]; }
+        function penalty() {
+          var s = 0, dark = 0, run, c, line, t, q;
+          var P1 = '10111010000', P2 = '00001011101';
+          for (t = 0; t < 2; t++) {
+            for (y = 0; y < n; y++) {
+              line = ''; run = 0; c = null;
+              for (x = 0; x < n; x++) {
+                var v2 = t ? m[x][y] : m[y][x];
+                line += v2 ? '1' : '0';
+                if (v2 === c) { run++; if (run === 5) s += 3; else if (run > 5) s++; } else { c = v2; run = 1; }
+              }
+              for (q = 0; q + 11 <= n; q++) { var w = line.substr(q, 11); if (w === P1 || w === P2) s += 40; }
+            }
+          }
+          for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
+            if (m[y][x]) dark++;
+            if (x < n - 1 && y < n - 1 && m[y][x] === m[y][x + 1] && m[y][x] === m[y + 1][x] && m[y][x] === m[y + 1][x + 1]) s += 3;
+          }
+          var total = n * n;
+          s += (Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1) * 10;
+          return s;
+        }
+        var best = 0, bestP = Infinity, mk, pp;
+        for (mk = 0; mk < 8; mk++) {
+          applyMask(mk); formatBits(mk); pp = penalty(); applyMask(mk);
+          if (pp < bestP) { bestP = pp; best = mk; }
+        }
+        applyMask(best); formatBits(best);
+        return { size: n, version: ver, modules: m };
+      }
+      return { encode: encode };
+    })();
+
+    /* ===== drawing: KravN colours, rounded finder eyes, K badge in the middle ===== */
+    var FONT = 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+    function parseColor(v) {
+      if (!v) return null;
+      var c = document.createElement('canvas').getContext('2d');
+      c.fillStyle = '#010203'; c.fillStyle = v;
+      var s = String(c.fillStyle), nums;
+      if (s === '#010203') return null;                       // value was not a valid colour
+      if (s.charAt(0) === '#' && s.length === 7) return [parseInt(s.substr(1, 2), 16), parseInt(s.substr(3, 2), 16), parseInt(s.substr(5, 2), 16)];
+      nums = s.match(/[\d.]+/g);
+      if (!nums || nums.length < 3) return null;
+      if (s.indexOf('color(') === 0) return [nums[0] * 255, nums[1] * 255, nums[2] * 255];
+      return [+nums[0], +nums[1], +nums[2]];
+    }
+    function css(rgb, k) { k = k === undefined ? 1 : k; return 'rgb(' + Math.round(rgb[0] * k) + ',' + Math.round(rgb[1] * k) + ',' + Math.round(rgb[2] * k) + ')'; }
+    function palette() {
+      var cs = getComputedStyle(document.body);
+      var a = parseColor(cs.getPropertyValue('--accent').trim()) || [124, 58, 237];
+      var b = parseColor(cs.getPropertyValue('--accent-2').trim()) || a;
+      /* ink + eye colours are the accent darkened, so scanners always see strong contrast on white */
+      return { a: css(a), b: css(b), ink: css(a, .3), eye: css(a, .5), deep: css(a, .16) };
+    }
+
+    /* QR painting (shared by the card and the saved image) */
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath(); ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath(); ctx.fill();
+    }
+    function paintBadge(ctx, x, y, s, pal) {
+      var g = ctx.createLinearGradient(x, y, x + s, y + s);
+      g.addColorStop(0, pal.b); g.addColorStop(1, pal.a);
+      ctx.fillStyle = g; roundRect(ctx, x, y, s, s, s * .3);
+      ctx.fillStyle = '#fff'; ctx.font = '800 ' + Math.round(s * .62) + 'px ' + FONT;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('K', x + s / 2, y + s / 2 + s * .04);
+    }
+    function paintQR(cv, qr, px, pal) {
+      var n = qr.size, quiet = 4, cell = px / (n + quiet * 2), ctx = cv.getContext('2d'), x, y;
+      var L = Math.max(5, Math.min(9, Math.floor(n * .19) | 1));   // odd number of modules left empty for the badge
+      var lo = (n - L) / 2, hi = lo + L;
+      function E(i) { return Math.round((i + quiet) * cell); }
+      function eyeZone(a, b) { return (a < 7 && b < 7) || (a >= n - 7 && b < 7) || (a < 7 && b >= n - 7); }
+      cv.width = px; cv.height = px;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, px, px);
+      ctx.fillStyle = pal.ink;
+      for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
+        if (!qr.modules[y][x] || eyeZone(x, y)) continue;
+        if (x >= lo && x < hi && y >= lo && y < hi) continue;
+        ctx.fillRect(E(x), E(y), E(x + 1) - E(x), E(y + 1) - E(y));
+      }
+      function eye(ex, ey) {
+        var X = E(ex), Y = E(ey), S = E(ex + 7) - X;
+        ctx.fillStyle = pal.ink; roundRect(ctx, X, Y, S, S, cell * 2);
+        ctx.fillStyle = '#fff'; roundRect(ctx, E(ex + 1), E(ey + 1), E(ex + 6) - E(ex + 1), E(ey + 6) - E(ey + 1), cell * 1.3);
+        ctx.fillStyle = pal.eye; roundRect(ctx, E(ex + 2), E(ey + 2), E(ex + 5) - E(ex + 2), E(ey + 5) - E(ey + 2), cell * .9);
+      }
+      eye(0, 0); eye(n - 7, 0); eye(0, n - 7);
+      var bx = E(lo), bw = E(hi) - bx;
+      ctx.fillStyle = '#fff'; roundRect(ctx, bx, bx, bw, bw, cell * .9);
+      paintBadge(ctx, bx + cell * .5, bx + cell * .5, bw - cell, pal);
+    }
+
+    /* the image people can save: dark KravN card with the QR in the middle */
+    function fit(ctx, text, maxW) {
+      if (ctx.measureText(text).width <= maxW) return text;
+      while (text.length > 4 && ctx.measureText(text + '…').width > maxW) text = text.slice(0, -1);
+      return text + '…';
+    }
+    function poster(qr, name, url, pal) {
+      var W = 960, H = 1200, c = document.createElement('canvas'), ctx = c.getContext('2d'), q = document.createElement('canvas');
+      c.width = W; c.height = H;
+      var bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, pal.deep); bg.addColorStop(1, '#07070b');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+      var glow = ctx.createRadialGradient(W / 2, 0, 20, W / 2, 0, 760); glow.addColorStop(0, pal.a); glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalAlpha = .38; ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+      /* brand */
+      ctx.font = '800 56px ' + FONT; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      var tw = ctx.measureText('KravN').width, bs = 76, gap = 20, bx = (W - (bs + gap + tw)) / 2;
+      paintBadge(ctx, bx, 96, bs, pal);
+      ctx.fillStyle = '#fff'; ctx.fillText('KravN', bx + bs + gap, 96 + bs / 2 + 3);
+      /* QR panel */
+      var S = 640, qx = (W - S) / 2, qy = 250;
+      paintQR(q, qr, S, pal);
+      ctx.save(); ctx.fillStyle = '#fff'; roundRect(ctx, qx - 14, qy - 14, S + 28, S + 28, 44);
+      ctx.beginPath(); ctx.moveTo(qx + 30, qy); ctx.arcTo(qx + S, qy, qx + S, qy + S, 30); ctx.arcTo(qx + S, qy + S, qx, qy + S, 30);
+      ctx.arcTo(qx, qy + S, qx, qy, 30); ctx.arcTo(qx, qy, qx + S, qy, 30); ctx.closePath(); ctx.clip();
+      ctx.drawImage(q, qx, qy, S, S); ctx.restore();
+      /* text */
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = '#fff'; ctx.font = '700 60px ' + FONT; ctx.fillText(fit(ctx, '@' + name, W - 160), W / 2, 1000);
+      ctx.fillStyle = 'rgba(255,255,255,.66)'; ctx.font = '500 30px ' + FONT; ctx.fillText('Scan to open this profile on KravN', W / 2, 1056);
+      ctx.fillStyle = 'rgba(255,255,255,.42)'; ctx.font = '500 26px ' + FONT; ctx.fillText(fit(ctx, url.replace(/^https?:\/\//, ''), W - 160), W / 2, 1110);
+      return c;
+    }
+
+    /* ===== the card ===== */
+    var ICON = {
+      copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
+      share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>',
+      save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
+      close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+    };
+    var box, canvas, frame, fail, nameEl, urlEl, copyLbl, shareBtn, saveBtn, lastFocus, cur = null;
+
+    function mk(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html) e.innerHTML = html; return e; }
+    function btn(cls, icon, label) { var b = mk('button', 'qr-btn ' + cls, icon + '<span>' + label + '</span>'); b.type = 'button'; return b; }
+
+    function build() {
+      box = mk('div', 'qr'); box.hidden = true; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'qr-title');
+      var card = mk('div', 'qr-card');
+      var x = mk('button', 'qr-x', ICON.close); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.addEventListener('click', close);
+      var brand = mk('div', 'qr-brand', '<span class="qr-mark" aria-hidden="true">K</span><span>KravN</span>');
+      nameEl = mk('h3', 'qr-name'); nameEl.id = 'qr-title';
+      var sub = mk('p', 'qr-sub', 'Scan with your camera to open this profile');
+      frame = mk('div', 'qr-frame'); canvas = mk('canvas', 'qr-canvas'); canvas.setAttribute('role', 'img'); frame.appendChild(canvas);
+      fail = mk('p', 'qr-fail', 'This link is too long to turn into a QR code. Use Copy link instead.'); fail.hidden = true;
+      urlEl = mk('div', 'qr-url');
+      var actions = mk('div', 'qr-actions');
+      var copyBtn = btn('qr-btn--primary', ICON.copy, 'Copy link'); copyLbl = copyBtn.querySelector('span');
+      shareBtn = btn('', ICON.share, 'Share'); shareBtn.hidden = !navigator.share;
+      saveBtn = btn('', ICON.save, 'Save image');
+      copyBtn.addEventListener('click', copyLink); shareBtn.addEventListener('click', nativeShare); saveBtn.addEventListener('click', saveImage);
+      actions.appendChild(copyBtn); actions.appendChild(shareBtn); actions.appendChild(saveBtn);
+      [x, brand, nameEl, sub, frame, fail, urlEl, actions].forEach(function (n) { card.appendChild(n); });
+      box.appendChild(card); document.body.appendChild(box);
+      box.addEventListener('click', function (e) { if (e.target === box) close(); });
+      box.addEventListener('keydown', function (e) {
+        if (e.key !== 'Tab') return;
+        var f = Array.prototype.filter.call(box.querySelectorAll('button'), function (b) { return !b.hidden && b.offsetParent !== null; });
+        if (!f.length) return;
+        var first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      });
+    }
+
+    function open(b) {
+      if (!box) build();
+      var url = location.origin + b.getAttribute('data-url');
+      var name = b.getAttribute('data-name') || (b.getAttribute('data-title') || '').replace(/ on KravN$/, '');
+      var qr = null;
+      try { qr = KravQR.encode(url, 'H'); } catch (err) { qr = null; }
+      cur = { url: url, name: name, title: b.getAttribute('data-title') || name + ' on KravN', qr: qr };
+      nameEl.textContent = '@' + name; urlEl.textContent = url.replace(/^https?:\/\//, ''); copyLbl.textContent = 'Copy link';
+      shareBtn.hidden = !navigator.share;
+      frame.hidden = !qr; fail.hidden = !!qr; saveBtn.hidden = !qr;
+      if (qr) {
+        var css = 248, dpr = Math.min(window.devicePixelRatio || 1, 3);
+        paintQR(canvas, qr, Math.round(css * dpr), palette());
+        canvas.setAttribute('aria-label', 'QR code that opens the KravN profile of ' + name);
+      }
+      lastFocus = document.activeElement; document.documentElement.style.overflow = 'hidden';
+      box.hidden = false;
+      box.querySelector('.qr-btn--primary').focus();
+    }
+    function close() {
+      if (!box || box.hidden) return;
+      box.hidden = true; document.documentElement.style.overflow = '';
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    function copyLink() {
+      var url = cur.url;
+      function done() { copyLbl.textContent = 'Link copied'; setTimeout(function () { copyLbl.textContent = 'Copy link'; }, 1800); }
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, function () { window.prompt('Copy this link', url); });
+      else window.prompt('Copy this link', url);
+    }
+    function nativeShare() {
+      if (navigator.share) navigator.share({ title: cur.title, url: cur.url }).catch(function () {});
+    }
+    function saveImage() {
+      if (!cur.qr) return;
+      var c = poster(cur.qr, cur.name, cur.url, palette());
+      var file = 'kravn-' + (cur.name.toLowerCase().replace(/[^a-z0-9_-]+/g, '') || 'profile') + '-qr.png';
+      function dl(href, revoke) {
+        var a = document.createElement('a'); a.href = href; a.download = file; document.body.appendChild(a); a.click(); a.remove();
+        if (revoke) setTimeout(function () { URL.revokeObjectURL(href); }, 2000);
+      }
+      if (c.toBlob) c.toBlob(function (blob) { if (blob) dl(URL.createObjectURL(blob), true); }, 'image/png');
+      else dl(c.toDataURL('image/png'), false);
+    }
+
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-share-profile]');
+      if (!b) return;
+      e.preventDefault(); open(b);
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  })();
 </script>
 <%- include('partials/foot') %>
