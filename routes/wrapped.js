@@ -37,6 +37,28 @@ function parseRuntime(s) {
   const n = parseInt(s, 10); return Number.isNaN(n) ? 0 : n;
 }
 
+/* ---------- actor photo (same TMDB profile image the person page shows) ----------
+   If you already have a helper that builds person.photo for /person, call it here instead.
+   Uses TMDB_API_KEY (v3 key or v4 bearer token) from .env. Successful lookups are cached in memory. */
+const photoCache = new Map();
+async function actorPhoto(name) {
+  const key = String(name || '').trim().toLowerCase();
+  const tk = process.env.TMDB_API_KEY || process.env.TMDB_KEY || process.env.TMDB_TOKEN;
+  if (!key || !tk) return '';
+  if (photoCache.has(key)) return photoCache.get(key);
+  try {
+    const bearer = tk.length > 40;
+    const url = 'https://api.themoviedb.org/3/search/person?include_adult=false&query=' + encodeURIComponent(name) + (bearer ? '' : '&api_key=' + tk);
+    const r = await fetch(url, { headers: bearer ? { Authorization: 'Bearer ' + tk } : {}, signal: AbortSignal.timeout(5000) });
+    if (!r.ok) return '';
+    const withPic = ((await r.json()).results || []).filter((x) => x.profile_path);
+    const hit = withPic.find((x) => String(x.name).toLowerCase() === key) || withPic[0];
+    const photo = hit ? 'https://image.tmdb.org/t/p/w500' + hit.profile_path : '';
+    if (photo) photoCache.set(key, photo);
+    return photo;
+  } catch (e) { return ''; }
+}
+
 /* ---------- persona copy: [name, emoji, blurb, one-line summary] ---------- */
 const FR_PERSONA = {
   Marvel: ['The Marvel Loyalist', '🦸', 'Assemble first, ask questions later.', 'Fluent in Marvel, allergic to spoilers, and always ready for the next post-credits scene.'],
@@ -147,6 +169,11 @@ router.get('/wrapped', requireLogin, wrap(async (req, res) => {
   /* favourite face: the most-mentioned actor, shown only when it isn't already the obsession */
   const sTop = topEntry(aMap, 2);
   const star = sTop && obs.type !== 'actor' ? { name: sTop[0], count: sTop[1].n, poster: sTop[1].poster } : null;
+
+  /* actors get their own photo instead of a movie poster (falls back to the poster if no photo is found) */
+  const [obsPhoto, starPhoto] = await Promise.all([obs.type === 'actor' ? actorPhoto(obs.name) : '', star ? actorPhoto(star.name) : '']);
+  obs.photo = obsPhoto || '';
+  if (star) star.photo = starPhoto || '';
 
   /* best discussion */
   const score = (p) => Number(p.like_count) * 2 + Number(p.comment_count);
