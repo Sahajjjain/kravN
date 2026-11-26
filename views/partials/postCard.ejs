@@ -8,6 +8,18 @@
   const compact = !!locals.compact;
   const genres = genreList(post);
   const threadUrl = '/posts/' + post.id;
+
+  // Watchlist bookmark: on tiles it sits on the poster (top-right), so the footer stays clean.
+  // /js/watchlist.js wires it up (same markup it would create itself) and keeps it in sync.
+  const wlOnPoster = showMovie && compact;
+  const wl = (() => {
+    const m = /^\/(movie|tv)\/(\d+)(?:[/?#]|$)/.exec(movieLink(post) || '');
+    if (m) return { type: m[1], id: m[2], imdb: '', title: post.movie_name || '', year: '' };
+    return {
+      type: '', id: '', imdb: post.imdb_id || '', title: post.movie_name || '',
+      year: (String(post.release_date || '').match(/(?:19|20)\d{2}/) || [''])[0]
+    };
+  })();
 %>
 <article class="pcard<%= compact ? ' pcard--tile' : '' %><%= showMovie ? '' : ' pcard--bare' %>" id="d-<%= post.id %>"
   data-post="<%= json(d) %>" data-created="<%= new Date(post.created_at).getTime() %>" data-rating="<%= d.rating || 0 %>"
@@ -17,6 +29,9 @@
       <% if (d.posterUrl) { %><img src="<%= d.posterUrl %>" alt="" loading="lazy" decoding="async"><% } else { %><span class="pcard-poster-fallback"><%- include('icon', { n: 'film' }) %></span><% } %>
       <% if (d.rating) { %><span class="pcard-badge" style="display:none"><%- include('icon', { n: 'star' }) %><%= d.rating %></span><% } %>
     </a>
+  <% } %>
+  <% if (wlOnPoster) { %>
+    <button type="button" class="wl-btn wl-btn--poster" data-watch aria-pressed="false" aria-label="Save to watchlist" title="Save to watchlist"<% if (wl.type) { %> data-type="<%= wl.type %>" data-id="<%= wl.id %>"<% } %><% if (wl.imdb) { %> data-imdb="<%= wl.imdb %>"<% } %> data-title="<%= wl.title %>"<% if (wl.year) { %> data-year="<%= wl.year %>"<% } %>><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1z"/></svg></button>
   <% } %>
   <div class="pcard-body">
     <div class="pcard-eyebrow">

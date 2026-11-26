@@ -2,108 +2,104 @@
 <%- include('partials/nav') %>
 <style>
   /* =====================================================================
-     SHARED: compact poster tiles + slim genre pills
-     Used by the home page rail and the discussions grid.
+     HOME: "Browse by genre" row + trending discussion poster tiles
      ===================================================================== */
 
-  /* ---------- genre pills (home "Browse by genre" + discussions filter chips) ---------- */
-  .kv-genres, .toolbar .chips--scroll {
+  /* ---------- genre pills ---------- */
+  .kv-genres {
     display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
     scroll-snap-type: x proximity; padding: 2px 0 6px;
     -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
             mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
   }
-  .kv-genres::-webkit-scrollbar, .toolbar .chips--scroll::-webkit-scrollbar { display: none; }
-  .kv-genre, .toolbar .chips--scroll .chip {
+  .kv-genres::-webkit-scrollbar { display: none; }
+  .kv-genre {
     flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; height: 32px; padding: 0 14px; margin: 0;
     border-radius: 999px; font: 500 12.5px/1 var(--font); letter-spacing: .01em; color: color-mix(in srgb, var(--text) 82%, transparent);
     white-space: nowrap; background: color-mix(in srgb, var(--text) 5%, transparent);
     border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); box-shadow: none;
     transition: color .2s, background .2s, border-color .2s, transform .2s;
   }
-  .kv-genre:hover, .kv-genre:focus-visible,
-  .toolbar .chips--scroll .chip:hover, .toolbar .chips--scroll .chip:focus-visible {
-    color: #fff; border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent);
-  }
-  .toolbar .chips--scroll .chip.on { color: #fff; background: var(--accent); border-color: var(--accent); }
-  .kv-genre:active, .toolbar .chips--scroll .chip:active { transform: scale(.96); }
+  .kv-genre:hover, .kv-genre:focus-visible { color: #fff; border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+  .kv-genre:active { transform: scale(.96); }
 
-  /* ---------- discussions grid ---------- */
-  .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; align-items: start; }
+  /* ---------- trending rail: sizing ---------- */
+  .rail-track--posts { gap: 14px; align-items: flex-start; padding-block: 4px 10px; }
+  .rail-track--posts .pcard { flex: 0 0 auto; width: clamp(150px, 14vw, 184px); max-width: 184px; scroll-snap-align: start; }
 
-  /* ---------- the tile itself ---------- */
-  :is(.rail-track--posts, .pgrid) .pcard {
-    display: flex; flex-direction: column; gap: 0; padding: 0; height: auto; position: relative; overflow: hidden; min-width: 0; margin: 0;
-    border-radius: 14px;
+  /* ---------- the tile ---------- */
+  .rail-track--posts .pcard {
+    position: relative; display: flex; flex-direction: column; min-width: 0; height: auto; margin: 0; padding: 0; overflow: hidden;
+    border-radius: 16px;
     background: linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, var(--surface)), var(--surface));
     border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
     transition: transform .25s ease, border-color .25s, box-shadow .25s;
   }
-  :is(.rail-track--posts, .pgrid) .pcard:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: 0 16px 36px -18px rgba(0, 0, 0, .7); }
+  .rail-track--posts .pcard:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: 0 18px 38px -18px rgba(0, 0, 0, .75); }
 
-  /* poster: the full 2:3 frame */
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster {
+  /* poster: 2:3 frame; the watchlist bookmark sits on it, top-right (plain dark circle, no blur) */
+  .rail-track--posts .pcard .pcard-poster {
     position: relative; display: block; width: 100%; height: auto; aspect-ratio: 2/3; flex: none; margin: 0; border-radius: 0;
     background: color-mix(in srgb, var(--surface-2) 90%, #000); overflow: hidden;
   }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; transition: transform .5s ease; }
-  :is(.rail-track--posts, .pgrid) .pcard:hover .pcard-poster img { transform: scale(1.04); }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster::after { content: ''; position: absolute; inset: auto 0 0 0; height: 38%; background: linear-gradient(0deg, rgba(0,0,0,.55), transparent); pointer-events: none; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--muted); }
+  .rail-track--posts .pcard .pcard-poster img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; transition: transform .5s ease; }
+  .rail-track--posts .pcard:hover .pcard-poster img { transform: scale(1.04); }
+  .rail-track--posts .pcard .pcard-poster::after { content: ''; position: absolute; inset: auto 0 0 0; height: 38%; background: linear-gradient(0deg, rgba(0, 0, 0, .55), transparent); pointer-events: none; }
+  .rail-track--posts .pcard .pcard-poster-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--muted); }
+  .rail-track--posts .pcard .wl-btn--poster { -webkit-backdrop-filter: none; backdrop-filter: none; }
 
-  /* rating chip over the poster (inline display:none keeps it hidden on other pages; forced on in tiles) */
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-badge {
-    display: inline-flex !important; position: absolute; z-index: 2; top: 8px; left: 8px; align-items: center; gap: 4px;
-    padding: 3px 8px 3px 6px; border-radius: 999px; font: 700 11px/1 var(--font); color: #fff;
-    background: rgba(10, 10, 14, .62); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, .14);
-  }
-  .pcard-badge svg { width: 11px; height: 11px; color: #f5c518; fill: currentColor; }
-
-  /* text block — the single column is pinned to the card width (minmax(0, 1fr)) so a long
-     movie name gets an ellipsis instead of stretching the card and pushing the footer out of view */
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-body { padding: 10px 11px 11px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; min-width: 0; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow { margin: 0; display: block; min-width: 0; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow .rate,
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow .muted { display: none; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-movie {
+  /* text block: one column pinned to the card width, so long names get an ellipsis instead of widening the card */
+  .rail-track--posts .pcard .pcard-body { padding: 11px 12px 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; min-width: 0; }
+  .rail-track--posts .pcard .pcard-eyebrow { margin: 0; display: block; min-width: 0; }
+  .rail-track--posts .pcard .pcard-eyebrow :is(.rate, .muted) { display: none; }
+  .rail-track--posts .pcard .pcard-movie {
     display: block; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
     color: var(--accent-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; z-index: 2;
   }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-title { margin: 0; font-size: 13.5px; font-weight: 650; line-height: 1.3; letter-spacing: -.005em; min-width: 0; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-title a { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: inherit; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-text { display: none; }
+  .rail-track--posts .pcard .pcard-title { margin: 0; font-size: 13.5px; font-weight: 650; line-height: 1.32; letter-spacing: -.005em; min-width: 0; }
+  .rail-track--posts .pcard .pcard-title a { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: inherit; }
+  .rail-track--posts .pcard .pcard-text,
+  .rail-track--posts .pcard time { display: none; }
 
-  /* footer: author left (shrinks first), like + comment right (never shrinks) */
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-foot { margin: 3px 0 0; padding: 8px 0 0; border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent); display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: nowrap; min-width: 0; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-author { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; font-size: 11.5px; color: color-mix(in srgb, var(--text) 70%, transparent); position: relative; z-index: 2; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-author span:last-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 62px; }
-  :is(.rail-track--posts, .pgrid) .pcard .avatar--sm { width: 20px; height: 20px; font-size: 10px; flex: none; }
-  :is(.rail-track--posts, .pgrid) .pcard time,
-  :is(.rail-track--posts, .pgrid) .pcard [data-share-post] { display: none; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-actions { flex: none; margin: 0; display: inline-flex; gap: 8px; position: relative; z-index: 2; }
-  :is(.rail-track--posts, .pgrid) .pcard .act { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; padding: 0; min-height: 0; background: none; border: 0; }
-  :is(.rail-track--posts, .pgrid) .pcard .act svg { width: 13px; height: 13px; }
+  /* footer: row 1 = clickable username, row 2 = like · comment (left) and share (right) */
+  .rail-track--posts .pcard .pcard-foot { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; margin: 3px 0 0; padding: 8px 0 0; border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent); }
+  .rail-track--posts .pcard .pcard-author { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 6px; justify-self: start; min-width: 0; max-width: 100%; font-size: 11.5px; color: color-mix(in srgb, var(--text) 70%, transparent); transition: color .2s; }
+  .rail-track--posts .pcard .pcard-author:hover { color: var(--text); }
+  .rail-track--posts .pcard .pcard-author span:last-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rail-track--posts .pcard .avatar--sm { width: 20px; height: 20px; font-size: 10px; flex: none; }
 
-  /* ---------- home rail sizing ---------- */
-  .rail-track--posts { gap: 14px; align-items: flex-start; padding-block: 4px 10px; }
-  .rail-track--posts .pcard { flex: 0 0 auto; width: clamp(150px, 14vw, 184px); max-width: 184px; scroll-snap-align: start; }
+  .rail-track--posts .pcard .pcard-actions { position: relative; z-index: 2; display: flex; align-items: center; gap: 2px; margin: 0 -8px; }
+  .rail-track--posts .pcard .act {
+    display: inline-flex; align-items: center; gap: 5px; height: 30px; min-height: 0; padding: 0 8px; border: 0; border-radius: 999px; background: none;
+    font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--text) 62%, transparent);
+    transition: background .2s, color .2s, transform .15s;
+  }
+  .rail-track--posts .pcard .act svg { width: 15px; height: 15px; flex: none; }
+  .rail-track--posts .pcard .act:hover { color: var(--text); background: color-mix(in srgb, var(--text) 9%, transparent); }
+  .rail-track--posts .pcard .act:active { transform: scale(.94); }
+  .rail-track--posts .pcard .act.like:hover, .rail-track--posts .pcard .act.like.on { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .rail-track--posts .pcard .act.like.on svg { fill: currentColor; }
+  .rail-track--posts .pcard [data-share-post] { margin-left: auto; }
 
   /* ---------- phones ---------- */
   @media (max-width: 640px) {
-    .kv-genres, .toolbar .chips--scroll { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; gap: 7px; }
-    .kv-genre, .toolbar .chips--scroll .chip { height: 30px; padding: 0 12px; font-size: 12px; }
-    .pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    :is(.rail-track--posts, .pgrid) .pcard { border-radius: 12px; }
-    :is(.rail-track--posts, .pgrid) .pcard .pcard-body { padding: 8px 9px 9px; gap: 4px; }
-    :is(.rail-track--posts, .pgrid) .pcard .pcard-title { font-size: 12.5px; }
-    :is(.rail-track--posts, .pgrid) .pcard .pcard-movie { font-size: 9.5px; }
-    :is(.rail-track--posts, .pgrid) .pcard .pcard-author span:last-child { max-width: 44px; }
+    .kv-genres { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; gap: 7px; }
+    .kv-genre { height: 30px; padding: 0 12px; font-size: 12px; }
     .rail-track--posts { gap: 10px; }
     .rail-track--posts .pcard { width: 132px; max-width: 132px; }
+    .rail-track--posts .pcard { border-radius: 14px; }
+    .rail-track--posts .pcard .pcard-body { padding: 9px 10px 10px; gap: 4px; }
+    .rail-track--posts .pcard .pcard-title { font-size: 12.5px; }
+    .rail-track--posts .pcard .pcard-movie { font-size: 9.5px; }
+    .rail-track--posts .pcard .pcard-actions { margin: 0 -6px; }
+    .rail-track--posts .pcard .act { gap: 4px; padding: 0 6px; font-size: 11.5px; }
+    .rail-track--posts .pcard .act svg { width: 14px; height: 14px; }
   }
-  @media (min-width: 900px) { .pgrid { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); } }
-  @media (hover: none) { :is(.rail-track--posts, .pgrid) .pcard:hover { transform: none; } }
+  @media (hover: none) { .rail-track--posts .pcard:hover { transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .rail-track--posts .pcard, .rail-track--posts .pcard .pcard-poster img, .rail-track--posts .pcard .pcard-author, .rail-track--posts .pcard .act, .kv-genre { transition: none; }
+    .rail-track--posts .pcard:hover, .rail-track--posts .pcard:hover .pcard-poster img { transform: none; }
+  }
 </style>
 
 <main class="page page--flush">

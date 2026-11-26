@@ -395,9 +395,9 @@ html.wl-selecting .wl-toast { bottom: calc(210px + env(safe-area-inset-bottom));
     return n;
   };
   // must match tmdb.normalize() on the server (used for the "is this title saved?" keys)
-  const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   // for searching: same idea, but keeps letters of every language (Hindi, Japanese, Arabic…)
-  const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  const fold = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 
   /* ------------------------------ network ------------------------------ */
 
@@ -958,11 +958,15 @@ html.wl-selecting .wl-toast { bottom: calc(210px + env(safe-area-inset-bottom));
       const m = TITLE_URL.exec(card.getAttribute('href') || '');
       if (m) poster.appendChild(makeBtn('poster', { type: m[1], id: m[2], title: card.getAttribute('title') || '' }));
     });
-    $$('.pcard-actions').forEach((acts) => {
-      if ($('[data-watch]', acts)) return;
-      const pcard = acts.closest('.pcard');
-      const info = pcard && movieOfPostCard(pcard);
-      if (info) acts.insertBefore(makeBtn('act', info), $('[data-share-post]', acts));
+    // one bookmark per discussion card: top-right of the poster on tiles (home rail + discussions grid), in the action row elsewhere
+    $$('.pcard').forEach((pcard) => {
+      if ($('[data-watch]', pcard)) return;
+      const info = movieOfPostCard(pcard);
+      if (!info) return;
+      const poster = $('.pcard-poster', pcard);
+      if (poster && pcard.closest('.pgrid, .rail-track--posts')) { poster.after(makeBtn('poster', info)); return; }
+      const acts = $('.pcard-actions', pcard);
+      if (acts) acts.insertBefore(makeBtn('act', info), $('[data-share-post]', acts));
     });
     const share = $('[data-share-movie]');
     if (share && share.parentNode && !$('[data-watch]', share.parentNode)) {

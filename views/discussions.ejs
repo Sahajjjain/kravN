@@ -17,109 +17,83 @@
 <%- include('partials/nav') %>
 <style>
   /* =====================================================================
-     SHARED: poster tiles + home genre pills (used by home rail + discussions)
+     DISCUSSIONS GRID: poster tiles
      ===================================================================== */
 
-  /* home page "Browse by genre": one swipeable row */
-  .kv-genres {
-    display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity; padding: 2px 0 6px;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
-            mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
-  }
-  .kv-genres::-webkit-scrollbar { display: none; }
-  .kv-genre {
-    flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; height: 32px; padding: 0 14px; margin: 0;
-    border-radius: 999px; font: 500 12.5px/1 var(--font); letter-spacing: .01em; text-decoration: none;
-    color: color-mix(in srgb, var(--text) 82%, transparent); white-space: nowrap;
-    background: color-mix(in srgb, var(--text) 5%, transparent);
-    border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
-    transition: color .2s, background .2s, border-color .2s, transform .2s;
-  }
-  .kv-genre:hover, .kv-genre:focus-visible { color: #fff; border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
-  .kv-genre:active { transform: scale(.96); }
-
-  /* poster grid */
   .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; align-items: start; }
+  .pgrid .pcard { content-visibility: auto; contain-intrinsic-size: auto 400px; } /* skip off-screen tiles */
 
-  /* tile */
-  :is(.rail-track--posts, .pgrid) .pcard {
-    display: flex; flex-direction: column; gap: 0; padding: 0; height: auto; position: relative; overflow: hidden; min-width: 0; margin: 0;
+  /* ---------- the tile ---------- */
+  .pgrid .pcard {
+    position: relative; display: flex; flex-direction: column; min-width: 0; height: auto; margin: 0; padding: 0; overflow: hidden;
     border-radius: 16px;
     background: linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, var(--surface)), var(--surface));
     border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
     transition: transform .25s ease, border-color .25s, box-shadow .25s;
   }
-  .pgrid .pcard { content-visibility: auto; contain-intrinsic-size: auto 320px; } /* skip off-screen tiles */
-  :is(.rail-track--posts, .pgrid) .pcard:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: 0 18px 38px -18px rgba(0, 0, 0, .75); }
+  .pgrid .pcard:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: 0 18px 38px -18px rgba(0, 0, 0, .75); }
 
-  /* poster: 2:3 frame */
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster {
+  /* poster: 2:3 frame; the watchlist bookmark sits on it, top-right (plain dark circle, no blur) */
+  .pgrid .pcard .pcard-poster {
     position: relative; display: block; width: 100%; height: auto; aspect-ratio: 2/3; flex: none; margin: 0; border-radius: 0;
     background: color-mix(in srgb, var(--surface-2) 90%, #000); overflow: hidden;
   }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; transition: transform .5s ease; }
-  :is(.rail-track--posts, .pgrid) .pcard:hover .pcard-poster img { transform: scale(1.04); }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster::after { content: ''; position: absolute; inset: auto 0 0 0; height: 38%; background: linear-gradient(0deg, rgba(0,0,0,.55), transparent); pointer-events: none; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-poster-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--muted); }
+  .pgrid .pcard .pcard-poster img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; transition: transform .5s ease; }
+  .pgrid .pcard:hover .pcard-poster img { transform: scale(1.04); }
+  .pgrid .pcard .pcard-poster::after { content: ''; position: absolute; inset: auto 0 0 0; height: 38%; background: linear-gradient(0deg, rgba(0, 0, 0, .55), transparent); pointer-events: none; }
+  .pgrid .pcard .pcard-poster-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--muted); }
+  .pgrid .pcard .wl-btn--poster { -webkit-backdrop-filter: none; backdrop-filter: none; }
 
-  /* rating chip: shown on the home rail only, never on the discussions grid */
-  .rail-track--posts .pcard .pcard-badge {
-    display: inline-flex !important; position: absolute; z-index: 2; top: 8px; left: 8px; align-items: center; gap: 4px;
-    padding: 3px 8px 3px 6px; border-radius: 999px; font: 700 11px/1 var(--font); color: #fff;
-    background: rgba(10, 10, 14, .62); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, .14);
-  }
-  .pcard-badge svg { width: 11px; height: 11px; color: #f5c518; fill: currentColor; }
-  .pgrid .pcard .pcard-badge, .pgrid .pcard .rate { display: none !important; }
-
-  /* text block (single column that may shrink, so the footer can never push the card wider and get clipped) */
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-body { padding: 11px 12px 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; min-width: 0; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow { margin: 0; display: block; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow .rate,
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-eyebrow .muted { display: none; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-movie {
+  /* text block: one column pinned to the card width, so long names get an ellipsis instead of widening the card */
+  .pgrid .pcard .pcard-body { padding: 11px 12px 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; min-width: 0; }
+  .pgrid .pcard .pcard-eyebrow { margin: 0; display: block; min-width: 0; }
+  .pgrid .pcard .pcard-eyebrow :is(.rate, .muted) { display: none; }
+  .pgrid .pcard .pcard-movie {
     display: block; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
     color: var(--accent-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; z-index: 2;
   }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-title { margin: 0; font-size: 13.5px; font-weight: 650; line-height: 1.32; letter-spacing: -.005em; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-title a { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: inherit; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-text { display: none; }
+  .pgrid .pcard .pcard-title { margin: 0; font-size: 13.5px; font-weight: 650; line-height: 1.32; letter-spacing: -.005em; min-width: 0; }
+  .pgrid .pcard .pcard-title a { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: inherit; }
+  .pgrid .pcard .pcard-text,
+  .pgrid .pcard time { display: none; }
 
-  /* footer: author left (shrinks first), like + comment right (never shrinks) */
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-foot { margin: 3px 0 0; padding: 8px 0 0; border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent); display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: nowrap; min-width: 0; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-author { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; font-size: 11.5px; color: color-mix(in srgb, var(--text) 70%, transparent); position: relative; z-index: 2; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-author span:last-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 62px; }
-  :is(.rail-track--posts, .pgrid) .pcard .avatar--sm { width: 20px; height: 20px; font-size: 10px; flex: none; }
-  :is(.rail-track--posts, .pgrid) .pcard time,
-  :is(.rail-track--posts, .pgrid) .pcard [data-share-post] { display: none; }
-  :is(.rail-track--posts, .pgrid) .pcard .pcard-actions { flex: none; margin: 0; display: inline-flex; gap: 8px; position: relative; z-index: 2; }
-  :is(.rail-track--posts, .pgrid) .pcard .act { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; padding: 0; min-height: 0; background: none; border: 0; }
-  :is(.rail-track--posts, .pgrid) .pcard .act svg { width: 13px; height: 13px; }
+  /* footer: row 1 = clickable username, row 2 = like · comment (left) and share (right) */
+  .pgrid .pcard .pcard-foot { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; margin: 3px 0 0; padding: 8px 0 0; border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent); }
+  .pgrid .pcard .pcard-author { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 6px; justify-self: start; min-width: 0; max-width: 100%; font-size: 11.5px; color: color-mix(in srgb, var(--text) 70%, transparent); transition: color .2s; }
+  .pgrid .pcard .pcard-author:hover { color: var(--text); }
+  .pgrid .pcard .pcard-author span:last-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pgrid .pcard .avatar--sm { width: 20px; height: 20px; font-size: 10px; flex: none; }
 
-  /* home rail sizing */
-  .rail-track--posts { gap: 14px; align-items: flex-start; padding-block: 4px 10px; }
-  .rail-track--posts .pcard { flex: 0 0 auto; width: clamp(150px, 14vw, 184px); max-width: 184px; scroll-snap-align: start; }
+  .pgrid .pcard .pcard-actions { position: relative; z-index: 2; display: flex; align-items: center; gap: 2px; margin: 0 -8px; }
+  .pgrid .pcard .act {
+    display: inline-flex; align-items: center; gap: 5px; height: 30px; min-height: 0; padding: 0 8px; border: 0; border-radius: 999px; background: none;
+    font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--text) 62%, transparent);
+    transition: background .2s, color .2s, transform .15s;
+  }
+  .pgrid .pcard .act svg { width: 15px; height: 15px; flex: none; }
+  .pgrid .pcard .act:hover { color: var(--text); background: color-mix(in srgb, var(--text) 9%, transparent); }
+  .pgrid .pcard .act:active { transform: scale(.94); }
+  .pgrid .pcard .act.like:hover, .pgrid .pcard .act.like.on { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .pgrid .pcard .act.like.on svg { fill: currentColor; }
+  .pgrid .pcard [data-share-post] { margin-left: auto; }
 
   @media (min-width: 900px) { .pgrid { grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 18px; } }
 
   @media (max-width: 640px) {
-    .kv-genres { margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; gap: 7px; }
-    .kv-genre { height: 30px; padding: 0 12px; font-size: 12px; }
     .pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    :is(.rail-track--posts, .pgrid) .pcard { border-radius: 14px; }
-    :is(.rail-track--posts, .pgrid) .pcard .pcard-body { padding: 9px 10px 10px; gap: 4px; }
-    :is(.rail-track--posts, .pgrid) .pcard .pcard-title { font-size: 12.5px; }
-    :is(.rail-track--posts, .pgrid) .pcard .pcard-movie { font-size: 9.5px; }
-    :is(.rail-track--posts, .pgrid) .pcard .pcard-author span:last-child { max-width: 44px; }
-    .rail-track--posts { gap: 10px; }
-    .rail-track--posts .pcard { width: 132px; max-width: 132px; }
+    .pgrid .pcard { border-radius: 14px; }
+    .pgrid .pcard .pcard-body { padding: 9px 10px 10px; gap: 4px; }
+    .pgrid .pcard .pcard-title { font-size: 12.5px; }
+    .pgrid .pcard .pcard-movie { font-size: 9.5px; }
+    .pgrid .pcard .pcard-actions { margin: 0 -6px; }
+    .pgrid .pcard .act { gap: 4px; padding: 0 6px; font-size: 11.5px; }
+    .pgrid .pcard .act svg { width: 14px; height: 14px; }
   }
 
-  @media (hover: none) { :is(.rail-track--posts, .pgrid) .pcard:hover { transform: none; } }
+  @media (hover: none) { .pgrid .pcard:hover { transform: none; } }
   @media (prefers-reduced-motion: reduce) {
-    :is(.rail-track--posts, .pgrid) .pcard, :is(.rail-track--posts, .pgrid) .pcard .pcard-poster img, .kv-genre { transition: none; }
-    :is(.rail-track--posts, .pgrid) .pcard:hover, :is(.rail-track--posts, .pgrid) .pcard:hover .pcard-poster img { transform: none; }
+    .pgrid .pcard, .pgrid .pcard .pcard-poster img, .pgrid .pcard .pcard-author, .pgrid .pcard .act { transition: none; }
+    .pgrid .pcard:hover, .pgrid .pcard:hover .pcard-poster img { transform: none; }
   }
 </style>
 
@@ -277,6 +251,94 @@
   }
 </style>
 
+<style>
+  /* =====================================================================
+     VIEW TOGGLE (grid <-> list)
+     ===================================================================== */
+  .kv-disc .view-btn {
+    margin: 0 0 0 auto; display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; flex: none; border-radius: 999px; cursor: pointer;
+    color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+    -webkit-tap-highlight-color: transparent; transition: background .2s, border-color .2s, transform .15s;
+  }
+  .kv-disc .view-btn:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .kv-disc .view-btn:active { transform: scale(.94); }
+  .kv-disc .view-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .kv-disc .view-btn svg { width: 18px; height: 18px; }
+  /* the icon shows the view you will switch TO */
+  .kv-disc .view-btn .ic-grid { display: none; }
+  html[data-disc-view="list"] .kv-disc .view-btn .ic-list { display: none; }
+  html[data-disc-view="list"] .kv-disc .view-btn .ic-grid { display: block; }
+
+  /* =====================================================================
+     LIST VIEW: each row is exactly as tall as its poster thumbnail
+     ===================================================================== */
+  html[data-disc-view="list"] .pgrid { --lw: 100px; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+
+  html[data-disc-view="list"] .pgrid .pcard {
+    display: grid; grid-template-columns: var(--lw) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto;
+    height: calc(var(--lw) * 1.5); border-radius: 14px; align-items: stretch;
+    contain-intrinsic-size: auto calc(var(--lw) * 1.5);
+  }
+  html[data-disc-view="list"] .pgrid .pcard:hover { transform: translateY(-2px); box-shadow: 0 12px 26px -18px rgba(0, 0, 0, .75); }
+
+  /* poster: fixed width, 2:3, fills the full row height */
+  html[data-disc-view="list"] .pgrid .pcard > .pcard-poster { grid-column: 1; grid-row: 1 / -1; width: var(--lw); height: 100%; aspect-ratio: auto; }
+  html[data-disc-view="list"] .pgrid .pcard > .pcard-poster::after { display: none; }
+  html[data-disc-view="list"] .pgrid .pcard:hover .pcard-poster img { transform: none; }
+  html[data-disc-view="list"] .pgrid .pcard > :not(.pcard-poster) { grid-column: 2; min-width: 0; }
+
+  /* text column: fills the row, footer pinned to the bottom, anything extra is clipped */
+  html[data-disc-view="list"] .pgrid .pcard .pcard-body { display: flex; flex-direction: column; gap: 4px; min-height: 0; overflow: hidden; padding: 10px 12px 8px; }
+  html[data-disc-view="list"] .pgrid .pcard .pcard-movie { font-size: 10.5px; }
+  html[data-disc-view="list"] .pgrid .pcard .pcard-title { font-size: 15px; line-height: 1.28; }
+  html[data-disc-view="list"] .pgrid .pcard .pcard-title a { -webkit-line-clamp: 2; line-clamp: 2; }
+  html[data-disc-view="list"] .pgrid .pcard .pcard-text {
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    margin: 0; font-size: 12.5px; line-height: 1.4; color: color-mix(in srgb, var(--text) 60%, transparent);
+  }
+
+  /* footer: author left, actions right, one compact row */
+  html[data-disc-view="list"] .pgrid .pcard .pcard-foot {
+    margin: auto 0 0; padding: 4px 0 0; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; flex: none;
+  }
+  html[data-disc-view="list"] .pgrid .pcard > .pcard-foot { margin: 0; padding: 4px 12px 6px; }
+  html[data-disc-view="list"] .pgrid .pcard .pcard-actions { margin: 0 -8px 0 0; }
+  html[data-disc-view="list"] .pgrid .pcard [data-share-post] { margin-left: 0; }
+
+  /* wide laptop: two rows per line */
+  @media (min-width: 1000px) {
+    html[data-disc-view="list"] .pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  }
+
+  /* phone: smaller thumbnail, no excerpt, tighter text */
+  @media (max-width: 640px) {
+    .kv-disc .genre-menu { order: 1; }
+    .kv-disc .view-btn { order: 2; width: 38px; height: 38px; }
+    .kv-disc .toolbar .seg { order: 3; flex: 1 1 100%; }
+
+    html[data-disc-view="list"] .pgrid { --lw: 76px; gap: 8px; }
+    html[data-disc-view="list"] .pgrid .pcard { border-radius: 12px; }
+    html[data-disc-view="list"] .pgrid .pcard .pcard-body { padding: 8px 10px 6px; gap: 3px; }
+    html[data-disc-view="list"] .pgrid .pcard .pcard-movie { font-size: 9.5px; }
+    html[data-disc-view="list"] .pgrid .pcard .pcard-title { font-size: 13px; }
+    html[data-disc-view="list"] .pgrid .pcard .pcard-text { display: none; }
+    html[data-disc-view="list"] .pgrid .pcard .pcard-foot { gap: 4px; padding-top: 2px; }
+    html[data-disc-view="list"] .pgrid .pcard > .pcard-foot { padding: 2px 10px 4px; }
+    html[data-disc-view="list"] .pgrid .pcard .pcard-author { font-size: 11px; }
+    html[data-disc-view="list"] .pgrid .pcard .avatar--sm { width: 18px; height: 18px; font-size: 9px; }
+    html[data-disc-view="list"] .pgrid .pcard .pcard-actions { margin-right: -6px; }
+    html[data-disc-view="list"] .pgrid .pcard .act { height: 26px; padding: 0 5px; gap: 3px; font-size: 11px; }
+    html[data-disc-view="list"] .pgrid .pcard .act svg { width: 13px; height: 13px; }
+  }
+
+  @media (hover: none) { html[data-disc-view="list"] .pgrid .pcard:hover { transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .kv-disc .view-btn { transition: none; }
+    html[data-disc-view="list"] .pgrid .pcard:hover { transform: none; }
+  }
+</style>
+
 <main class="page">
   <div class="shell shell--narrow kv-disc">
     <header class="page-head">
@@ -315,7 +377,33 @@
       <div class="seg" role="group" aria-label="Sort">
         <% sorts.forEach((s) => { %><a class="<%= sort === s.key ? 'on' : '' %>" href="<%= qs({ sort: s.key }) %>"<%- sort === s.key ? ' aria-current="true"' : '' %>><% if (s.long === s.short) { %><%= s.long %><% } else { %><span class="lg"><%= s.long %></span><span class="sm"><%= s.short %></span><% } %></a><% }) %>
       </div>
+
+      <button type="button" class="view-btn" data-disc-view data-mode="grid" aria-label="Switch to list view" title="Switch to list view">
+        <svg class="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>
+        <svg class="ic-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      </button>
     </div>
+
+    <script>
+      /* grid/list view: stored in localStorage, applied as an attribute on <html> */
+      (function () {
+        var KEY = 'disc-view', root = document.documentElement, btn = document.querySelector('[data-disc-view]');
+        function apply(m) {
+          root.setAttribute('data-disc-view', m);
+          if (!btn) return;
+          var t = 'Switch to ' + (m === 'list' ? 'grid' : 'list') + ' view';
+          btn.setAttribute('aria-label', t); btn.title = t; btn.dataset.mode = m;
+        }
+        var saved = 'grid';
+        try { saved = localStorage.getItem(KEY) === 'list' ? 'list' : 'grid'; } catch (e) {}
+        apply(saved);
+        if (btn) btn.addEventListener('click', function () {
+          var m = root.getAttribute('data-disc-view') === 'list' ? 'grid' : 'list';
+          apply(m);
+          try { localStorage.setItem(KEY, m); } catch (e) {}
+        });
+      })();
+    </script>
 
     <% if (posts.length) { %>
       <div class="pgrid" id="feed" data-post-list><%- include('partials/postCards', { posts }) %></div>
