@@ -14,7 +14,7 @@
     background: radial-gradient(40% 36% at 15% 20%, rgba(139, 92, 246, .45), transparent), radial-gradient(36% 32% at 85% 85%, rgba(236, 72, 153, .3), transparent), radial-gradient(30% 28% at 72% 8%, rgba(59, 130, 246, .2), transparent);
     animation: wr-drift 14s ease-in-out infinite alternate; }
   .wr-hero::after { content: ""; position: absolute; z-index: -1; inset: 0; opacity: .08; mix-blend-mode: overlay; pointer-events: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); }
+    background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
   .wr-copy { display: grid; gap: 20px; justify-items: start; min-width: 0; }
   .wr-eyebrow { display: inline-flex; align-items: center; gap: 12px; font: 600 12px/1 var(--wr-font); letter-spacing: .22em; text-transform: uppercase; color: rgba(255, 255, 255, .62); }
   .wr-eyebrow::before { content: ""; width: 34px; height: 1px; background: rgba(255, 255, 255, .4); }
@@ -65,17 +65,18 @@
     .wr-fan { height: 270px; width: 100%; }
     .wr-fp { width: 112px; } .wr-fp-c { width: 134px; }
     .wr-fp-l { --x: -76%; } .wr-fp-r { --x: 76%; }
+    .wr-hero::before { animation: none; } .wr-hero::after { display: none; }
   }
 
   /* ---------- fullscreen story ---------- */
   .wr-ov { position: fixed; inset: 0; z-index: 500; height: 100vh; height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
     box-sizing: border-box; padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 4px); color: #fff; font-family: var(--wr-font); overscroll-behavior: contain; touch-action: none;
-    background: radial-gradient(60% 50% at 50% 0%, rgba(139, 92, 246, .22), transparent), rgba(6, 5, 12, .97); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+    background: radial-gradient(60% 50% at 50% 0%, rgba(139, 92, 246, .22), transparent), rgba(6, 5, 12, .98); }
   .wr-ov[hidden] { display: none !important; }
   .wr-stagewrap { display: flex; align-items: center; gap: 22px; }
-  .wr-frame { position: relative; overflow: hidden; border-radius: 28px; background: #000; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  .wr-frame { position: relative; overflow: hidden; isolation: isolate; border-radius: 28px; background: #000; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
     box-shadow: 0 40px 90px -30px rgba(0, 0, 0, .95), 0 0 0 1px rgba(255, 255, 255, .12); }
-  .wr-stage { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 0 0; will-change: transform; }
+  .wr-stage { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 0 0; }
   .wr-segs { position: absolute; z-index: 6; top: 14px; left: 14px; right: 14px; display: flex; gap: 4px; pointer-events: none; }
   .wr-seg { flex: 1; height: 4px; border-radius: 3px; background: rgba(255, 255, 255, .28); overflow: hidden; }
   .wr-seg i { display: block; height: 100%; width: 0; background: #fff; }
@@ -85,8 +86,8 @@
   .wr-ov.paused .wr-seg.on i { animation-play-state: paused; }
   @keyframes wr-fill { from { width: 0; } to { width: 100%; } }
   .wr-x { position: absolute; z-index: 7; top: 26px; right: 14px; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border-radius: 50%; cursor: pointer; color: #fff;
-    background: rgba(0, 0, 0, .4); border: 1px solid rgba(255, 255, 255, .35); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-  .wr-zone { position: absolute; z-index: 5; top: 70px; bottom: 0; }
+    background: rgba(0, 0, 0, .5); border: 1px solid rgba(255, 255, 255, .35); }
+  .wr-zone { position: absolute; z-index: 5; top: 70px; bottom: 0; touch-action: none; }
   .wr-zone.l { left: 0; width: 30%; } .wr-zone.r { right: 0; width: 70%; }
   .wr-ic { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
   .wr-arrow { width: 48px; height: 48px; display: grid; place-items: center; padding: 0; border-radius: 50%; cursor: pointer; color: #fff; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .22); transition: background .2s, transform .2s; }
@@ -106,7 +107,7 @@
   /* ---------- share sheet ---------- */
   .wr-sheet { position: absolute; inset: 0; z-index: 600; display: flex; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .6); touch-action: pan-y; }
   .wr-sheet[hidden] { display: none; }
-  .wr-card { width: min(480px, 100%); max-height: 94%; overflow-y: auto; overscroll-behavior: contain; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0;
+  .wr-card { width: min(480px, 100%); max-height: 94%; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0;
     background: #16131f; border: 1px solid rgba(255, 255, 255, .1); box-shadow: 0 -24px 70px rgba(0, 0, 0, .6); animation: wr-sheetup .3s cubic-bezier(.2, .8, .2, 1) both; }
   @keyframes wr-sheetup { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
   @media (min-width: 760px) { .wr-sheet { align-items: center; } .wr-card { border-radius: 28px; } }
@@ -132,16 +133,18 @@
 
   /* ---------- slide (design units = 1080 x 1920 px) ---------- */
   .wr-s { position: absolute; inset: 0; display: none; overflow: hidden; color: #fff; font-family: var(--wr-font);
-    background: linear-gradient(165deg, hsl(var(--h) 80% 38%), hsl(calc(var(--h) + 30) 72% 20%) 50%, hsl(calc(var(--h) + 55) 70% 8%)); }
+    background-color: #1a1233; background-image: linear-gradient(165deg, var(--c1), var(--c2) 50%, var(--c3)); }
   .wr-s.on { display: block; animation: wr-fade .45s ease both; }
   @keyframes wr-fade { from { opacity: 0; } to { opacity: 1; } }
   .wr-bg { position: absolute; inset: 0; overflow: hidden; }
   .wr-bg i { position: absolute; border-radius: 50%; }
-  .wr-bg i:nth-child(1) { left: 400px; top: -330px; width: 1400px; height: 1400px; background: radial-gradient(closest-side, hsl(calc(var(--h) + 40) 100% 65% / .45), transparent); animation: wr-drift 9s ease-in-out infinite alternate; }
-  .wr-bg i:nth-child(2) { left: -700px; top: 960px; width: 1600px; height: 1600px; background: radial-gradient(closest-side, hsl(calc(var(--h) - 30) 100% 55% / .35), transparent); animation: wr-drift 11s ease-in-out infinite alternate-reverse; }
+  .wr-bg i:nth-child(1) { left: 400px; top: -330px; width: 1400px; height: 1400px; background: radial-gradient(closest-side, var(--g1), var(--g1z)); animation: wr-drift 9s ease-in-out infinite alternate; }
+  .wr-bg i:nth-child(2) { left: -700px; top: 960px; width: 1600px; height: 1600px; background: radial-gradient(closest-side, var(--g2), var(--g2z)); animation: wr-drift 11s ease-in-out infinite alternate-reverse; }
   .wr-bg i:nth-child(3) { left: 180px; top: -480px; width: 1480px; height: 1480px; background: repeating-radial-gradient(closest-side, transparent 0 218px, rgba(255, 255, 255, .07) 218px 220px); }
   .wr-bg i:nth-child(4) { inset: 0; border-radius: 0; background-image: var(--noise); background-size: 160px 160px; opacity: .14; mix-blend-mode: overlay; }
   .wr-bg i:nth-child(5) { inset: 0; border-radius: 0; background: radial-gradient(circle at 50% 50%, transparent 60%, rgba(0, 0, 0, .4) 100%); }
+  /* phones: no animated giant layers and no blend-mode noise (they cause blank/black frames and crashes) */
+  @media (max-width: 760px), (hover: none) { .wr-bg i:nth-child(1), .wr-bg i:nth-child(2) { animation: none; } .wr-bg i:nth-child(4) { display: none; } }
   .wr-tag { position: absolute; left: 0; width: 1080px; top: 160px; height: 60px; line-height: 60px; padding: 0 160px; box-sizing: border-box; text-align: center; font-weight: 700; font-size: 36px;
     text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: rgba(255, 255, 255, .8); }
   .wr-body { position: absolute; left: 90px; top: 280px; width: 900px; height: 1420px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 38px; text-align: center; }
@@ -357,7 +360,12 @@
     return e;
   }
   function domSlide(sp) {
-    var s = el('div', 'wr-s'); s.style.setProperty('--h', sp.hue);
+    var s = el('div', 'wr-s'), hh = sp.hue;
+    function C(o, sat, lig, a) { return 'hsla(' + ((hh + o + 360) % 360) + ',' + sat + '%,' + lig + '%,' + a + ')'; }
+    s.style.setProperty('--h', hh);
+    s.style.setProperty('--c1', C(0, 80, 38, 1)); s.style.setProperty('--c2', C(30, 72, 20, 1)); s.style.setProperty('--c3', C(55, 70, 8, 1));
+    s.style.setProperty('--g1', C(40, 100, 65, .45)); s.style.setProperty('--g1z', C(40, 100, 65, 0));
+    s.style.setProperty('--g2', C(-30, 100, 55, .35)); s.style.setProperty('--g2z', C(-30, 100, 55, 0));
     var bg = el('div', 'wr-bg'); for (var q = 0; q < 5; q++) bg.appendChild(el('i')); s.appendChild(bg);
     s.appendChild(el('div', 'wr-tag', sp.tag));
     var body = el('div', 'wr-body');
@@ -499,7 +507,8 @@
     c.fillStyle = 'rgba(255,255,255,.8)'; c.font = '700 36px ' + FAM; c.textAlign = 'left'; c.fillText(label, x0 + 82, 1810);
     return cv;
   }
-  function toBlob(cv) { return new Promise(function (ok, no) { cv.toBlob(function (b) { b ? ok(b) : no(new Error('export failed')); }, 'image/png'); }); }
+  /* the canvas is freed right after export: iOS Safari blanks canvases once total canvas memory gets too high */
+  function toBlob(cv) { return new Promise(function (ok, no) { cv.toBlob(function (b) { cv.width = cv.height = 0; b ? ok(b) : no(new Error('export failed')); }, 'image/png'); }); }
   function saveBlob(blob, name) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000); }
   function fname(i) { return 'kravn-wrapped-' + W.year + '-' + (i + 1) + '.png'; }
   /* images are rendered in the background, so Save and Share are instant */
@@ -512,7 +521,9 @@
   function warmAll() {
     if (warmed) return; warmed = true;
     var p = Promise.resolve();
-    [LAST].concat(S.map(function (_, k) { return k; })).forEach(function (k) {
+    var coarse = false; try { coarse = matchMedia('(pointer: coarse)').matches; } catch (e) {}
+    var order = coarse ? [LAST] : [LAST].concat(S.map(function (_, k) { return k; }));
+    order.forEach(function (k) {
       p = p.then(function () { return getBlob(k).catch(noop); }).then(function () { return new Promise(function (r) { setTimeout(r, 150); }); });
     });
   }
@@ -584,6 +595,8 @@
 
   /* one image through the system share sheet; on phones this lists Instagram (Stories), WhatsApp, Messages, etc. */
   async function nativeShare(i, imageOnly) {
+    /* phones only open the share sheet straight after a tap, so never wait for a render in between */
+    if (canFiles && !blobCache[i]) { toast('Preparing your image…'); await getBlob(i); toast('Ready. Tap again to share.'); return; }
     var blob = await getBlob(i), f = new File([blob], fname(i), { type: 'image/png' });
     var data = imageOnly ? { files: [f] } : { files: [f], title: 'My KravN Wrapped ' + W.year, text: CAP + ' ' + SITE };
     if (canFiles) {
@@ -593,6 +606,10 @@
   /* the complete Wrapped: every slide in one share (images are sent together, in order) */
   async function shareAll() {
     toast('Preparing all ' + S.length + ' slides…');
+    if (canFiles) {
+      var miss = false; for (var q = 0; q < S.length; q++) if (!blobCache[q]) miss = true;
+      if (miss) { for (var w = 0; w < S.length; w++) await getBlob(w); toast('Ready. Tap again to share all slides.'); return; }
+    }
     var files = [];
     for (var k = 0; k < S.length; k++) files.push(new File([await getBlob(k)], fname(k), { type: 'image/png' }));
     var data = { files: files, title: 'My KravN Wrapped ' + W.year, text: CAP + ' ' + SITE };
@@ -626,15 +643,15 @@
     var x = el('button', 'wr-x'); x.type = 'button'; x.innerHTML = ICON.x; x.setAttribute('aria-label', 'Close'); x.addEventListener('click', close);
     frame.appendChild(stage); frame.appendChild(sg); frame.appendChild(x);
     /* tap = next/previous, hold = pause, swipe down = close */
-    var downT = 0, downY = 0;
+    var downT = 0, downY = 0, downX = 0;
     ['l', 'r'].forEach(function (d) {
       var z = el('div', 'wr-zone ' + d);
-      z.addEventListener('pointerdown', function (e) { downT = Date.now(); downY = e.clientY; holdPaused = true; updatePause(); });
+      z.addEventListener('pointerdown', function (e) { if (e.isPrimary === false) return; downT = Date.now(); downY = e.clientY; downX = e.clientX; holdPaused = true; updatePause(); });
       z.addEventListener('pointerup', function (e) {
         holdPaused = false; updatePause();
         var dy = e.clientY - downY;
         if (dy > 110) { close(); return; }
-        if (Date.now() - downT < 260 && Math.abs(dy) < 14) show(idx + (d === 'l' ? -1 : 1));
+        if (Date.now() - downT < 450 && Math.abs(dy) < 30 && Math.abs(e.clientX - downX) < 30) show(idx + (d === 'l' ? -1 : 1));
       });
       z.addEventListener('pointerleave', function () { holdPaused = false; updatePause(); });
       z.addEventListener('pointercancel', function () { holdPaused = false; updatePause(); });
@@ -695,6 +712,7 @@
     ov.appendChild(wrapEl); ov.appendChild(row); ov.appendChild(sheet); ov.appendChild(toastEl); document.body.appendChild(ov);
     addEventListener('resize', function () { if (!ov.hidden) layout(); });
     addEventListener('orientationchange', function () { setTimeout(function () { if (!ov.hidden) layout(); }, 250); });
+    if (window.visualViewport) visualViewport.addEventListener('resize', function () { if (!ov.hidden) layout(); });
     document.addEventListener('keydown', function (e) {
       if (ov.hidden) return;
       if (e.key === 'Escape') { sheetOpen ? closeSheet() : close(); }
