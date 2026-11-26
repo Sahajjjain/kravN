@@ -85,6 +85,9 @@
   #search-overlay .search-hint { margin-top: 14px; text-align: center; font-size: 12.5px; color: color-mix(in srgb, var(--text) 50%, transparent); }
   #search-overlay kbd { display: inline-block; padding: 2px 7px; border-radius: 6px; font: 600 11px/1.3 var(--font); color: color-mix(in srgb, var(--text) 80%, transparent); background: color-mix(in srgb, var(--text) 8%, transparent); border: 1px solid color-mix(in srgb, var(--text) 14%, transparent); }
 
+
+    #topnav .nav-wrapped svg { width: 15px; height: 15px; margin-right: 6px; flex: none; }
+  #topnav .topnav-links a.nav-wrapped:not(.on) { color: var(--accent); }
   /* ---------- desktop (≥ 821px) ---------- */
   @media (min-width: 821px) {
     #topnav .topnav-links { display: flex; align-items: center; gap: 4px; }
@@ -178,6 +181,7 @@
     <a href="/discussions" class="<%= nav === 'discussions' ? 'on' : '' %>"<%- nav === 'discussions' ? ' aria-current="page"' : '' %>>Discussions</a>
     <% if (me) { %><a href="/watchlist" class="<%= nav === 'watchlist' ? 'on' : '' %>"<%- nav === 'watchlist' ? ' aria-current="page"' : '' %>>Watchlist</a><% } %>
     <% if (me) { %><a href="/dashboard" class="<%= nav === 'dashboard' ? 'on' : '' %>"<%- nav === 'dashboard' ? ' aria-current="page"' : '' %>>Dashboard</a><% } %>
+        <% if (me) { %><a href="/wrapped" class="nav-wrapped <%= nav === 'wrapped' ? 'on' : '' %>"<%- nav === 'wrapped' ? ' aria-current="page"' : '' %>><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M21 5h-4"/></svg>Wrapped</a><% } %>
     <a href="/about" class="<%= nav === 'about' ? 'on' : '' %>"<%- nav === 'about' ? ' aria-current="page"' : '' %>>About</a>
   </nav>
 
@@ -200,6 +204,7 @@
           <a href="/users/<%= encodeURIComponent(me.username) %>" role="menuitem"><%- include('icon', { n: 'user' }) %> My profile</a>
           <a href="/watchlist" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1z"/></svg> My watchlist</a>
           <a href="/dashboard" role="menuitem"><%- include('icon', { n: 'home' }) %> My dashboard</a>
+                    <a href="/wrapped" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M21 5h-4"/></svg> KravN Wrapped</a>
           <a href="/notifications" role="menuitem"><%- include('icon', { n: 'bell' }) %> Notifications<% if (unread > 0) { %><span class="menu-badge"><%= unread > 9 ? '9+' : unread %></span><% } %></a>
           <a href="/posts/new" role="menuitem"><%- include('icon', { n: 'plus' }) %> Start a discussion</a>
           <div class="menu-sep"></div>

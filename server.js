@@ -121,6 +121,7 @@ app.use('/', require('./routes/browse'));
 app.use('/', require('./routes/movies'));
 app.use('/', require('./routes/posts'));
 app.use('/', require('./routes/watchlist')); // before users, so /users/:name/watchlist is never shadowed
+app.use('/', require('./routes/wrapped'));
 app.use('/', require('./routes/users'));
 
 /* ------------------------------ 404 + errors ------------------------------ */

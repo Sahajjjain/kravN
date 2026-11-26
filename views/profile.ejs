@@ -605,6 +605,7 @@
       <div class="profile-actions">
         <% if (items.length) { %><button type="button" class="btn btn-primary" data-cards-open="#feed"><svg class="kv-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="13" height="14" rx="2"/><path d="M8 3.5h11a2 2 0 0 1 2 2V17"/></svg> Kravn Cards</button><% } %>
         <% if (isOwn) { %><a class="btn btn-glass" href="/posts/new"><%- include('partials/icon', { n: 'plus' }) %> New discussion</a><% } %>
+        <% if (isOwn) { %><a class="btn btn-glass" href="/wrapped">✨ KravN Wrapped</a><% } %>
         <button type="button" class="btn btn-glass" aria-haspopup="dialog" data-share-profile data-name="<%= u.username %>" data-title="<%= u.username %> on KravN" data-url="/users/<%= encodeURIComponent(u.username) %>"><%- include('partials/icon', { n: 'share' }) %> <span>Share</span></button>
       </div>
     </header>
