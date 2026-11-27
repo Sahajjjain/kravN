@@ -30,6 +30,8 @@
   // Verified tick by number of posts: 100+ blue, more than 200 gold
   const postN = Number(stats && stats.discussions) || 0;
   const tick = postN > 200 ? { k: 'gold', t: 'Gold verified · 200+ posts' } : postN >= 100 ? { k: 'blue', t: 'Verified · 100+ posts' } : null;
+  // Founder badge: only for the KravN founder (username match is case-insensitive). Shown next to the tick, never instead of it.
+  const isFounder = String(u.username || '').trim().toLowerCase() === 'sahaj';
   const commentList = (typeof recentComments !== 'undefined' && Array.isArray(recentComments)) ? recentComments : [];
   const allGenres = [...new Set(items.flatMap((i) => i.genres))].sort((a, b) => String(a).localeCompare(String(b)));
 
@@ -85,6 +87,28 @@
   .vtick--blue { color: #1d9bf0; }
   .vtick--gold { color: #e8b100; }
   .profile-id .muted { margin: 0; font-size: 12.5px; }
+
+  /* ---------- founder badge (only for the KravN founder) ----------
+     Champagne-gold glass pill: hairline gold border, soft inner glow, thin-line crown and spaced small caps.
+     One colour family on purpose (restrained = elegant). Mid-tone golds stay readable on dark and light themes.
+     It sits next to the tick, never replaces it. */
+  .fbadge {
+    position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 12px 0 9px; margin: 0;
+    border-radius: 999px; overflow: hidden; white-space: nowrap; cursor: default; vertical-align: middle;
+    border: 1px solid rgba(214, 170, 70, .5);
+    background:
+      radial-gradient(120% 140% at 0% 0%, rgba(240, 205, 120, .22), transparent 60%),
+      linear-gradient(180deg, rgba(214, 170, 70, .12), rgba(214, 170, 70, .04)),
+      color-mix(in srgb, var(--text) 4%, var(--surface));
+    box-shadow: inset 0 1px 0 rgba(255, 236, 180, .18), 0 8px 20px -12px rgba(214, 170, 70, .65);
+    -webkit-user-select: none; user-select: none;
+  }
+  .fbadge svg { position: relative; z-index: 1; width: 14px; height: 14px; flex: none; display: block; overflow: visible; filter: drop-shadow(0 0 4px rgba(214, 170, 70, .45)); }
+  .fbadge-t {
+    position: relative; z-index: 1; font: 600 10px/1 var(--font); letter-spacing: .2em; text-transform: uppercase; padding-left: .1em;
+    background: linear-gradient(100deg, #e9c46a, #b98a2b 48%, #e9c46a); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  }
+  
 
   .profile-actions { display: flex; gap: 8px; flex: none; }
   .profile-actions .btn {
@@ -174,6 +198,9 @@
   @media (min-width: 900px) {
     .page .profile-head { gap: 24px; padding: 26px 30px; border-radius: 22px; margin-bottom: 14px; }
     .page .profile-head .avatar--xl { width: 80px; height: 80px; font-size: 34px; }
+    .fbadge { height: 26px; padding: 0 14px 0 10px; gap: 7px; }
+    .fbadge svg { width: 15px; height: 15px; }
+    .fbadge-t { font-size: 10.5px; }
     .page .stats { border-radius: 18px; }
     .page .stats .stat { padding: 18px 8px; gap: 10px; }
     .page .stats .stat strong { font-size: 25px; }
@@ -188,7 +215,10 @@
     .page .profile-head { display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; padding: 14px; border-radius: 16px; margin-bottom: 10px; }
     .page .profile-head .avatar--xl { width: 54px; height: 54px; font-size: 23px; }
     .profile-id { flex: none; }
-    .profile-id h1 { font-size: 20px; }
+    .profile-id h1 { font-size: 20px; gap: 6px; }
+    .fbadge { height: 22px; padding: 0 11px 0 8px; gap: 5px; }
+    .fbadge svg { width: 12px; height: 12px; }
+    .fbadge-t { font-size: 9px; letter-spacing: .17em; }
     .profile-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr; gap: 8px; }
     .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr 1fr; }
     .profile-actions .btn { width: 100%; padding: 0 10px; }
@@ -633,7 +663,7 @@
       <span class="avatar avatar--xl" style="--h:<%= hue(u.username) %>"><%= u.username.charAt(0).toUpperCase() %></span>
       <div class="profile-id">
         <span class="eyebrow"><span class="dot"></span> <%= isOwn ? 'Your dashboard' : 'Profile' %></span>
-        <h1><%= u.username %><% if (tick) { %><span class="vtick vtick--<%= tick.k %>" role="img" aria-label="<%= tick.t %>" title="<%= tick.t %>"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 1.5l2.4 1.7 2.9-.3 1.2 2.7 2.6 1.4-.3 2.9L22.5 12l-1.7 2.4.3 2.9-2.6 1.4-1.2 2.7-2.9-.3L12 22.5l-2.4-1.7-2.9.3-1.2-2.7-2.6-1.4.3-2.9L1.5 12l1.7-2.4-.3-2.9 2.6-1.4 1.2-2.7 2.9.3z"/><path d="M7.8 12.4l2.9 2.9 5.5-5.8" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><% } %><% if (isOwn) { %><span class="pill pill--accent">You</span><% } %></h1>
+        <h1><%= u.username %><% if (tick) { %><span class="vtick vtick--<%= tick.k %>" role="img" aria-label="<%= tick.t %>" title="<%= tick.t %>"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 1.5l2.4 1.7 2.9-.3 1.2 2.7 2.6 1.4-.3 2.9L22.5 12l-1.7 2.4.3 2.9-2.6 1.4-1.2 2.7-2.9-.3L12 22.5l-2.4-1.7-2.9.3-1.2-2.7-2.6-1.4.3-2.9L1.5 12l1.7-2.4-.3-2.9 2.6-1.4 1.2-2.7 2.9.3z"/><path d="M7.8 12.4l2.9 2.9 5.5-5.8" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><% } %><% if (isFounder) { %><span class="fbadge" role="img" aria-label="Founder of KravN" title="Founder of KravN"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 17.5L2.6 8.4l5 4.1L12 5l4.4 7.5 5-4.1-.9 9.1z" fill="rgba(214,170,70,.28)" stroke="#d6aa46" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 21h14" stroke="#d6aa46" stroke-width="1.6" stroke-linecap="round" fill="none"/><circle cx="12" cy="3.6" r="1.1" fill="#f0cd78"/></svg><span class="fbadge-t">Founder</span></span><% } %><% if (isOwn) { %><span class="pill pill--accent">You</span><% } %></h1>
         <p class="muted">Member since <%= fmtDate(u.created_at) %></p>
         <% if (isOwn || bioText) { %>
         <div class="pf-bio" id="pf-bio" data-max="<%= BIO_MAX %>">
