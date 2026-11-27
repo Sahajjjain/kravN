@@ -18,7 +18,7 @@
       ts: new Date(p.created_at || 0).getTime() || 0
     };
   };
-  const items = posts.map(mapPost);
+  const items = posts.map((p) => Object.assign(mapPost(p), { card: cardData(p) }));
   // Likes tab: pass `likedPosts` (same row shape as `posts`). If it is missing, the tab is hidden.
   const hasLikes = typeof likedPosts !== 'undefined' && Array.isArray(likedPosts);
   const likedItems = hasLikes ? likedPosts.map(mapPost) : [];
@@ -170,39 +170,6 @@
   .pf-item[hidden] { display: none; }
   .pf-empty { text-align: center; padding: 36px 0; }
 
-  /* ---------- Kravn Cards: a vertical, one-card-at-a-time feed of the same poster cards ---------- */
-  .kc { --kc-h: 100vh; --kc-w: min(78vw, 340px, calc((var(--kc-h) - 220px) * .667)); position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; color: #fff; background: rgba(8, 8, 12, .95); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
-  @supports (height: 100dvh) { .kc { --kc-h: 100dvh; } }
-  .kc[hidden] { display: none !important; }
-  .kc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: calc(12px + env(safe-area-inset-top)) 16px 6px; }
-  .kc-count { font: 600 13px/1 var(--font); letter-spacing: .08em; color: rgba(255, 255, 255, .75); font-variant-numeric: tabular-nums; }
-  .kc-hint { flex: 1; text-align: center; font-size: 12px; color: rgba(255, 255, 255, .45); }
-  .kc-close { width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border-radius: 50%; cursor: pointer; color: #fff; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .25); transition: background .2s; }
-  .kc-close:hover { background: rgba(255, 255, 255, .16); }
-  .kc-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
-
-  .kc-feed { flex: 1; min-height: 0; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .kc-feed::-webkit-scrollbar { display: none; }
-  .kc-slide { height: 100%; scroll-snap-align: center; scroll-snap-stop: always; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
-  .kc-slide .mcard { width: var(--kc-w); flex: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
-  .kc-slide .mcard-poster { position: relative; }
-  .kc-empty { margin: auto; padding: 0 24px; text-align: center; font-size: 14px; color: rgba(255, 255, 255, .7); }
-
-  .kc-heart { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; pointer-events: none; opacity: 0; color: #fff; }
-  .kc-heart svg { width: 96px; height: 96px; fill: currentColor; stroke: none; filter: drop-shadow(0 6px 24px rgba(0, 0, 0, .55)); }
-  .kc-heart.pop { animation: kc-pop .75s ease-out; }
-  @keyframes kc-pop { 0% { opacity: 0; transform: scale(.4); } 22% { opacity: 1; transform: scale(1.15); } 60% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
-
-  .kc-like {
-    display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; margin: 0; border-radius: 999px; cursor: pointer; color: #fff;
-    font: 600 13px/1 var(--font); font-variant-numeric: tabular-nums; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .28);
-    transition: background .2s, border-color .2s, transform .2s;
-  }
-  .kc-like svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; }
-  .kc-like:active svg { transform: scale(.8); }
-  .kc-like.on { background: color-mix(in srgb, var(--accent) 28%, transparent); border-color: var(--accent); }
-  .kc-like.on svg { fill: currentColor; }
-
   /* ---------- laptop / large screens ---------- */
   @media (min-width: 900px) {
     .page .profile-head { gap: 24px; padding: 26px 30px; border-radius: 22px; margin-bottom: 14px; }
@@ -237,13 +204,11 @@
     .dd--sort .dd-list { grid-template-columns: 1fr; }
     .dd-panel { border-radius: 18px; }
     .pf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 10px; }
-    .kc-hint { font-size: 11px; }
   }
-  @media (max-width: 360px) { .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr; } .kc-hint { display: none; } }
+  @media (max-width: 360px) { .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) {
     .dd-panel { animation: none; }
-    .dd-pill, .dd-pill .chev, .dd-opt, .kc-like, .kc-like svg { transition: none; }
-    .kc-heart.pop { animation-duration: .01s; }
+    .dd-pill, .dd-pill .chev, .dd-opt { transition: none; }
   }
 </style>
 
@@ -576,6 +541,91 @@
   @media (prefers-reduced-motion: reduce) { .qr, .qr-card { animation: none; } .qr-btn, .qr-x { transition: none; } }
 </style>
 
+<style>
+  /* Kravn Cards reel: the real card (same as post.ejs) at its natural size, scaled as a whole to fit the screen.
+     Tap = open post, double-tap = like. Buttons: Like + Share only. */
+  .kc {
+    position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; color: #fff; overflow: hidden;
+    height: 100vh; background: #08080c; opacity: 0; visibility: hidden; pointer-events: none;
+    overscroll-behavior: contain;
+    transition: opacity .2s ease, visibility 0s .2s;
+  }
+  @supports (height: 100dvh) { .kc { height: 100dvh; } }
+  .kc.open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .2s ease; }
+  .kc-bg { position: absolute; inset: -40px; z-index: 0; background: center / cover no-repeat; filter: blur(50px) saturate(1.2); opacity: .35; transition: background-image .3s; pointer-events: none; }
+  .kc::after { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(180deg, rgba(8,8,12,.55), rgba(8,8,12,.88)); }
+  .kc-progress { position: absolute; top: 0; left: 0; right: 0; z-index: 3; height: 3px; background: rgba(255,255,255,.1); }
+  .kc-progress i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, var(--accent-2, var(--accent)), var(--accent)); transition: transform .25s ease; }
+
+  .kc-top {
+    position: relative; z-index: 2; flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 6px calc(14px + env(safe-area-inset-left));
+  }
+  .kc-count { flex: none; min-width: 56px; font: 600 13px/1 var(--font); letter-spacing: .06em; font-variant-numeric: tabular-nums; color: rgba(255,255,255,.85); }
+  .kc-hint { flex: 1; min-width: 0; text-align: center; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: rgba(255,255,255,.5); }
+  .kc-close {
+    flex: none; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; margin: 0; border-radius: 50%; cursor: pointer; color: #fff;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.25); -webkit-tap-highlight-color: transparent; transition: background .2s, transform .2s;
+  }
+  .kc-close:hover { background: rgba(255,255,255,.18); }
+  .kc-close:active { transform: scale(.94); }
+  .kc-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+
+  .kc-feed { position: relative; z-index: 1; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scroll-snap-type: y mandatory; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .kc-feed::-webkit-scrollbar { display: none; }
+  .kc-slide {
+    height: 100%; box-sizing: border-box; padding: 4px 12px calc(12px + env(safe-area-inset-bottom)); scroll-snap-align: center; scroll-snap-stop: always;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  }
+  .kc-slide[hidden] { display: none; }
+
+  /* .kc-fit takes the scaled size in layout; .kc-stage keeps the card's natural size and is scaled with transform,
+     so the card looks exactly like it does on the post page, just smaller or larger. */
+  .kc-fit { position: relative; flex: none; width: 380px; height: 480px; }
+  .kc-stage {
+    position: absolute; top: 0; left: 0; width: 380px; transform-origin: 0 0; cursor: pointer;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .kc-stage .kcard-mount { width: 100%; }
+  .kc-heart { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; pointer-events: none; opacity: 0; color: #fff; }
+  .kc-heart svg { width: 96px; height: 96px; fill: currentColor; stroke: none; filter: drop-shadow(0 6px 24px rgba(0,0,0,.55)); }
+  .kc-heart.pop { animation: kc-pop .75s ease-out; }
+  @keyframes kc-pop { 0% { opacity: 0; transform: scale(.4); } 22% { opacity: 1; transform: scale(1.15); } 60% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+
+  /* action bar: Like + Share, two equal buttons as wide as the card */
+  .kc-bar { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: max(var(--kc-fw, 280px), 240px); max-width: 100%; }
+  .kc-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; height: 46px; padding: 0 14px; margin: 0; border-radius: 999px; cursor: pointer; white-space: nowrap; text-decoration: none;
+    font: 600 14px/1 var(--font); color: #fff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.26);
+    -webkit-tap-highlight-color: transparent; transition: background .2s, border-color .2s, transform .2s;
+  }
+  .kc-btn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .kc-btn span { overflow: hidden; text-overflow: ellipsis; }
+  .kc-btn:hover { background: rgba(255,255,255,.18); color: #fff; }
+  .kc-btn:active { transform: scale(.96); }
+  .kc-btn:focus-visible, .kc-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .kc-like b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .kc-like.on { background: var(--accent); border-color: var(--accent); }
+  .kc-like.on svg { fill: currentColor; }
+  .kc-empty { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; padding: 24px; text-align: center; font-size: 14px; color: rgba(255,255,255,.7); pointer-events: none; }
+  .kc-empty[hidden] { display: none; }
+
+  @media (max-width: 420px) { .kc-hint { display: none; } }
+  @media (max-height: 520px) {
+    .kc-top { padding-top: calc(6px + env(safe-area-inset-top)); padding-bottom: 2px; }
+    .kc-close { width: 38px; height: 38px; }
+    .kc-slide { gap: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+    .kc-btn { height: 40px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .kc, .kc-bg, .kc-progress i, .kc-btn, .kc-close { transition: none; }
+    .kc-heart.pop { animation: none; opacity: 1; }
+  }
+    /* hide the Like / Share row under the card */
+  .kc-bar { display: none; }
+  .kc-slide { gap: 0; }
+</style>
+
 <main class="page">
   <div class="shell">
 
@@ -784,18 +834,44 @@
   </div>
 </main>
 
+<% if (items.length) { %>
+<div class="kc" id="kc" role="dialog" aria-modal="true" aria-label="Kravn Cards" aria-hidden="true">
+  <div class="kc-bg" aria-hidden="true"></div>
+  <div class="kc-progress" aria-hidden="true"><i></i></div>
+  <div class="kc-top">
+    <span class="kc-count" id="kc-count" aria-live="polite"></span>
+    <span class="kc-hint">Tap to open · double-tap to like</span>
+    <button type="button" class="kc-close" id="kc-close" aria-label="Close cards"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="kc-feed" id="kc-feed">
+    <% items.forEach((it) => { const c = it.card; %>
+      <article class="kc-slide" data-id="<%= it.id %>" data-href="<%= it.href %>" data-poster="<%= c.posterUrl || '' %>">
+        <div class="kc-fit">
+          <div class="kc-stage">
+            <div class="kcard-mount" data-kcard-mount data-post="<%= json(c) %>"></div>
+            <span class="kc-heart" aria-hidden="true"><%- include('partials/icon', { n: 'heart' }) %></span>
+          </div>
+        </div>
+        <div class="kc-bar">
+          <button type="button" class="kc-btn kc-like<%= c.liked ? ' on' : '' %>" data-like="<%= it.id %>" aria-pressed="<%= !!c.liked %>"><%- include('partials/icon', { n: 'heart' }) %><span data-like-label><%= c.liked ? 'Liked' : 'Like' %></span><b data-like-count="<%= it.id %>"><%= c.likes %></b></button>
+          <button type="button" class="kc-btn" data-kc-share data-url="<%= it.href %>" data-title="<%= it.title %>"><%- include('partials/icon', { n: 'share' }) %><span>Share</span></button>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+  <p class="kc-empty" id="kc-empty" hidden>No discussions to show as cards yet.</p>
+</div>
+<% } %>
+
 <script>
-  /* dropdown filters + sort + Kravn Cards feed (everything reads the .pf-item data attributes) */
+  /* dropdown filters + sort */
   (function () {
     var grid = document.getElementById('feed');
     if (!grid) return;
-    var LIKE_URL = function (id) { return '/posts/' + id + '/like'; }; // POST, toggles the like
     var items = Array.prototype.slice.call(grid.querySelectorAll('.pf-item'));
     var emptyMsg = document.getElementById('pf-empty');
     var state = { genre: '', sort: 'latest' };
-    var HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>';
     function num(el, k) { return parseFloat(el.getAttribute('data-' + k)) || 0; }
-    function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html) e.innerHTML = html; return e; }
 
     /* ----- filter + sort ----- */
     var by = {
@@ -837,86 +913,6 @@
       if (e.key !== 'Escape') return;
       menus.forEach(function (m) { if (m.open) { m.open = false; m.querySelector('summary').focus(); } });
     });
-
-    /* ----- likes (shared by the double-tap and the heart button) ----- */
-    function itemOf(slide) { return grid.querySelector('.pf-item[data-id="' + slide.getAttribute('data-id') + '"]'); }
-    function paint(slide) {
-      var it = itemOf(slide), on = it.getAttribute('data-liked') === '1', b = slide.querySelector('.kc-like');
-      b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.querySelector('span').textContent = num(it, 'likes');
-    }
-    function setLike(slide, want) {
-      var it = itemOf(slide), was = it.getAttribute('data-liked') === '1', n = num(it, 'likes');
-      if (want === was) return;
-      function write(liked, count) { it.setAttribute('data-liked', liked ? 1 : 0); it.setAttribute('data-likes', Math.max(0, count)); paint(slide); }
-      write(want, n + (want ? 1 : -1));
-      fetch(LIKE_URL(it.getAttribute('data-id')), { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch', 'Accept': 'application/json' } })
-        .then(function (r) {
-          if (r.status === 401) { location.href = '/login?next=' + encodeURIComponent(location.pathname); throw 0; }
-          if (!r.ok) throw r;
-          return r.json().catch(function () { return null; });
-        })
-        .then(function (j) { if (j && typeof j.liked === 'boolean') write(j.liked, typeof j.likes === 'number' ? j.likes : num(it, 'likes')); })
-        .catch(function () { write(was, n); });
-    }
-    function burst(slide) {
-      var h = slide.querySelector('.kc-heart'); if (!h) return;
-      h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop');
-    }
-
-    /* ----- Kravn Cards: vertical feed, tap opens, double-tap likes ----- */
-    var ov, feed, counter, slides = [], idx = 0, lastFocus, ticking = false, tapTimer = null;
-    function sync() { idx = Math.max(0, Math.min(slides.length - 1, Math.round(feed.scrollTop / feed.clientHeight))); counter.textContent = slides.length ? (idx + 1) + ' / ' + slides.length : ''; }
-    function go(i) { feed.scrollTo({ top: Math.max(0, Math.min(slides.length - 1, i)) * feed.clientHeight, behavior: 'smooth' }); }
-    function hide() { ov.hidden = true; document.documentElement.style.overflow = ''; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
-
-    function build() {
-      ov = el('div', 'kc'); ov.hidden = true; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'Kravn Cards');
-      var top = el('div', 'kc-top'); counter = el('span', 'kc-count');
-      var close = el('button', 'kc-close', '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>');
-      close.type = 'button'; close.setAttribute('aria-label', 'Close cards'); close.addEventListener('click', hide);
-      top.appendChild(counter); top.appendChild(el('span', 'kc-hint', 'Tap to open · double-tap to like')); top.appendChild(close);
-      feed = el('div', 'kc-feed');
-      feed.addEventListener('scroll', function () { if (ticking) return; ticking = true; requestAnimationFrame(function () { ticking = false; sync(); }); }, { passive: true });
-      feed.addEventListener('click', function (e) {
-        var slide = e.target.closest('.kc-slide');
-        if (!slide) { if (e.target === feed) hide(); return; }
-        if (e.target.closest('.kc-like')) { var it = itemOf(slide); setLike(slide, it.getAttribute('data-liked') !== '1'); return; }
-        var card = e.target.closest('.mcard');
-        if (!card) { hide(); return; }
-        e.preventDefault();
-        if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; setLike(slide, true); burst(slide); return; }
-        tapTimer = setTimeout(function () { tapTimer = null; location.href = card.href; }, 260);
-      });
-      ov.appendChild(top); ov.appendChild(feed);
-      document.body.appendChild(ov);
-    }
-
-    function show() {
-      if (!ov) build();
-      feed.innerHTML = ''; slides = [];
-      var visible = items.filter(function (it) { return !it.hidden; });
-      if (!visible.length) feed.appendChild(el('p', 'kc-empty', 'No discussions to show as cards yet.'));
-      visible.forEach(function (it) {
-        var src = it.querySelector('.mcard'); if (!src) return;
-        var slide = el('div', 'kc-slide'), card = src.cloneNode(true), poster = card.querySelector('.mcard-poster');
-        slide.setAttribute('data-id', it.getAttribute('data-id'));
-        if (poster) poster.appendChild(el('span', 'kc-heart', HEART));
-        var like = el('button', 'kc-like', HEART + '<span></span>'); like.type = 'button'; like.setAttribute('aria-label', 'Like');
-        slide.appendChild(card); slide.appendChild(like); feed.appendChild(slide); slides.push(slide); paint(slide);
-      });
-      lastFocus = document.activeElement; document.documentElement.style.overflow = 'hidden';
-      ov.hidden = false; feed.scrollTop = 0; sync();
-      ov.querySelector('.kc-close').focus();
-    }
-
-    document.addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('[data-cards-open]');
-      if (b) { e.preventDefault(); e.stopImmediatePropagation(); show(); }
-    }, true);
-    document.addEventListener('keydown', function (e) {
-      if (!ov || ov.hidden) return;
-      if (e.key === 'Escape') hide(); else if (e.key === 'ArrowDown') { e.preventDefault(); go(idx + 1); } else if (e.key === 'ArrowUp') { e.preventDefault(); go(idx - 1); }
-    });
     apply();
   })();
 </script>
@@ -947,6 +943,138 @@
     });
     var h = (location.hash || '').replace('#', '');
     if (h === 'comments' || h === 'likes' || h === 'lists') show(h);
+  })();
+</script>
+
+<script>
+  /* Kravn Cards reel: the real KravN Card (same as the post page) scaled to fit any screen.
+     Tap = open post, double-tap = like, swipe = next card, back button = close. */
+  (function () {
+    var ov = document.getElementById('kc'), feed = document.getElementById('kc-feed'), grid = document.getElementById('feed');
+    if (!ov || !feed || !grid) return;
+    var bg = ov.querySelector('.kc-bg'), bar = ov.querySelector('.kc-progress i'), count = document.getElementById('kc-count'), empty = document.getElementById('kc-empty');
+    var slides = Array.prototype.slice.call(feed.querySelectorAll('.kc-slide')), byId = {};
+    var INTERACTIVE = 'button, a, input, textarea, select, label, [role="button"]';
+    var MAX_SCALE = 1.5;
+    slides.forEach(function (s) { byId[s.getAttribute('data-id')] = s; });
+    var cur = 0, lastFocus = null, ticking = false, tapTimer = null, pushed = false, fitQueued = false;
+
+    function live() { return Array.prototype.filter.call(feed.querySelectorAll('.kc-slide'), function (s) { return !s.hidden; }); }
+
+    /* follow whatever genre filter + sort the grid is showing right now */
+    function arrange() {
+      var order = Array.prototype.filter.call(grid.querySelectorAll('.pf-item'), function (it) { return !it.hidden; })
+        .map(function (it) { return byId[it.getAttribute('data-id')]; }).filter(Boolean);
+      slides.forEach(function (s) { s.hidden = order.indexOf(s) < 0; });
+      var dom = live(), same = dom.length === order.length && order.every(function (s, i) { return dom[i] === s; });
+      if (!same) order.forEach(function (s) { feed.appendChild(s); });
+      empty.hidden = order.length > 0;
+    }
+
+    /* scale the whole card (never reshape it) so card + buttons fit the screen; grows a little on big screens */
+    function fit(slide) {
+      if (!slide || slide.hidden) return;
+      var box = slide.querySelector('.kc-fit'), st = slide.querySelector('.kc-stage'), br = slide.querySelector('.kc-bar');
+      var w = st.offsetWidth, h = st.offsetHeight;
+      if (!w || !h || !slide.clientHeight) return;
+      var cs = getComputedStyle(slide), gap = parseFloat(cs.rowGap) || 14;
+      var availW = slide.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      var availH = slide.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - br.offsetHeight - gap;
+      var s = Math.max(0.3, Math.min(availW / w, availH / h, MAX_SCALE));
+      var fw = Math.floor(w * s), fh = Math.floor(h * s);
+      st.style.transform = 'scale(' + s + ')';
+      box.style.width = fw + 'px'; box.style.height = fh + 'px';
+      slide.style.setProperty('--kc-fw', fw + 'px');
+    }
+    function fitAll() {
+      if (fitQueued) return; fitQueued = true;
+      requestAnimationFrame(function () { fitQueued = false; live().forEach(fit); });
+    }
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(fitAll);
+      slides.forEach(function (s) { ro.observe(s.querySelector('.kc-stage')); });
+      ro.observe(feed);
+    }
+
+    function sync() {
+      var v = live(), h = feed.clientHeight || 1;
+      cur = Math.max(0, Math.min(v.length - 1, Math.round(feed.scrollTop / h)));
+      count.textContent = v.length ? (cur + 1) + ' / ' + v.length : '';
+      bar.style.transform = 'scaleX(' + (v.length ? (cur + 1) / v.length : 0) + ')';
+      var p = v[cur] && v[cur].getAttribute('data-poster');
+      bg.style.backgroundImage = p ? 'url("' + p.replace(/"/g, '%22') + '")' : 'none';
+    }
+    function go(i) { var n = live().length; feed.scrollTo({ top: Math.max(0, Math.min(n - 1, i)) * feed.clientHeight, behavior: 'smooth' }); }
+
+    function open() {
+      arrange(); lastFocus = document.activeElement;
+      ov.classList.add('open'); ov.setAttribute('aria-hidden', 'false');
+      document.documentElement.style.overflow = 'hidden'; document.body.style.overflow = 'hidden';
+      try { history.pushState({ kc: 1 }, ''); pushed = true; } catch (e) { pushed = false; }
+      feed.scrollTop = 0; sync(); fitAll();
+      setTimeout(fitAll, 120); setTimeout(fitAll, 500);
+      document.getElementById('kc-close').focus({ preventScroll: true });
+    }
+    function hide() {
+      if (!ov.classList.contains('open')) return;
+      clearTimeout(tapTimer); tapTimer = null;
+      ov.classList.remove('open'); ov.setAttribute('aria-hidden', 'true');
+      document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+      if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+    }
+    function close() {
+      if (!ov.classList.contains('open')) return;
+      if (pushed) { pushed = false; try { history.back(); } catch (e) {} }
+      hide();
+    }
+    window.addEventListener('popstate', function () { pushed = false; hide(); });
+
+    function like(slide) {
+      var b = slide.querySelector('.kc-like'), h = slide.querySelector('.kc-heart');
+      if (b && !b.classList.contains('on')) b.click();
+      if (h) { h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop'); }
+      if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+    }
+    function share(b) {
+      var url = location.origin + b.getAttribute('data-url'), title = b.getAttribute('data-title') || 'KravN';
+      if (navigator.share) { navigator.share({ title: title, url: url }).catch(function () {}); return; }
+      var label = b.querySelector('span'), old = label.textContent;
+      function done() { label.textContent = 'Copied'; setTimeout(function () { label.textContent = old; }, 1800); }
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, function () { window.prompt('Copy this link', url); });
+      else window.prompt('Copy this link', url);
+    }
+
+    feed.addEventListener('scroll', function () { if (ticking) return; ticking = true; requestAnimationFrame(function () { ticking = false; sync(); }); }, { passive: true });
+    feed.addEventListener('click', function (e) {
+      var s = e.target.closest('[data-kc-share]');
+      if (s) { share(s); return; }
+      if (e.target === feed || e.target.classList.contains('kc-slide')) { close(); return; }
+
+      /* tap on the card: second tap within 260ms likes, otherwise open the post */
+      var stage = e.target.closest('.kc-stage');
+      if (!stage || e.target.closest(INTERACTIVE)) return;
+      var slide = stage.closest('.kc-slide');
+      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; like(slide); return; }
+      tapTimer = setTimeout(function () { tapTimer = null; location.href = slide.getAttribute('data-href'); }, 260);
+    });
+    document.getElementById('kc-close').addEventListener('click', close);
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-cards-open]');
+      if (b) { e.preventDefault(); e.stopImmediatePropagation(); open(); }
+    }, true);
+    document.addEventListener('keydown', function (e) {
+      if (!ov.classList.contains('open')) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1); }
+      else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    });
+
+    /* rotation / address-bar resize: stay on the same card and refit */
+    window.addEventListener('resize', function () {
+      if (!ov.classList.contains('open')) return;
+      feed.scrollTop = cur * feed.clientHeight; sync(); fitAll();
+    });
+    window.addEventListener('orientationchange', function () { setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 250); });
   })();
 </script>
 
