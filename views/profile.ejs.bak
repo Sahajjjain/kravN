@@ -1,0 +1,1726 @@
+<%
+  const u = profileUser;
+  const yearOf = (d) => (String(d || '').match(/(?:19|20)\d{2}/) || [''])[0];
+  const mapPost = (p) => {
+    const rating = Number(p.rating) || 0;
+    return {
+      id: p.id,
+      href: '/posts/' + p.id,
+      title: p.title || p.movie_name || 'Discussion',
+      movie: p.movie_name || '',
+      year: yearOf(p.release_date),
+      poster: posterOf(p) || '',
+      genres: (genreList(p) || []).filter(Boolean),
+      likes: Number(p.likes ?? p.like_count) || 0,
+      liked: !!(p.liked ?? p.liked_by_me ?? p.user_liked),
+      rating,
+      badge: rating ? '★ ' + (Math.round(rating * 10) / 10) : '',
+      ts: new Date(p.created_at || 0).getTime() || 0
+    };
+  };
+  const items = posts.map((p) => Object.assign(mapPost(p), { card: cardData(p) }));
+  // Likes tab: pass `likedPosts` (same row shape as `posts`). If it is missing, the tab is hidden.
+  const hasLikes = typeof likedPosts !== 'undefined' && Array.isArray(likedPosts);
+  const likedItems = hasLikes ? likedPosts.map(mapPost) : [];
+  // Lists tab: visitors only see it when there is at least one public list; the owner always sees it.
+  const wlLists = (typeof watchLists !== 'undefined' && Array.isArray(watchLists)) ? watchLists : [];
+  const hasLists = (typeof watchLists !== 'undefined' && Array.isArray(watchLists)) && (wlLists.length > 0 || !!isOwn);
+  const wlBase = '/users/' + encodeURIComponent(u.username) + '/watchlist';
+  const wlTotal = wlLists.reduce((n, l) => n + (Number(l.count) || 0), 0);
+  // Verified tick by number of posts: 100+ blue, more than 200 gold
+  const postN = Number(stats && stats.discussions) || 0;
+  const tick = postN > 200 ? { k: 'gold', t: 'Gold verified · 200+ posts' } : postN >= 100 ? { k: 'blue', t: 'Verified · 100+ posts' } : null;
+  // Founder badge: only for the KravN founder (username match is case-insensitive). Shown next to the tick, never instead of it.
+  const isFounder = String(u.username || '').trim().toLowerCase() === 'sahaj';
+  const commentList = (typeof recentComments !== 'undefined' && Array.isArray(recentComments)) ? recentComments : [];
+  const allGenres = [...new Set(items.flatMap((i) => i.genres))].sort((a, b) => String(a).localeCompare(String(b)));
+
+  // Bio (max 20 characters) + "Movies you vibe with" (max 3). Limits must match routes/users.js.
+  const BIO_MAX = 20, VIBE_MAX = 3;
+  const bioText = Array.from(String(u.bio || '').trim()).slice(0, BIO_MAX).join('');
+  const vibes = (typeof vibeMovies !== 'undefined' && Array.isArray(vibeMovies) ? vibeMovies : []).slice(0, VIBE_MAX).map((v) => ({
+    id: String(v.id || ''),
+    title: String(v.title || ''),
+    year: String(v.year || ''),
+    poster: String(v.poster || '')
+  }));
+  const showVibes = !!isOwn || vibes.length > 0;
+
+  // Filter + sort dropdowns share one component (markup, styles and script).
+  const ic = (d) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  const CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  const menus = [
+    { key: 'genre', def: '', label: 'All genres', name: 'Filter by genre',
+      icon: ic('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'),
+      options: [{ v: '', t: 'All genres' }, ...allGenres.map((g) => ({ v: g, t: g }))] },
+    { key: 'sort', def: 'latest', label: 'Latest', name: 'Sort discussions',
+      icon: ic('<path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/>'),
+      options: [{ v: 'latest', t: 'Latest' }, { v: 'oldest', t: 'Oldest' }, { v: 'rating', t: 'Top rated' }, { v: 'likes', t: 'Most liked' }, { v: 'random', t: 'Random' }] }
+  ].filter((m) => m.options.length > 1);
+%>
+<%- include('partials/head', { title: isOwn ? 'Your dashboard' : '@' + u.username }) %>
+<%- include('partials/nav') %>
+
+<style>
+  /* PROFILE: header (+ bio) -> stats -> movies you vibe with -> tabs (discussions / comments / likes / lists)
+     (cards come from partials/movieCard + movie-card.css) */
+
+  /* ---------- header ---------- */
+  .page .profile-head {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 20px 22px; margin: 0 0 12px; border-radius: 20px;
+    background:
+      radial-gradient(90% 160% at 0% 0%, hsl(var(--h, 260) 70% 50% / .24), transparent 62%),
+      linear-gradient(180deg, color-mix(in srgb, var(--text) 5%, var(--surface)), var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+  }
+  .page .profile-head .avatar--xl {
+    width: 64px; height: 64px; font-size: 27px; font-weight: 700; flex: none;
+    box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px hsl(var(--h, 260) 70% 58% / .6);
+  }
+  .profile-id { flex: 1 1 220px; display: grid; gap: 3px; justify-items: start; min-width: 0; }
+  .profile-id .eyebrow { display: none; }
+  .profile-id h1 { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; font-size: clamp(21px, 2.6vw, 30px); font-weight: 700; letter-spacing: -.025em; line-height: 1.15; overflow-wrap: anywhere; }
+  .profile-id h1 .pill { font-size: 10.5px; padding: 2px 8px; }
+  .vtick { flex: none; display: inline-flex; width: .78em; height: .78em; min-width: 18px; min-height: 18px; }
+  .vtick svg { width: 100%; height: 100%; display: block; }
+  .vtick--blue { color: #1d9bf0; }
+  .vtick--gold { color: #e8b100; }
+  .profile-id .muted { margin: 0; font-size: 12.5px; }
+
+  /* ---------- founder badge (only for the KravN founder) ----------
+     Champagne-gold glass pill: hairline gold border, soft inner glow, thin-line crown and spaced small caps.
+     One colour family on purpose (restrained = elegant). Mid-tone golds stay readable on dark and light themes.
+     It sits next to the tick, never replaces it. */
+  .fbadge {
+    position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 12px 0 9px; margin: 0;
+    border-radius: 999px; overflow: hidden; white-space: nowrap; cursor: default; vertical-align: middle;
+    border: 1px solid rgba(214, 170, 70, .5);
+    background:
+      radial-gradient(120% 140% at 0% 0%, rgba(240, 205, 120, .22), transparent 60%),
+      linear-gradient(180deg, rgba(214, 170, 70, .12), rgba(214, 170, 70, .04)),
+      color-mix(in srgb, var(--text) 4%, var(--surface));
+    box-shadow: inset 0 1px 0 rgba(255, 236, 180, .18), 0 8px 20px -12px rgba(214, 170, 70, .65);
+    -webkit-user-select: none; user-select: none;
+  }
+  .fbadge svg { position: relative; z-index: 1; width: 14px; height: 14px; flex: none; display: block; overflow: visible; filter: drop-shadow(0 0 4px rgba(214, 170, 70, .45)); }
+  .fbadge-t {
+    position: relative; z-index: 1; font: 600 10px/1 var(--font); letter-spacing: .2em; text-transform: uppercase; padding-left: .1em;
+    background: linear-gradient(100deg, #e9c46a, #b98a2b 48%, #e9c46a); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  }
+  
+
+  .profile-actions { display: flex; gap: 8px; flex: none; }
+  .profile-actions .btn {
+    display: inline-flex !important; visibility: visible !important; opacity: 1 !important; align-items: center; justify-content: center; gap: 8px;
+    height: 40px; padding: 0 18px; margin: 0; border-radius: 999px; font: 600 12.5px/1 var(--font); letter-spacing: .03em; white-space: nowrap; text-decoration: none; cursor: pointer;
+    transition: transform .2s ease, background .2s ease, border-color .2s ease, filter .2s ease;
+  }
+  .profile-actions .btn svg { width: 15px; height: 15px; flex: none; }
+  .profile-actions .btn svg.kv-ic { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .profile-actions .btn:hover { transform: translateY(-1px); }
+  .profile-actions .btn:active { transform: scale(.97); }
+  .profile-actions .btn-primary { color: #fff; background: var(--accent); border: 1px solid var(--accent); box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--accent) 75%, transparent); }
+  .profile-actions .btn-primary:hover { filter: brightness(1.08); }
+  .profile-actions .btn-glass { color: var(--text); background: transparent; box-shadow: none; border: 1px solid color-mix(in srgb, var(--text) 32%, transparent); }
+  .profile-actions .btn-glass:hover { background: color-mix(in srgb, var(--text) 8%, transparent); border-color: color-mix(in srgb, var(--text) 55%, transparent); }
+
+  /* ---------- stats ---------- */
+  .page .stats { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0 0 4px; padding: 0; overflow: hidden; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); background: color-mix(in srgb, var(--text) 3%, var(--surface)); }
+  .page .stats .stat { display: flex; align-items: baseline; justify-content: center; gap: 8px; padding: 15px 8px; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; min-width: 0; }
+  .page .stats .stat + .stat { border-left: 1px solid color-mix(in srgb, var(--text) 8%, transparent); }
+  .page .stats .stat strong { font-size: 21px; font-weight: 700; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text); }
+  .page .stats .stat span { font-size: 11px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; color: color-mix(in srgb, var(--text) 55%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .page .sprocket { margin: 14px 0 0; opacity: .5; }
+
+  /* ---------- section headings ---------- */
+  .pf-h { display: flex; align-items: center; gap: 10px; margin: 0; font-size: clamp(16px, 1.8vw, 19px); font-weight: 700; letter-spacing: -.015em; }
+  .pf-h i { width: 3px; height: 1em; border-radius: 3px; background: linear-gradient(180deg, var(--accent-2, var(--accent)), var(--accent)); flex: none; }
+  .pf-count { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font: 600 11.5px/1 var(--font); font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--text) 75%, transparent); background: color-mix(in srgb, var(--text) 7%, transparent); border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
+  .pf-sec { display: flex; align-items: center; gap: 10px; margin: 20px 0 0; }
+
+  /* ---------- toolbar: genre + sort dropdown pills ---------- */
+  .page .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0 20px; min-width: 0; }
+
+  .dd { position: relative; z-index: 40; min-width: 0; }
+  .dd--sort { margin-left: auto; }
+  .dd-pill {
+    list-style: none; display: inline-flex; align-items: center; gap: 9px; height: 40px; padding: 0 14px 0 16px; border-radius: 999px; max-width: 100%;
+    cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+    font: 600 13px/1 var(--font); color: var(--text);
+    background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+    transition: background .2s, border-color .2s, box-shadow .2s;
+  }
+  .dd-pill::-webkit-details-marker { display: none; }
+  .dd-pill:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .dd-pill > svg { width: 15px; height: 15px; flex: none; opacity: .75; }
+  .dd-pill .chev { width: 14px; height: 14px; opacity: .7; transition: transform .25s ease; }
+  .dd-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .dd[open] .dd-pill { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .dd[open] .chev { transform: rotate(180deg); }
+  .dd.has-value .dd-pill { background: color-mix(in srgb, var(--accent) 20%, transparent); border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+
+  .dd-panel {
+    position: absolute; top: calc(100% + 10px); left: 0; width: min(440px, calc(100vw - 32px)); padding: 10px; border-radius: 20px;
+    background: color-mix(in srgb, var(--text) 5%, var(--surface)); border: 1px solid color-mix(in srgb, var(--text) 13%, transparent);
+    box-shadow: 0 28px 60px -20px rgba(0, 0, 0, .85);
+    -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    transform-origin: top left; animation: dd-pop .18s ease-out;
+  }
+  .dd--sort .dd-panel { left: auto; right: 0; width: 210px; transform-origin: top right; }
+  @keyframes dd-pop { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+
+  .dd-list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 4px; max-height: min(56vh, 340px);
+    overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 25%, transparent) transparent;
+  }
+  .dd--sort .dd-list { grid-template-columns: 1fr; }
+  .dd-opt {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; height: 40px; padding: 0 12px; margin: 0; border: 0; border-radius: 12px;
+    cursor: pointer; text-align: left; white-space: nowrap; font: 500 13px/1 var(--font); background: none;
+    color: color-mix(in srgb, var(--text) 82%, transparent); transition: background .15s, color .15s;
+  }
+  .dd-opt span { overflow: hidden; text-overflow: ellipsis; }
+  .dd-opt svg { width: 14px; height: 14px; flex: none; opacity: 0; }
+  .dd-opt:hover, .dd-opt:focus-visible { background: color-mix(in srgb, var(--accent) 16%, transparent); color: #fff; }
+  .dd-opt.on { background: var(--accent); color: #fff; font-weight: 600; }
+  .dd-opt.on svg { opacity: 1; }
+  .dd-opt--all { grid-column: 1 / -1; margin-bottom: 4px; }
+  .dd :is(.dd-pill, .dd-opt):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- poster grid ---------- */
+  .pf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; align-items: start; }
+  .pf-item { min-width: 0; }
+  .pf-item[hidden] { display: none; }
+  .pf-empty { text-align: center; padding: 36px 0; }
+
+  /* ---------- laptop / large screens ---------- */
+  @media (min-width: 900px) {
+    .page .profile-head { gap: 24px; padding: 26px 30px; border-radius: 22px; margin-bottom: 14px; }
+    .page .profile-head .avatar--xl { width: 80px; height: 80px; font-size: 34px; }
+    .fbadge { height: 26px; padding: 0 14px 0 10px; gap: 7px; }
+    .fbadge svg { width: 15px; height: 15px; }
+    .fbadge-t { font-size: 10.5px; }
+    .page .stats { border-radius: 18px; }
+    .page .stats .stat { padding: 18px 8px; gap: 10px; }
+    .page .stats .stat strong { font-size: 25px; }
+    .page .stats .stat span { font-size: 11.5px; }
+    .pf-grid { grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 22px 18px; }
+    .page .toolbar { margin: 14px 0 24px; }
+  }
+  @media (min-width: 1400px) { .pf-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 26px 20px; } }
+
+  /* ---------- phone ---------- */
+  @media (max-width: 640px) {
+    .page .profile-head { display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; padding: 14px; border-radius: 16px; margin-bottom: 10px; }
+    .page .profile-head .avatar--xl { width: 54px; height: 54px; font-size: 23px; }
+    .profile-id { flex: none; }
+    .profile-id h1 { font-size: 20px; gap: 6px; }
+    .fbadge { height: 22px; padding: 0 11px 0 8px; gap: 5px; }
+    .fbadge svg { width: 12px; height: 12px; }
+    .fbadge-t { font-size: 9px; letter-spacing: .17em; }
+    .profile-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr 1fr; }
+    .profile-actions .btn { width: 100%; padding: 0 10px; }
+    .page .stats { border-radius: 14px; }
+    .page .stats .stat { flex-direction: column; align-items: center; gap: 4px; padding: 12px 2px; }
+    .page .stats .stat strong { font-size: 18px; }
+    .page .stats .stat span { font-size: 9.5px; letter-spacing: .04em; max-width: 100%; }
+    .pf-sec { margin-top: 16px; }
+    .page .toolbar { margin: 10px 0 16px; }
+    .dd-pill { height: 38px; padding: 0 12px 0 14px; }
+    .dd--genre { max-width: calc(100% - 140px); }
+    .dd-list { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 52vh; }
+    .dd--sort .dd-list { grid-template-columns: 1fr; }
+    .dd-panel { border-radius: 18px; }
+    .pf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 10px; }
+  }
+  @media (max-width: 360px) { .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) {
+    .dd-panel { animation: none; }
+    .dd-pill, .dd-pill .chev, .dd-opt { transition: none; }
+  }
+</style>
+
+<style>
+  /* tabs + comments + likes + lists */
+
+  /* ---------- tabs ---------- */
+  .pf-tabs {
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(max-content, 1fr); gap: 4px; margin: 18px 0 0; padding: 4px; border-radius: 999px; max-width: 520px;
+    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+    background: color-mix(in srgb, var(--text) 5%, var(--surface)); border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  }
+  .pf-tab {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; height: 42px; padding: 0 14px; margin: 0; border: 0; border-radius: 999px;
+    cursor: pointer; white-space: nowrap; font: 600 13px/1 var(--font); letter-spacing: .01em; background: none; -webkit-tap-highlight-color: transparent;
+    color: color-mix(in srgb, var(--text) 62%, transparent); transition: background .2s, color .2s, box-shadow .2s, transform .2s;
+  }
+  .pf-tab svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .pf-tab:hover { color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); }
+  .pf-tab:active { transform: scale(.97); }
+  .pf-tabs::-webkit-scrollbar { display: none; }
+  .pf-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .pf-tab.on { color: #fff; background: var(--accent); box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--accent) 80%, transparent); }
+  .pf-tab em {
+    font: 600 11px/1 var(--font); font-style: normal; font-variant-numeric: tabular-nums; padding: 3px 7px; border-radius: 999px;
+    background: color-mix(in srgb, var(--text) 10%, transparent);
+  }
+  .pf-tab.on em { background: rgba(255, 255, 255, .22); }
+
+  .pf-panel { margin-top: 4px; animation: pf-in .25s ease-out; }
+  .pf-panel[hidden] { display: none; }
+  @keyframes pf-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- comments ---------- */
+  .pf-comments-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 12px; margin: 20px 0 0; }
+  .pf-comment {
+    position: relative; display: grid; gap: 10px; align-content: space-between; min-width: 0; padding: 16px 18px 14px; border-radius: 16px; text-decoration: none; color: inherit; overflow: hidden;
+    background:
+      radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%),
+      color-mix(in srgb, var(--text) 3%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+    transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+  }
+  .pf-comment::before { content: '“'; position: absolute; top: -6px; right: 14px; font: 700 64px/1 Georgia, serif; color: color-mix(in srgb, var(--accent) 28%, transparent); pointer-events: none; }
+  .pf-comment:hover { border-color: color-mix(in srgb, var(--accent) 50%, transparent); transform: translateY(-2px); box-shadow: 0 18px 36px -22px rgba(0, 0, 0, .8); }
+  .pf-comment:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .pf-comment p { margin: 0; padding-right: 18px; font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+  .pf-comment-meta { display: flex; align-items: center; gap: 8px; min-width: 0; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent); font-size: 12px; color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .pf-comment-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .pf-comment-meta b { font-weight: 600; color: color-mix(in srgb, var(--text) 85%, transparent); }
+  .pf-comment-meta time { flex: none; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .pf-liked-grid { margin-top: 20px; }
+
+  /* ---------- public lists (watchlist collections) ---------- */
+  .pf-tabs.has-4 { max-width: 640px; }
+  .pf-lists-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0 0; min-width: 0; }
+  .pf-lists-head p { margin: 0; font-size: 13px; color: color-mix(in srgb, var(--text) 58%, transparent); min-width: 0; }
+  .pf-lists-all {
+    flex: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 999px; text-decoration: none; white-space: nowrap;
+    font: 600 12.5px/1 var(--font); color: var(--text); border: 1px solid color-mix(in srgb, var(--text) 24%, transparent); transition: background .2s, border-color .2s;
+  }
+  .pf-lists-all:hover { background: color-mix(in srgb, var(--text) 8%, transparent); border-color: color-mix(in srgb, var(--text) 45%, transparent); }
+  .pf-lists-all:focus-visible, .pf-list:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .pf-lists { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 14px; margin: 14px 0 0; }
+  .pf-list {
+    display: grid; gap: 12px; min-width: 0; padding: 12px 12px 14px; border-radius: 18px; text-decoration: none; color: inherit;
+    background:
+      radial-gradient(90% 110% at 100% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%),
+      color-mix(in srgb, var(--text) 3%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+    transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; -webkit-tap-highlight-color: transparent;
+  }
+  .pf-list:hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); transform: translateY(-2px); box-shadow: 0 18px 36px -22px rgba(0, 0, 0, .8); }
+  .pf-list:active { transform: scale(.985); }
+  .pf-list-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .pf-list-strip > span { display: block; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 8px; background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+  .pf-list-strip img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .pf-list-meta { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0 2px; }
+  .pf-list-text { flex: 1; min-width: 0; display: grid; gap: 3px; }
+  .pf-list-name { font: 700 15px/1.25 var(--font); letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pf-list-n { font-size: 12.5px; color: color-mix(in srgb, var(--text) 56%, transparent); font-variant-numeric: tabular-nums; }
+  .pf-list-go { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: color-mix(in srgb, var(--text) 70%, transparent); background: color-mix(in srgb, var(--text) 7%, transparent); transition: background .2s, color .2s; }
+  .pf-list-go svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .pf-list:hover .pf-list-go { color: #fff; background: var(--accent); }
+  .pf-lists-empty { display: grid; justify-items: center; gap: 12px; margin: 28px 0 0; padding: 30px 16px; text-align: center; border-radius: 18px; border: 1px dashed color-mix(in srgb, var(--text) 18%, transparent); }
+  .pf-lists-empty p { margin: 0; max-width: 36ch; font-size: 14px; line-height: 1.5; color: color-mix(in srgb, var(--text) 62%, transparent); }
+
+  @media (min-width: 900px) {
+    .pf-tabs { margin-top: 22px; }
+    .pf-lists { gap: 16px; margin-top: 16px; }
+    .pf-lists-head { margin-top: 24px; }
+    .pf-comments-list { gap: 14px; margin-top: 24px; }
+    .pf-liked-grid { margin-top: 24px; }
+  }
+  @media (max-width: 640px) {
+    .profile-actions .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .pf-tabs, .pf-tabs.has-4 { max-width: none; margin-top: 14px; border-radius: 18px; }
+    .pf-lists-head { margin-top: 14px; }
+    .pf-lists { grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
+    .pf-list { padding: 10px 10px 12px; border-radius: 16px; }
+    .pf-tab, .pf-tabs.has-4 .pf-tab { flex-direction: column; justify-content: center; height: 54px; padding: 0 8px; gap: 5px; font-size: 12px; border-radius: 14px; }
+    .pf-tab svg { display: none; }
+    .pf-tab em, .pf-tabs.has-4 .pf-tab em { padding: 2px 8px; font-size: 11px; }
+    .pf-comments-list { grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
+    .pf-comment { padding: 14px 15px 12px; }
+    .pf-liked-grid { margin-top: 14px; }
+  }
+  @media (hover: none) { .pf-comment:hover, .pf-list:hover { transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .pf-tab, .pf-comment, .pf-list, .pf-list-go { transition: none; }
+    .pf-list:hover, .pf-list:active { transform: none; }
+    .pf-panel { animation: none; }
+    .pf-comment:hover, .pf-tab:active { transform: none; }
+  }
+</style>
+
+<style>
+  /* bio (max 20 characters) + compact "movies you vibe with" + picker sheet */
+  .pf-bio[hidden], .pf-bio-view[hidden], .pf-bio-edit[hidden], .pf-bio-text[hidden], .pf-vibe-hint[hidden], .vb[hidden] { display: none !important; }
+
+  /* ----- bio: sits right under "Member since" ----- */
+  .pf-bio { margin-top: 6px; min-width: 0; max-width: 100%; }
+  .pf-bio-view { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; }
+  .pf-bio-text { margin: 0; min-width: 0; font-size: 13.5px; line-height: 1.45; font-style: italic; overflow-wrap: anywhere; color: color-mix(in srgb, var(--text) 72%, transparent); }
+  .pf-bio-btn, .pf-vibe-edit {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 28px; padding: 0 11px; margin: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+    font: 600 11.5px/1 var(--font); color: color-mix(in srgb, var(--text) 68%, transparent); background: transparent;
+    border: 1px solid color-mix(in srgb, var(--text) 22%, transparent); -webkit-tap-highlight-color: transparent;
+    transition: color .2s, background .2s, border-color .2s, transform .2s;
+  }
+  .pf-bio-btn svg, .pf-vibe-edit svg { width: 12px; height: 12px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .pf-bio-btn:hover, .pf-vibe-edit:hover { color: var(--text); background: color-mix(in srgb, var(--accent) 14%, transparent); border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+  .pf-bio-btn:active, .pf-vibe-edit:active { transform: scale(.96); }
+  .pf-bio-btn.is-set span { display: none; }
+  .pf-bio-btn.is-set { width: 28px; padding: 0; }
+  :is(.pf-bio-btn, .pf-vibe-edit, .pf-sbtn, .pf-vibe-slot, .vb-res, .vb-x, .vb-pick-x):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .pf-bio-edit { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .pf-bio-edit input, .vb-search input {
+    box-sizing: border-box; margin: 0; font: 400 14px/1.4 var(--font); color: var(--text); outline: none;
+    background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .pf-bio-edit input { width: 190px; max-width: 100%; height: 34px; padding: 0 14px; border-radius: 999px; }
+  .vb-search input { width: 100%; height: 44px; padding: 0 16px; border-radius: 999px; }
+  .pf-bio-edit input:focus, .vb-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .pf-bio-edit input::placeholder, .vb-search input::placeholder { color: color-mix(in srgb, var(--text) 42%, transparent); }
+  .pf-bio-count, .vb-count { font-size: 12px; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .pf-bio-count.over { color: #ff6b6b; }
+  .pf-sbtn {
+    height: 34px; padding: 0 16px; margin: 0; border-radius: 999px; cursor: pointer; white-space: nowrap; font: 600 12.5px/1 var(--font);
+    color: var(--text); background: transparent; border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+    transition: background .2s, border-color .2s, transform .2s, filter .2s;
+  }
+  .pf-sbtn:hover { background: color-mix(in srgb, var(--text) 8%, transparent); border-color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .pf-sbtn:active { transform: scale(.97); }
+  .pf-sbtn--primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .pf-sbtn--primary:hover { background: var(--accent); border-color: var(--accent); filter: brightness(1.08); }
+  .pf-sbtn:disabled { opacity: .45; cursor: not-allowed; filter: none; transform: none; }
+
+  /* ----- movies you vibe with: a small label + posters, nothing else ----- */
+  .pf-vibe {
+    display: grid; gap: 8px; width: fit-content; max-width: 100%; box-sizing: border-box; min-width: 0; margin: 10px 0 0; padding: 9px 12px 12px; border-radius: 14px;
+    background:
+      radial-gradient(80% 160% at 100% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%),
+      color-mix(in srgb, var(--text) 3%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+  }
+  .pf-vibe-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-width: 0; }
+  .pf-vibe-title { min-width: 0; overflow-wrap: anywhere; margin: 0; font: 700 10.5px/1.2 var(--font); letter-spacing: .12em; text-transform: uppercase; color: color-mix(in srgb, var(--text) 62%, transparent); }
+  .pf-vibe-hint { margin: 0; max-width: 28ch; font-size: 12px; line-height: 1.4; color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .pf-vibe-row { display: flex; align-items: center; gap: 8px; }
+  .pf-vibe-item { margin: 0; flex: none; }
+  .pf-vibe-poster, .pf-vibe-slot { flex: none; width: 56px; aspect-ratio: 2 / 3; border-radius: 8px; }
+  .pf-vibe-poster:has(img) .pf-vibe-ph, .vb-pick:has(img) .vb-pick-ph { visibility: hidden; }
+  .pf-vibe-poster {
+    position: relative; display: grid; place-items: center; overflow: hidden;
+    background: color-mix(in srgb, var(--text) 8%, var(--surface)); border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+    box-shadow: 0 8px 16px -10px rgba(0, 0, 0, .8);
+  }
+  .pf-vibe-poster img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+  .pf-vibe-ph { padding: 3px; text-align: center; font: 600 8.5px/1.2 var(--font); overflow: hidden; overflow-wrap: anywhere; color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .pf-vibe-slot {
+    display: grid; place-items: center; padding: 0; margin: 0; cursor: pointer; box-sizing: border-box;
+    color: color-mix(in srgb, var(--text) 50%, transparent); background: transparent; border: 1.5px dashed color-mix(in srgb, var(--text) 26%, transparent);
+    -webkit-tap-highlight-color: transparent; transition: color .2s, background .2s, border-color .2s;
+  }
+  .pf-vibe-slot svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .pf-vibe-slot:hover { color: var(--text); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .pf-vibe-edit { flex: none; width: 24px; height: 24px; padding: 0; }
+  .pf-vibe-edit svg { width: 11px; height: 11px; }
+
+  /* phones: bubble spans the full width, three posters share it evenly */
+  @media (max-width: 699px) {
+    .pf-vibe { width: 100%; padding: 9px 10px 10px; }
+    .pf-vibe-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; }
+    .pf-vibe-item { min-width: 0; }
+    .pf-vibe-poster, .pf-vibe-slot { width: 100%; aspect-ratio: 5 / 7; }
+    .pf-vibe-hint { max-width: none; }
+  }
+  /* tablet + laptop: stats and vibes sit side by side, so no empty space */
+  @media (min-width: 700px) {
+    .page .pf-meta--vibes { display: flex; align-items: stretch; gap: 12px; margin: 0 0 4px; }
+    .page .pf-meta--vibes .stats { flex: 1 1 0; min-width: 0; margin: 0; }
+    .page .pf-meta--vibes .stats .stat { flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px 8px; }
+    .page .pf-meta--vibes .stats .stat strong { font-size: 28px; }
+    .page .pf-meta--vibes .pf-vibe { flex: none; width: auto; margin: 0; }
+    .page .pf-meta--vibes .pf-vibe-poster, .page .pf-meta--vibes .pf-vibe-slot { width: 60px; }
+  }
+
+  /* ----- picker sheet ----- */
+  .vb { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 16px; background: rgba(6, 6, 10, .72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); animation: qr-fade .2s ease-out; }
+  .vb-card {
+    position: relative; width: min(480px, 100%); height: min(640px, calc(100vh - 32px)); box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 24px;
+    background:
+      radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 65%),
+      color-mix(in srgb, var(--text) 4%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 14%, transparent); box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .9); animation: qr-pop .22s ease-out;
+  }
+  @supports (height: 100dvh) { .vb-card { height: min(640px, calc(100dvh - 32px)); } }
+  .vb-head { flex: none; padding-right: 44px; }
+  .vb-head h3 { margin: 0 0 4px; font: 700 18px/1.25 var(--font); letter-spacing: -.02em; color: var(--text); }
+  .vb-head p { margin: 0; font-size: 12.5px; line-height: 1.45; color: color-mix(in srgb, var(--text) 60%, transparent); }
+  .vb-x {
+    position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; margin: 0; border-radius: 50%; cursor: pointer;
+    color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); transition: background .2s;
+  }
+  .vb-x:hover { background: color-mix(in srgb, var(--text) 15%, transparent); }
+  .vb-x svg, .vb-pick-x svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .vb-picked { flex: none; display: grid; grid-template-columns: repeat(3, 64px); gap: 10px; }
+  .vb-pick {
+    position: relative; display: grid; place-items: center; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 10px; font: 600 13px/1 var(--font);
+    color: color-mix(in srgb, var(--text) 40%, transparent); background: color-mix(in srgb, var(--text) 4%, transparent); border: 1.5px dashed color-mix(in srgb, var(--text) 24%, transparent);
+  }
+  .vb-pick.filled { border: 1px solid color-mix(in srgb, var(--text) 14%, transparent); background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+  .vb-pick img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+  .vb-pick-ph { padding: 6px; text-align: center; font: 600 10px/1.25 var(--font); overflow-wrap: anywhere; color: color-mix(in srgb, var(--text) 60%, transparent); }
+  .vb-pick-x { position: absolute; top: 4px; right: 4px; z-index: 2; width: 24px; height: 24px; display: grid; place-items: center; padding: 0; margin: 0; border-radius: 50%; cursor: pointer; color: #fff; background: rgba(0, 0, 0, .72); border: 1px solid rgba(255, 255, 255, .3); }
+  .vb-pick-x svg { width: 12px; height: 12px; stroke-width: 2.4; }
+  .vb-search { flex: none; }
+  .vb-results { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 4px; align-content: start; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 25%, transparent) transparent; }
+  .vb-msg { margin: 0; padding: 22px 8px; text-align: center; font-size: 13px; line-height: 1.5; color: color-mix(in srgb, var(--text) 58%, transparent); }
+  .vb-res { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; padding: 8px 10px; margin: 0; border: 0; border-radius: 14px; cursor: pointer; text-align: left; color: var(--text); background: none; transition: background .15s; }
+  .vb-res:hover:not(:disabled), .vb-res:focus-visible { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .vb-res:disabled { cursor: default; opacity: .5; }
+  .vb-res-th { flex: none; width: 40px; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 6px; background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+  .vb-res-th img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .vb-res-text { flex: 1; min-width: 0; display: grid; gap: 3px; }
+  .vb-res-name { font: 600 14px/1.25 var(--font); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vb-res-yr { font-size: 12px; color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .vb-res-tag { flex: none; font: 600 12px/1 var(--font); color: var(--accent); }
+  .vb-res.on .vb-res-tag { color: color-mix(in srgb, var(--text) 60%, transparent); }
+  .vb-foot { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .vb-actions { display: flex; gap: 8px; }
+
+  @media (max-width: 640px) {
+    .pf-bio-edit input, .vb-search input { font-size: 16px; } /* stops iOS zoom-on-focus */
+    .pf-bio-edit input { width: 100%; }
+    .pf-bio-edit { width: 100%; }
+    .vb { place-items: end center; padding: 0; }
+    .vb-card { width: 100%; height: 90vh; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: 22px 22px 0 0; }
+    @supports (height: 100dvh) { .vb-card { height: 90dvh; } }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .vb, .vb-card { animation: none; }
+    .pf-bio-btn, .pf-vibe-edit, .pf-sbtn, .pf-vibe-slot, .vb-res, .vb-x { transition: none; }
+    .pf-bio-btn:active, .pf-vibe-edit:active, .pf-sbtn:active { transform: none; }
+  }
+</style>
+
+<style>
+  /* Share -> KravN QR card */
+  .qr {
+    position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 16px;
+    background: rgba(6, 6, 10, .72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    animation: qr-fade .2s ease-out;
+  }
+  .qr[hidden] { display: none !important; }
+  .qr-card {
+    position: relative; width: min(360px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain;
+    display: grid; gap: 14px; justify-items: center; padding: 22px 22px 20px; border-radius: 24px; text-align: center;
+    background:
+      radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 65%),
+      color-mix(in srgb, var(--text) 4%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+    box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .9);
+    animation: qr-pop .22s ease-out;
+  }
+  @supports (height: 100dvh) { .qr-card { max-height: calc(100dvh - 32px); } }
+  .qr-x {
+    position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; margin: 0; border-radius: 50%; cursor: pointer;
+    color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); transition: background .2s;
+  }
+  .qr-x:hover { background: color-mix(in srgb, var(--text) 15%, transparent); }
+  .qr-x svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .qr-brand { display: inline-flex; align-items: center; gap: 9px; font: 700 18px/1 var(--font); letter-spacing: -.02em; color: var(--text); }
+  .qr-mark {
+    width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px; color: #fff; font: 800 16px/1 var(--font);
+    background: linear-gradient(135deg, var(--accent-2, var(--accent)), var(--accent)); box-shadow: 0 8px 20px -10px var(--accent);
+  }
+  .qr-name { margin: 0; max-width: 100%; font: 700 20px/1.2 var(--font); letter-spacing: -.02em; overflow-wrap: anywhere; color: var(--text); }
+  .qr-sub { margin: -6px 0 0; font-size: 12.5px; color: color-mix(in srgb, var(--text) 60%, transparent); }
+  .qr-frame {
+    line-height: 0; padding: 10px; border-radius: 22px; background: #fff;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 22px 44px -22px color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+  .qr-frame[hidden] { display: none; }
+  .qr-canvas { display: block; width: min(248px, 62vw); height: min(248px, 62vw); border-radius: 12px; }
+  .qr-fail { margin: 0; padding: 14px 6px; font-size: 13px; line-height: 1.5; color: color-mix(in srgb, var(--text) 70%, transparent); }
+  .qr-fail[hidden] { display: none; }
+  .qr-url {
+    max-width: 100%; box-sizing: border-box; padding: 8px 14px; border-radius: 999px; font-size: 12px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: color-mix(in srgb, var(--text) 70%, transparent); background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  }
+  .qr-actions { width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; }
+  .qr-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 42px; padding: 0 12px; margin: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+    font: 600 12.5px/1 var(--font); color: var(--text); background: transparent; border: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+    transition: background .2s, border-color .2s, transform .2s, filter .2s;
+  }
+  .qr-btn svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .qr-btn:hover { background: color-mix(in srgb, var(--text) 8%, transparent); border-color: color-mix(in srgb, var(--text) 55%, transparent); }
+  .qr-btn:active { transform: scale(.97); }
+  .qr-btn--primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .qr-btn--primary:hover { background: var(--accent); border-color: var(--accent); filter: brightness(1.08); }
+  .qr-btn[hidden] { display: none; }
+  .qr :is(.qr-btn, .qr-x):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @keyframes qr-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes qr-pop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .qr, .qr-card { animation: none; } .qr-btn, .qr-x { transition: none; } }
+</style>
+
+<style>
+  /* Kravn Cards reel: the real card (same as post.ejs) at its natural size, scaled as a whole to fit the screen.
+     Tap = open post, double-tap = like. Buttons: Like + Share only. */
+  .kc {
+    position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; color: #fff; overflow: hidden;
+    height: 100vh; background: #08080c; opacity: 0; visibility: hidden; pointer-events: none;
+    overscroll-behavior: contain;
+    transition: opacity .2s ease, visibility 0s .2s;
+  }
+  @supports (height: 100dvh) { .kc { height: 100dvh; } }
+  .kc.open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .2s ease; }
+  .kc-bg { position: absolute; inset: -40px; z-index: 0; background: center / cover no-repeat; filter: blur(50px) saturate(1.2); opacity: .35; transition: background-image .3s; pointer-events: none; }
+  .kc::after { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(180deg, rgba(8,8,12,.55), rgba(8,8,12,.88)); }
+  .kc-progress { position: absolute; top: 0; left: 0; right: 0; z-index: 3; height: 3px; background: rgba(255,255,255,.1); }
+  .kc-progress i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, var(--accent-2, var(--accent)), var(--accent)); transition: transform .25s ease; }
+
+  .kc-top {
+    position: relative; z-index: 2; flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 6px calc(14px + env(safe-area-inset-left));
+  }
+  .kc-count { flex: none; min-width: 56px; font: 600 13px/1 var(--font); letter-spacing: .06em; font-variant-numeric: tabular-nums; color: rgba(255,255,255,.85); }
+  .kc-hint { flex: 1; min-width: 0; text-align: center; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: rgba(255,255,255,.5); }
+  .kc-close {
+    flex: none; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; margin: 0; border-radius: 50%; cursor: pointer; color: #fff;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.25); -webkit-tap-highlight-color: transparent; transition: background .2s, transform .2s;
+  }
+  .kc-close:hover { background: rgba(255,255,255,.18); }
+  .kc-close:active { transform: scale(.94); }
+  .kc-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+
+  .kc-feed { position: relative; z-index: 1; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scroll-snap-type: y mandatory; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .kc-feed::-webkit-scrollbar { display: none; }
+  .kc-slide {
+    height: 100%; box-sizing: border-box; padding: 4px 12px calc(12px + env(safe-area-inset-bottom)); scroll-snap-align: center; scroll-snap-stop: always;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  }
+  .kc-slide[hidden] { display: none; }
+
+  /* .kc-fit takes the scaled size in layout; .kc-stage keeps the card's natural size and is scaled with transform,
+     so the card looks exactly like it does on the post page, just smaller or larger. */
+  .kc-fit { position: relative; flex: none; width: 380px; height: 480px; }
+  .kc-stage {
+    position: absolute; top: 0; left: 0; width: 380px; transform-origin: 0 0; cursor: pointer;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .kc-stage .kcard-mount { width: 100%; }
+  .kc-heart { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; pointer-events: none; opacity: 0; color: #fff; }
+  .kc-heart svg { width: 96px; height: 96px; fill: currentColor; stroke: none; filter: drop-shadow(0 6px 24px rgba(0,0,0,.55)); }
+  .kc-heart.pop { animation: kc-pop .75s ease-out; }
+  @keyframes kc-pop { 0% { opacity: 0; transform: scale(.4); } 22% { opacity: 1; transform: scale(1.15); } 60% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+
+  /* action bar: Like + Share, two equal buttons as wide as the card */
+  .kc-bar { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: max(var(--kc-fw, 280px), 240px); max-width: 100%; }
+  .kc-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; height: 46px; padding: 0 14px; margin: 0; border-radius: 999px; cursor: pointer; white-space: nowrap; text-decoration: none;
+    font: 600 14px/1 var(--font); color: #fff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.26);
+    -webkit-tap-highlight-color: transparent; transition: background .2s, border-color .2s, transform .2s;
+  }
+  .kc-btn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .kc-btn span { overflow: hidden; text-overflow: ellipsis; }
+  .kc-btn:hover { background: rgba(255,255,255,.18); color: #fff; }
+  .kc-btn:active { transform: scale(.96); }
+  .kc-btn:focus-visible, .kc-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .kc-like b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .kc-like.on { background: var(--accent); border-color: var(--accent); }
+  .kc-like.on svg { fill: currentColor; }
+  .kc-empty { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; padding: 24px; text-align: center; font-size: 14px; color: rgba(255,255,255,.7); pointer-events: none; }
+  .kc-empty[hidden] { display: none; }
+
+  @media (max-width: 420px) { .kc-hint { display: none; } }
+  @media (max-height: 520px) {
+    .kc-top { padding-top: calc(6px + env(safe-area-inset-top)); padding-bottom: 2px; }
+    .kc-close { width: 38px; height: 38px; }
+    .kc-slide { gap: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+    .kc-btn { height: 40px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .kc, .kc-bg, .kc-progress i, .kc-btn, .kc-close { transition: none; }
+    .kc-heart.pop { animation: none; opacity: 1; }
+  }
+    /* hide the Like / Share row under the card */
+  .kc-bar { display: none; }
+  .kc-slide { gap: 0; }
+</style>
+
+<main class="page">
+  <div class="shell">
+
+    <header class="profile-head" style="--h:<%= hue(u.username) %>">
+      <span class="avatar avatar--xl" style="--h:<%= hue(u.username) %>"><%= u.username.charAt(0).toUpperCase() %></span>
+      <div class="profile-id">
+        <span class="eyebrow"><span class="dot"></span> <%= isOwn ? 'Your dashboard' : 'Profile' %></span>
+        <h1><%= u.username %><% if (tick) { %><span class="vtick vtick--<%= tick.k %>" role="img" aria-label="<%= tick.t %>" title="<%= tick.t %>"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 1.5l2.4 1.7 2.9-.3 1.2 2.7 2.6 1.4-.3 2.9L22.5 12l-1.7 2.4.3 2.9-2.6 1.4-1.2 2.7-2.9-.3L12 22.5l-2.4-1.7-2.9.3-1.2-2.7-2.6-1.4.3-2.9L1.5 12l1.7-2.4-.3-2.9 2.6-1.4 1.2-2.7 2.9.3z"/><path d="M7.8 12.4l2.9 2.9 5.5-5.8" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><% } %><% if (isFounder) { %><span class="fbadge" role="img" aria-label="Founder of KravN" title="Founder of KravN"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 17.5L2.6 8.4l5 4.1L12 5l4.4 7.5 5-4.1-.9 9.1z" fill="rgba(214,170,70,.28)" stroke="#d6aa46" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 21h14" stroke="#d6aa46" stroke-width="1.6" stroke-linecap="round" fill="none"/><circle cx="12" cy="3.6" r="1.1" fill="#f0cd78"/></svg><span class="fbadge-t">Founder</span></span><% } %><% if (isOwn) { %><span class="pill pill--accent">You</span><% } %></h1>
+        <p class="muted">Member since <%= fmtDate(u.created_at) %></p>
+        <% if (isOwn || bioText) { %>
+        <div class="pf-bio" id="pf-bio" data-max="<%= BIO_MAX %>">
+          <div class="pf-bio-view" id="pf-bio-view">
+            <p class="pf-bio-text" id="pf-bio-text"<%- bioText ? '' : ' hidden' %>><%= bioText %></p>
+            <% if (isOwn) { %><button type="button" class="pf-bio-btn<%= bioText ? ' is-set' : '' %>" id="pf-bio-open" aria-label="<%= bioText ? 'Edit bio' : 'Add a bio' %>"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Add a bio</span></button><% } %>
+          </div>
+          <% if (isOwn) { %>
+          <div class="pf-bio-edit" id="pf-bio-edit" hidden>
+            <input type="text" id="pf-bio-input" maxlength="<%= BIO_MAX %>" placeholder="Your vibe in a few words" autocomplete="off" aria-label="Your bio">
+            <span class="pf-bio-count" id="pf-bio-count" aria-live="polite">0 / <%= BIO_MAX %></span>
+            <button type="button" class="pf-sbtn" id="pf-bio-cancel">Cancel</button>
+            <button type="button" class="pf-sbtn pf-sbtn--primary" id="pf-bio-save">Save</button>
+          </div>
+          <% } %>
+        </div>
+        <% } %>
+      </div>
+      <div class="profile-actions">
+        <% if (items.length) { %><button type="button" class="btn btn-primary" data-cards-open="#feed"><svg class="kv-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="13" height="14" rx="2"/><path d="M8 3.5h11a2 2 0 0 1 2 2V17"/></svg> Kravn Cards</button><% } %>
+        <% if (isOwn) { %><a class="btn btn-glass" href="/posts/new"><%- include('partials/icon', { n: 'plus' }) %> New discussion</a><% } %>
+        <% if (isOwn) { %><a class="btn btn-glass" href="/wrapped">✨ KravN Wrapped</a><% } %>
+        <button type="button" class="btn btn-glass" aria-haspopup="dialog" data-share-profile data-name="<%= u.username %>" data-title="<%= u.username %> on KravN" data-url="/users/<%= encodeURIComponent(u.username) %>"><%- include('partials/icon', { n: 'share' }) %> <span>Share</span></button>
+      </div>
+    </header>
+
+    <div class="pf-meta<%= showVibes ? ' pf-meta--vibes' : '' %>">
+    <div class="stats">
+      <div class="stat" title="Discussions"><strong data-count="<%= stats.discussions %>"><%= stats.discussions %></strong><span>Posts</span></div>
+      <div class="stat" title="Likes received"><strong data-count="<%= stats.likes %>"><%= stats.likes %></strong><span>Likes</span></div>
+      <div class="stat" title="Comments received"><strong data-count="<%= stats.comments %>"><%= stats.comments %></strong><span>Comments</span></div>
+      <div class="stat" title="Movies discussed"><strong data-count="<%= stats.movies %>"><%= stats.movies %></strong><span>Movies</span></div>
+    </div>
+
+    <% if (showVibes) { %>
+      <% const vibeTitle = isOwn ? 'Movies you vibe with' : 'Movies ' + u.username + ' vibes with'; %>
+      <section class="pf-vibe" id="pf-vibe" aria-label="<%= vibeTitle %>" data-max="<%= VIBE_MAX %>">
+        <div class="pf-vibe-head">
+          <h2 class="pf-vibe-title"><%= isOwn ? 'Your' : u.username + '’s' %> Vibes:</h2>
+          <% if (isOwn) { %><button type="button" class="pf-vibe-edit" id="pf-vibe-open" aria-haspopup="dialog" aria-label="Edit movies you vibe with"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button><% } %>
+        </div>
+        <div class="pf-vibe-row" id="pf-vibe-row">
+          <% vibes.forEach((v) => { %>
+            <figure class="pf-vibe-item" title="<%= v.title %><%= v.year ? ' (' + v.year + ')' : '' %>">
+              <span class="pf-vibe-poster"><b class="pf-vibe-ph"><%= v.title %></b><% if (v.poster) { %><img src="<%= v.poster %>" alt="<%= v.title %>" loading="lazy" decoding="async" onerror="this.remove()"><% } %></span>
+            </figure>
+          <% }) %>
+          <% if (isOwn) { for (let i = vibes.length; i < VIBE_MAX; i++) { %><button type="button" class="pf-vibe-slot" aria-label="Add a movie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><% } } %>
+        </div>
+        <% if (isOwn) { %>
+          <p class="pf-vibe-hint" id="pf-vibe-hint"<%- vibes.length ? ' hidden' : '' %>>Pick up to 3 movies that sum you up</p>
+          <script type="application/json" id="pf-vibe-data"><%- JSON.stringify(vibes).replace(/</g, '\\u003c') %></script>
+        <% } %>
+      </section>
+    <% } %>
+    </div>
+
+    <div class="sprocket" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+
+    <div class="pf-tabs<%= (hasLikes && hasLists) ? ' has-4' : '' %>" role="tablist" aria-label="Profile sections">
+      <button type="button" class="pf-tab on" role="tab" id="tab-discussions" aria-controls="panel-discussions" aria-selected="true" data-tab="discussions">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Discussions <em><%= items.length %></em>
+      </button>
+      <button type="button" class="pf-tab" role="tab" id="tab-comments" aria-controls="panel-comments" aria-selected="false" tabindex="-1" data-tab="comments">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Comments <em><%= commentList.length %></em>
+      </button>
+      <% if (hasLikes) { %>
+      <button type="button" class="pf-tab" role="tab" id="tab-likes" aria-controls="panel-likes" aria-selected="false" tabindex="-1" data-tab="likes">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        Likes <em><%= likedItems.length %></em>
+      </button>
+      <% } %>
+      <% if (hasLists) { %>
+      <button type="button" class="pf-tab" role="tab" id="tab-lists" aria-controls="panel-lists" aria-selected="false" tabindex="-1" data-tab="lists">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1z"/></svg>
+        Lists <em><%= wlLists.length %></em>
+      </button>
+      <% } %>
+    </div>
+
+    <!-- ===== Discussions ===== -->
+    <section class="pf-panel" id="panel-discussions" role="tabpanel" aria-labelledby="tab-discussions" data-panel="discussions">
+    <% if (!items.length) { %>
+      <div class="empty">
+        <p><%= isOwn ? "You haven't posted anything yet." : u.username + " hasn't posted anything yet." %></p>
+        <% if (isOwn) { %><a class="btn btn-primary" href="/posts/new">Start your first discussion</a><% } %>
+      </div>
+    <% } else { %>
+      <div class="pf-sec">
+        <h2 class="pf-h"><i></i>Discussions</h2>
+        <span class="pf-count"><%= items.length %></span>
+      </div>
+
+      <div class="toolbar">
+        <% menus.forEach((m) => { %>
+          <details class="dd dd--<%= m.key %>" data-dd="<%= m.key %>" data-default="<%= m.def %>">
+            <summary class="dd-pill" aria-label="<%= m.name %>"><%- m.icon %><span class="dd-label"><%= m.label %></span><%- CHEV %></summary>
+            <div class="dd-panel">
+              <div class="dd-list">
+                <% m.options.forEach((o, i) => { %><button type="button" class="dd-opt<%= m.key === 'genre' && i === 0 ? ' dd-opt--all' : '' %><%= o.v === m.def ? ' on' : '' %>" data-value="<%= o.v %>" data-label="<%= o.t %>"><span><%= o.t %></span><%- CHECK %></button><% }) %>
+              </div>
+            </div>
+          </details>
+        <% }) %>
+      </div>
+
+      <div class="pf-grid" id="feed">
+        <% items.forEach((it) => { %>
+          <div class="pf-item" data-id="<%= it.id %>" data-genres="<%= it.genres.join('|') %>" data-ts="<%= it.ts %>" data-rating="<%= it.rating %>" data-likes="<%= it.likes %>" data-liked="<%= it.liked ? 1 : 0 %>">
+            <%- include('partials/movieCard', {
+              m: { id: it.id, title: it.title, year: it.year, poster: it.poster, percent: null, url: it.href, type: '' },
+              href: it.href,
+              badge: it.badge,
+              sub: it.movie && it.movie !== it.title ? it.movie : ''
+            }) %>
+          </div>
+        <% }) %>
+      </div>
+      <p class="muted pf-empty" id="pf-empty" hidden>No discussions in that genre yet.</p>
+    <% } %>
+    </section>
+
+    <!-- ===== Comments ===== -->
+    <section class="pf-panel" id="panel-comments" role="tabpanel" aria-labelledby="tab-comments" data-panel="comments" hidden>
+      <% if (commentList.length) { %>
+        <div class="pf-comments-list">
+          <% commentList.forEach((c) => { const txt = String(c.content || ''); %>
+            <a class="pf-comment" href="/posts/<%= c.post_id %>#c-<%= c.id %>">
+              <p><%= txt.length > 220 ? txt.slice(0, 220) + '…' : txt %></p>
+              <div class="pf-comment-meta">
+                <span>on <b><%= c.post_title || c.movie_name || 'a discussion' %></b></span>
+                <time><%= timeAgo(c.created_at) %></time>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="muted pf-empty"><%= isOwn ? "You haven't commented yet." : u.username + " hasn't commented yet." %></p>
+      <% } %>
+    </section>
+
+    <!-- ===== Likes ===== -->
+    <% if (hasLikes) { %>
+    <section class="pf-panel" id="panel-likes" role="tabpanel" aria-labelledby="tab-likes" data-panel="likes" hidden>
+      <% if (likedItems.length) { %>
+        <div class="pf-grid pf-liked-grid">
+          <% likedItems.forEach((it) => { %>
+            <div class="pf-item">
+              <%- include('partials/movieCard', {
+                m: { id: it.id, title: it.title, year: it.year, poster: it.poster, percent: null, url: it.href, type: '' },
+                href: it.href,
+                badge: it.badge,
+                sub: it.movie && it.movie !== it.title ? it.movie : ''
+              }) %>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="muted pf-empty"><%= isOwn ? "You haven't liked anything yet." : u.username + " hasn't liked anything yet." %></p>
+      <% } %>
+    </section>
+    <% } %>
+
+    <!-- ===== Lists (public watchlist collections) ===== -->
+    <% if (hasLists) { %>
+    <section class="pf-panel" id="panel-lists" role="tabpanel" aria-labelledby="tab-lists" data-panel="lists" hidden>
+      <% if (wlLists.length) { %>
+        <div class="pf-lists-head">
+          <p><%= wlLists.length %> public <%= wlLists.length === 1 ? 'list' : 'lists' %> · <%= wlTotal %> <%= wlTotal === 1 ? 'title' : 'titles' %></p>
+          <a class="pf-lists-all" href="<%= wlBase %>">Open all</a>
+        </div>
+        <div class="pf-lists">
+          <% wlLists.forEach((l) => { const ps = (l.posters || []).slice(0, 4); %>
+            <a class="pf-list" href="<%= wlBase %>?list=<%= l.id %>" aria-label="<%= l.name %>, <%= l.count %> <%= Number(l.count) === 1 ? 'title' : 'titles' %>">
+              <div class="pf-list-strip" aria-hidden="true">
+                <% for (let i = 0; i < 4; i++) { %><span><% if (ps[i]) { %><img src="<%= ps[i] %>" alt="" width="120" height="180" loading="lazy" decoding="async" onerror="this.remove()"><% } %></span><% } %>
+              </div>
+              <div class="pf-list-meta">
+                <div class="pf-list-text">
+                  <span class="pf-list-name"><%= l.name %></span>
+                  <span class="pf-list-n"><%= l.count %> <%= Number(l.count) === 1 ? 'title' : 'titles' %></span>
+                </div>
+                <span class="pf-list-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="pf-lists-empty">
+          <p>No public lists yet. Make one of your watchlists public and it will show up here for everyone.</p>
+          <a class="btn btn-primary" href="/watchlist">Open my watchlist</a>
+        </div>
+      <% } %>
+    </section>
+    <% } %>
+  </div>
+</main>
+
+<% if (items.length) { %>
+<div class="kc" id="kc" role="dialog" aria-modal="true" aria-label="Kravn Cards" aria-hidden="true">
+  <div class="kc-bg" aria-hidden="true"></div>
+  <div class="kc-progress" aria-hidden="true"><i></i></div>
+  <div class="kc-top">
+    <span class="kc-count" id="kc-count" aria-live="polite"></span>
+    <span class="kc-hint">Tap to open · double-tap to like</span>
+    <button type="button" class="kc-close" id="kc-close" aria-label="Close cards"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="kc-feed" id="kc-feed">
+    <% items.forEach((it) => { const c = it.card; %>
+      <article class="kc-slide" data-id="<%= it.id %>" data-href="<%= it.href %>" data-poster="<%= c.posterUrl || '' %>">
+        <div class="kc-fit">
+          <div class="kc-stage">
+            <div class="kcard-mount" data-kcard-mount data-post="<%= json(c) %>"></div>
+            <span class="kc-heart" aria-hidden="true"><%- include('partials/icon', { n: 'heart' }) %></span>
+          </div>
+        </div>
+        <div class="kc-bar">
+          <button type="button" class="kc-btn kc-like<%= c.liked ? ' on' : '' %>" data-like="<%= it.id %>" aria-pressed="<%= !!c.liked %>"><%- include('partials/icon', { n: 'heart' }) %><span data-like-label><%= c.liked ? 'Liked' : 'Like' %></span><b data-like-count="<%= it.id %>"><%= c.likes %></b></button>
+          <button type="button" class="kc-btn" data-kc-share data-url="<%= it.href %>" data-title="<%= it.title %>"><%- include('partials/icon', { n: 'share' }) %><span>Share</span></button>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+  <p class="kc-empty" id="kc-empty" hidden>No discussions to show as cards yet.</p>
+</div>
+<% } %>
+
+<script>
+  /* dropdown filters + sort */
+  (function () {
+    var grid = document.getElementById('feed');
+    if (!grid) return;
+    var items = Array.prototype.slice.call(grid.querySelectorAll('.pf-item'));
+    var emptyMsg = document.getElementById('pf-empty');
+    var state = { genre: '', sort: 'latest' };
+    function num(el, k) { return parseFloat(el.getAttribute('data-' + k)) || 0; }
+
+    /* ----- filter + sort ----- */
+    var by = {
+      latest: function (a, b) { return num(b, 'ts') - num(a, 'ts'); },
+      oldest: function (a, b) { return num(a, 'ts') - num(b, 'ts'); },
+      rating: function (a, b) { return num(b, 'rating') - num(a, 'rating'); },
+      likes:  function (a, b) { return num(b, 'likes') - num(a, 'likes'); },
+      random: function () { return Math.random() - .5; }
+    };
+    function apply() {
+      var shown = items.filter(function (it) {
+        var ok = !state.genre || (it.getAttribute('data-genres') || '').split('|').indexOf(state.genre) > -1;
+        it.hidden = !ok; return ok;
+      });
+      shown.sort(by[state.sort] || by.latest).forEach(function (it) { grid.appendChild(it); });
+      if (emptyMsg) emptyMsg.hidden = shown.length > 0;
+    }
+
+    /* ----- dropdown pills ----- */
+    var menus = Array.prototype.slice.call(document.querySelectorAll('[data-dd]'));
+    menus.forEach(function (m) {
+      m.addEventListener('toggle', function () {
+        if (!m.open) return;
+        menus.forEach(function (o) { if (o !== m) o.open = false; });
+        var on = m.querySelector('.dd-opt.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+      });
+      m.addEventListener('click', function (e) {
+        var o = e.target.closest('.dd-opt'); if (!o) return;
+        var v = o.getAttribute('data-value');
+        m.querySelectorAll('.dd-opt').forEach(function (x) { x.classList.toggle('on', x === o); });
+        m.querySelector('.dd-label').textContent = o.getAttribute('data-label');
+        m.classList.toggle('has-value', v !== m.getAttribute('data-default'));
+        state[m.getAttribute('data-dd')] = v;
+        m.open = false; apply();
+      });
+    });
+    document.addEventListener('click', function (e) { menus.forEach(function (m) { if (m.open && !m.contains(e.target)) m.open = false; }); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      menus.forEach(function (m) { if (m.open) { m.open = false; m.querySelector('summary').focus(); } });
+    });
+    apply();
+  })();
+</script>
+
+<script>
+  /* Profile tabs: Discussions / Comments / Likes / Lists (keyboard + #hash aware) */
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-tab]'));
+    var panels = Array.prototype.slice.call(document.querySelectorAll('[data-panel]'));
+    if (!tabs.length) return;
+    function show(name, focus) {
+      if (!tabs.some(function (t) { return t.getAttribute('data-tab') === name; })) name = 'discussions';
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('data-tab') === name;
+        t.classList.toggle('on', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1;
+        if (on && focus) t.focus();
+      });
+      panels.forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== name; });
+      try { history.replaceState(null, '', name === 'discussions' ? location.pathname + location.search : '#' + name); } catch (e) {}
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('data-tab')); });
+      t.addEventListener('keydown', function (e) {
+        var n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : -1;
+        if (n < 0) return;
+        e.preventDefault(); show(tabs[(n + tabs.length) % tabs.length].getAttribute('data-tab'), true);
+      });
+    });
+    var h = (location.hash || '').replace('#', '');
+    if (h === 'comments' || h === 'likes' || h === 'lists') show(h);
+  })();
+</script>
+
+<script>
+  /* Kravn Cards reel: the real KravN Card (same as the post page) scaled to fit any screen.
+     Tap = open post, double-tap = like, swipe = next card, back button = close. */
+  (function () {
+    var ov = document.getElementById('kc'), feed = document.getElementById('kc-feed'), grid = document.getElementById('feed');
+    if (!ov || !feed || !grid) return;
+    var bg = ov.querySelector('.kc-bg'), bar = ov.querySelector('.kc-progress i'), count = document.getElementById('kc-count'), empty = document.getElementById('kc-empty');
+    var slides = Array.prototype.slice.call(feed.querySelectorAll('.kc-slide')), byId = {};
+    var INTERACTIVE = 'button, a, input, textarea, select, label, [role="button"]';
+    var MAX_SCALE = 1.5;
+    slides.forEach(function (s) { byId[s.getAttribute('data-id')] = s; });
+    var cur = 0, lastFocus = null, ticking = false, tapTimer = null, pushed = false, fitQueued = false;
+
+    function live() { return Array.prototype.filter.call(feed.querySelectorAll('.kc-slide'), function (s) { return !s.hidden; }); }
+
+    /* follow whatever genre filter + sort the grid is showing right now */
+    function arrange() {
+      var order = Array.prototype.filter.call(grid.querySelectorAll('.pf-item'), function (it) { return !it.hidden; })
+        .map(function (it) { return byId[it.getAttribute('data-id')]; }).filter(Boolean);
+      slides.forEach(function (s) { s.hidden = order.indexOf(s) < 0; });
+      var dom = live(), same = dom.length === order.length && order.every(function (s, i) { return dom[i] === s; });
+      if (!same) order.forEach(function (s) { feed.appendChild(s); });
+      empty.hidden = order.length > 0;
+    }
+
+    /* scale the whole card (never reshape it) so card + buttons fit the screen; grows a little on big screens */
+    function fit(slide) {
+      if (!slide || slide.hidden) return;
+      var box = slide.querySelector('.kc-fit'), st = slide.querySelector('.kc-stage'), br = slide.querySelector('.kc-bar');
+      var w = st.offsetWidth, h = st.offsetHeight;
+      if (!w || !h || !slide.clientHeight) return;
+      var cs = getComputedStyle(slide), gap = parseFloat(cs.rowGap) || 14;
+      var availW = slide.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      var availH = slide.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - br.offsetHeight - gap;
+      var s = Math.max(0.3, Math.min(availW / w, availH / h, MAX_SCALE));
+      var fw = Math.floor(w * s), fh = Math.floor(h * s);
+      st.style.transform = 'scale(' + s + ')';
+      box.style.width = fw + 'px'; box.style.height = fh + 'px';
+      slide.style.setProperty('--kc-fw', fw + 'px');
+    }
+    function fitAll() {
+      if (fitQueued) return; fitQueued = true;
+      requestAnimationFrame(function () { fitQueued = false; live().forEach(fit); });
+    }
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(fitAll);
+      slides.forEach(function (s) { ro.observe(s.querySelector('.kc-stage')); });
+      ro.observe(feed);
+    }
+
+    function sync() {
+      var v = live(), h = feed.clientHeight || 1;
+      cur = Math.max(0, Math.min(v.length - 1, Math.round(feed.scrollTop / h)));
+      count.textContent = v.length ? (cur + 1) + ' / ' + v.length : '';
+      bar.style.transform = 'scaleX(' + (v.length ? (cur + 1) / v.length : 0) + ')';
+      var p = v[cur] && v[cur].getAttribute('data-poster');
+      bg.style.backgroundImage = p ? 'url("' + p.replace(/"/g, '%22') + '")' : 'none';
+    }
+    function go(i) { var n = live().length; feed.scrollTo({ top: Math.max(0, Math.min(n - 1, i)) * feed.clientHeight, behavior: 'smooth' }); }
+
+    function open() {
+      arrange(); lastFocus = document.activeElement;
+      ov.classList.add('open'); ov.setAttribute('aria-hidden', 'false');
+      document.documentElement.style.overflow = 'hidden'; document.body.style.overflow = 'hidden';
+      try { history.pushState({ kc: 1 }, ''); pushed = true; } catch (e) { pushed = false; }
+      feed.scrollTop = 0; sync(); fitAll();
+      setTimeout(fitAll, 120); setTimeout(fitAll, 500);
+      document.getElementById('kc-close').focus({ preventScroll: true });
+    }
+    function hide() {
+      if (!ov.classList.contains('open')) return;
+      clearTimeout(tapTimer); tapTimer = null;
+      ov.classList.remove('open'); ov.setAttribute('aria-hidden', 'true');
+      document.documentElement.style.overflow = ''; document.body.style.overflow = '';
+      if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+    }
+    function close() {
+      if (!ov.classList.contains('open')) return;
+      if (pushed) { pushed = false; try { history.back(); } catch (e) {} }
+      hide();
+    }
+    window.addEventListener('popstate', function () { pushed = false; hide(); });
+
+    function like(slide) {
+      var b = slide.querySelector('.kc-like'), h = slide.querySelector('.kc-heart');
+      if (b && !b.classList.contains('on')) b.click();
+      if (h) { h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop'); }
+      if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+    }
+    function share(b) {
+      var url = location.origin + b.getAttribute('data-url'), title = b.getAttribute('data-title') || 'KravN';
+      if (navigator.share) { navigator.share({ title: title, url: url }).catch(function () {}); return; }
+      var label = b.querySelector('span'), old = label.textContent;
+      function done() { label.textContent = 'Copied'; setTimeout(function () { label.textContent = old; }, 1800); }
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, function () { window.prompt('Copy this link', url); });
+      else window.prompt('Copy this link', url);
+    }
+
+    feed.addEventListener('scroll', function () { if (ticking) return; ticking = true; requestAnimationFrame(function () { ticking = false; sync(); }); }, { passive: true });
+    feed.addEventListener('click', function (e) {
+      var s = e.target.closest('[data-kc-share]');
+      if (s) { share(s); return; }
+      if (e.target === feed || e.target.classList.contains('kc-slide')) { close(); return; }
+
+      /* tap on the card: second tap within 260ms likes, otherwise open the post */
+      var stage = e.target.closest('.kc-stage');
+      if (!stage || e.target.closest(INTERACTIVE)) return;
+      var slide = stage.closest('.kc-slide');
+      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; like(slide); return; }
+      tapTimer = setTimeout(function () { tapTimer = null; location.href = slide.getAttribute('data-href'); }, 260);
+    });
+    document.getElementById('kc-close').addEventListener('click', close);
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-cards-open]');
+      if (b) { e.preventDefault(); e.stopImmediatePropagation(); open(); }
+    }, true);
+    document.addEventListener('keydown', function (e) {
+      if (!ov.classList.contains('open')) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1); }
+      else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    });
+
+    /* rotation / address-bar resize: stay on the same card and refit */
+    window.addEventListener('resize', function () {
+      if (!ov.classList.contains('open')) return;
+      feed.scrollTop = cur * feed.clientHeight; sync(); fitAll();
+    });
+    window.addEventListener('orientationchange', function () { setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 250); });
+  })();
+</script>
+
+<script>
+  /* Bio (max 20 characters) + "Movies you vibe with" (max 3): owner-only editors */
+  (function () {
+    var BIO_URL = '/profile/bio';                 // POST { bio }                                  -> { bio }
+    var VIBES_URL = '/profile/vibes';             // POST { movies: [{ id, title, year, poster }] } -> { movies }
+    var SEARCH_URL = function (q) { return '/api/vibes/search?q=' + encodeURIComponent(q); }; // GET -> { results: [...] }
+    var HEAD = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'fetch' };
+    var PLUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    var CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+    function mk(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html) e.innerHTML = html; return e; }
+    function chars(s) { return Array.from(s).length; }
+    function tidy(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
+    function postJSON(url, body) {
+      return fetch(url, { method: 'POST', credentials: 'same-origin', headers: HEAD, body: JSON.stringify(body) }).then(function (r) {
+        if (r.status === 401) { location.href = '/login?next=' + encodeURIComponent(location.pathname); throw new Error('auth'); }
+        if (!r.ok) return failFrom(r);
+        return r.json();
+      });
+    }
+    function failFrom(r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        var e = new Error('bad'); e.status = r.status; e.detail = (j && j.error) || ''; throw e;
+      });
+    }
+    function describe(e, what) {
+      if (e && e.status === 404) return 'Server not updated: restart node';
+      if (e && e.detail) return e.detail;
+      return what + ' (' + ((e && e.status) || 'network error') + ')';
+    }
+    function norm(r) {
+      return { id: String(r.id || ''), title: String(r.title || ''), year: String(r.year || ''), poster: String(r.poster || '') };
+    }
+    function posterImg(src, alt) {
+      var i = new Image(); i.alt = alt || ''; i.loading = 'lazy'; i.decoding = 'async';
+      i.onerror = function () { this.remove(); }; i.src = src; return i;
+    }
+
+    /* ===== bio ===== */
+    (function () {
+      var root = document.getElementById('pf-bio'), edit = document.getElementById('pf-bio-edit');
+      if (!root || !edit) return;
+      var max = parseInt(root.getAttribute('data-max'), 10) || 20;
+      var view = document.getElementById('pf-bio-view'), text = document.getElementById('pf-bio-text'), open = document.getElementById('pf-bio-open');
+      var input = document.getElementById('pf-bio-input'), count = document.getElementById('pf-bio-count');
+      var save = document.getElementById('pf-bio-save'), cancel = document.getElementById('pf-bio-cancel');
+      var current = tidy(text.textContent), busy = false;
+
+      function refresh() {
+        var n = chars(tidy(input.value));
+        count.textContent = n + ' / ' + max;
+        count.classList.toggle('over', n > max);
+        save.disabled = busy || n > max;
+      }
+      function paint() {
+        text.textContent = current; text.hidden = !current;
+        open.classList.toggle('is-set', !!current);
+        open.setAttribute('aria-label', current ? 'Edit bio' : 'Add a bio');
+      }
+      function openEdit() {
+        input.value = current; view.hidden = true; edit.hidden = false; refresh();
+        input.focus(); input.setSelectionRange(input.value.length, input.value.length);
+      }
+      function closeEdit() { edit.hidden = true; view.hidden = false; open.focus(); }
+
+      paint();
+      open.addEventListener('click', openEdit);
+      cancel.addEventListener('click', closeEdit);
+      input.addEventListener('input', refresh);
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { e.preventDefault(); closeEdit(); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (!save.disabled) save.click(); }
+      });
+      save.addEventListener('click', function () {
+        var v = tidy(input.value), failed = false;
+        if (busy || chars(v) > max) return;
+        busy = true; save.textContent = 'Saving…'; refresh();
+        postJSON(BIO_URL, { bio: v }).then(function (j) {
+          current = tidy(j && typeof j.bio === 'string' ? j.bio : v);
+          paint(); closeEdit();
+        }).catch(function (e) {
+          failed = (e && e.message === 'auth') ? '' : describe(e, 'Couldn’t save');
+        }).then(function () {
+          busy = false; save.textContent = 'Save'; refresh();
+          if (failed) { count.textContent = failed; count.classList.add('over'); }
+        });
+      });
+    })();
+
+    /* ===== movies you vibe with ===== */
+    (function () {
+      var section = document.getElementById('pf-vibe'), openBtn = document.getElementById('pf-vibe-open');
+      if (!section || !openBtn) return;
+      var MAXV = parseInt(section.getAttribute('data-max'), 10) || 3;
+      var row = document.getElementById('pf-vibe-row'), hint = document.getElementById('pf-vibe-hint');
+      var saved = [], draft = [], found = [], busy = false, seq = 0, timer = null, lastFocus = null;
+      var box, input, picked, results, countEl, saveBtn;
+      try { saved = (JSON.parse(document.getElementById('pf-vibe-data').textContent) || []).map(norm); } catch (e) { saved = []; }
+
+      function renderRow() {
+        var i;
+        row.textContent = '';
+        saved.forEach(function (m) {
+          var fig = mk('figure', 'pf-vibe-item'), p = mk('span', 'pf-vibe-poster'), ph = mk('b', 'pf-vibe-ph');
+          fig.title = m.title + (m.year ? ' (' + m.year + ')' : '');
+          ph.textContent = m.title; p.appendChild(ph);
+          if (m.poster) p.appendChild(posterImg(m.poster, m.title));
+          fig.appendChild(p); row.appendChild(fig);
+        });
+        for (i = saved.length; i < MAXV; i++) {
+          var s = mk('button', 'pf-vibe-slot', PLUS); s.type = 'button'; s.setAttribute('aria-label', 'Add a movie'); row.appendChild(s);
+        }
+        if (hint) hint.hidden = saved.length > 0;
+      }
+
+      function setMsg(t) { results.textContent = ''; var p = mk('p', 'vb-msg'); p.textContent = t; results.appendChild(p); }
+      function inDraft(m) { return draft.some(function (d) { return d.id === m.id; }); }
+      function updateFoot() { countEl.classList.remove('over'); countEl.textContent = draft.length + ' / ' + MAXV + ' picked'; }
+      function markRes() {
+        Array.prototype.forEach.call(results.querySelectorAll('.vb-res'), function (b) {
+          var m = found[+b.getAttribute('data-i')], on = inDraft(m);
+          b.disabled = on || draft.length >= MAXV;
+          b.classList.toggle('on', on);
+          b.querySelector('.vb-res-tag').textContent = on ? 'Added' : 'Add';
+        });
+      }
+      function drawPicked() {
+        var i;
+        picked.textContent = '';
+        for (i = 0; i < MAXV; i++) {
+          var m = draft[i], s = mk('div', 'vb-pick' + (m ? ' filled' : ''));
+          if (m) {
+            s.title = m.title;
+            var ph = mk('span', 'vb-pick-ph'); ph.textContent = m.title; s.appendChild(ph);
+            if (m.poster) s.appendChild(posterImg(m.poster, m.title));
+            var x = mk('button', 'vb-pick-x', CLOSE); x.type = 'button'; x.setAttribute('data-i', i); x.setAttribute('aria-label', 'Remove ' + m.title); s.appendChild(x);
+          } else { s.textContent = String(i + 1); }
+          picked.appendChild(s);
+        }
+      }
+      function drawFound() {
+        results.textContent = '';
+        found.forEach(function (m, i) {
+          var b = mk('button', 'vb-res'), th = mk('span', 'vb-res-th'), tx = mk('span', 'vb-res-text'), nm = mk('span', 'vb-res-name'), yr = mk('span', 'vb-res-yr'), tag = mk('span', 'vb-res-tag');
+          b.type = 'button'; b.setAttribute('data-i', i);
+          if (m.poster) th.appendChild(posterImg(m.poster, ''));
+          nm.textContent = m.title; yr.textContent = m.year; tag.textContent = 'Add';
+          tx.appendChild(nm); if (m.year) tx.appendChild(yr);
+          b.appendChild(th); b.appendChild(tx); b.appendChild(tag); results.appendChild(b);
+        });
+        markRes();
+      }
+
+      function run(q) {
+        var my = ++seq;
+        setMsg('Searching…');
+        fetch(SEARCH_URL(q), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+          .then(function (r) {
+            if (r.status === 401) { location.href = '/login?next=' + encodeURIComponent(location.pathname); throw new Error('auth'); }
+            if (!r.ok) return failFrom(r);
+            return r.json();
+          })
+          .then(function (j) {
+            if (my !== seq) return;
+            found = ((j && j.results) || []).map(norm).filter(function (m) { return m.id && m.title; });
+            if (found.length) drawFound(); else setMsg('No movies found for “' + q + '”.');
+          })
+          .catch(function (e) { if (my === seq && !(e && e.message === 'auth')) setMsg(describe(e, 'Search failed')); });
+      }
+
+      function build() {
+        box = mk('div', 'vb'); box.hidden = true; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'vb-title');
+        var card = mk('div', 'vb-card');
+        var x = mk('button', 'vb-x', CLOSE); x.type = 'button'; x.setAttribute('aria-label', 'Close');
+        var head = mk('div', 'vb-head', '<h3 id="vb-title">Movies you vibe with</h3><p>Pick up to 3 that say something about you. You can change them any time.</p>');
+        picked = mk('div', 'vb-picked');
+        var sw = mk('div', 'vb-search'); input = mk('input'); input.type = 'search'; input.placeholder = 'Search for a movie…'; input.autocomplete = 'off'; input.setAttribute('aria-label', 'Search for a movie'); sw.appendChild(input);
+        results = mk('div', 'vb-results'); results.setAttribute('aria-live', 'polite');
+        var foot = mk('div', 'vb-foot'), actions = mk('div', 'vb-actions');
+        countEl = mk('span', 'vb-count');
+        var cancel = mk('button', 'pf-sbtn', 'Cancel'); cancel.type = 'button';
+        saveBtn = mk('button', 'pf-sbtn pf-sbtn--primary', 'Save'); saveBtn.type = 'button';
+        actions.appendChild(cancel); actions.appendChild(saveBtn); foot.appendChild(countEl); foot.appendChild(actions);
+        [x, head, picked, sw, results, foot].forEach(function (n) { card.appendChild(n); });
+        box.appendChild(card); document.body.appendChild(box);
+
+        x.addEventListener('click', hide); cancel.addEventListener('click', hide);
+        box.addEventListener('click', function (e) { if (e.target === box) hide(); });
+        picked.addEventListener('click', function (e) {
+          var b = e.target.closest('.vb-pick-x'); if (!b) return;
+          draft.splice(+b.getAttribute('data-i'), 1); drawPicked(); markRes(); updateFoot();
+        });
+        results.addEventListener('click', function (e) {
+          var b = e.target.closest('.vb-res'); if (!b || b.disabled) return;
+          var m = found[+b.getAttribute('data-i')];
+          if (!m || draft.length >= MAXV || inDraft(m)) return;
+          draft.push(m); drawPicked(); markRes(); updateFoot();
+        });
+        input.addEventListener('input', function () {
+          clearTimeout(timer);
+          var q = input.value.trim();
+          if (q.length < 2) { seq++; found = []; setMsg(q ? 'Keep typing…' : 'Search for a movie to add it.'); return; }
+          timer = setTimeout(function () { run(q); }, 300);
+        });
+        saveBtn.addEventListener('click', function () {
+          if (busy) return;
+          busy = true; saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+          var failed = false;
+          postJSON(VIBES_URL, { movies: draft }).then(function (j) {
+            saved = (j && Array.isArray(j.movies) ? j.movies : draft).map(norm).slice(0, MAXV);
+            renderRow(); hide();
+          }).catch(function (e) {
+            failed = (e && e.message === 'auth') ? '' : describe(e, 'Couldn’t save');
+          }).then(function () {
+            busy = false; saveBtn.disabled = false; saveBtn.textContent = 'Save';
+            if (failed) { countEl.textContent = failed; countEl.classList.add('over'); }
+          });
+        });
+        box.addEventListener('keydown', function (e) {
+          if (e.key !== 'Tab') return;
+          var f = Array.prototype.filter.call(box.querySelectorAll('button, input'), function (b) { return !b.disabled && b.offsetParent !== null; });
+          if (!f.length) return;
+          var first = f[0], last = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        });
+      }
+
+      function show() {
+        if (!box) build();
+        draft = saved.slice(); found = []; seq++; input.value = '';
+        drawPicked(); updateFoot(); setMsg('Search for a movie to add it.');
+        lastFocus = document.activeElement; document.documentElement.style.overflow = 'hidden';
+        box.hidden = false; input.focus();
+      }
+      function hide() {
+        if (!box || box.hidden) return;
+        box.hidden = true; document.documentElement.style.overflow = '';
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+      }
+
+      openBtn.addEventListener('click', show);
+      row.addEventListener('click', function (e) { if (e.target.closest('.pf-vibe-slot')) show(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });
+    })();
+  })();
+</script>
+
+<script>
+  /* Share profile: opens a KravN-branded QR card (scan it to open the profile) with Copy link / Share / Save image.
+     The QR code is generated right here in the browser: no library, no external request. */
+  (function () {
+
+    /* ===== tiny QR encoder (byte mode, error-correction Q/H, versions 1-15) ===== */
+    var KravQR = (function () {
+      var CW  = { Q: [0, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30], H: [0, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24] };
+      var BLK = { Q: [0, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12],            H: [0, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18] };
+      var FMT = { Q: 3, H: 2 };
+      var MAXV = 15;
+
+      function rawModules(v) {
+        var r = (16 * v + 128) * v + 64;
+        if (v >= 2) { var a = Math.floor(v / 7) + 2; r -= (25 * a - 10) * a - 55; if (v >= 7) r -= 36; }
+        return r;
+      }
+      function dataWords(v, e) { return Math.floor(rawModules(v) / 8) - CW[e][v] * BLK[e][v]; }
+
+      function utf8(s) {
+        var out = [], b = unescape(encodeURIComponent(s)), i;
+        for (i = 0; i < b.length; i++) out.push(b.charCodeAt(i));
+        return out;
+      }
+      function gfMul(x, y) {
+        var z = 0, i;
+        for (i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; }
+        return z;
+      }
+      function rsDivisor(d) {
+        var r = [], i, j, root = 1;
+        for (i = 0; i < d - 1; i++) r.push(0);
+        r.push(1);
+        for (i = 0; i < d; i++) {
+          for (j = 0; j < d; j++) { r[j] = gfMul(r[j], root); if (j + 1 < d) r[j] ^= r[j + 1]; }
+          root = gfMul(root, 2);
+        }
+        return r;
+      }
+      function rsRemainder(data, div) {
+        var r = div.map(function () { return 0; });
+        data.forEach(function (b) {
+          var f = b ^ r.shift(); r.push(0);
+          div.forEach(function (c, i) { r[i] ^= gfMul(c, f); });
+        });
+        return r;
+      }
+
+      function encode(text, ecl) {
+        ecl = ecl || 'H';
+        var bytes = utf8(text), ver, bits = [];
+        function put(val, len) { for (var i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1); }
+        for (ver = 1; ver <= MAXV; ver++) {
+          if (4 + (ver < 10 ? 8 : 16) + bytes.length * 8 <= dataWords(ver, ecl) * 8) break;
+        }
+        if (ver > MAXV) throw new Error('too long');
+        var cap = dataWords(ver, ecl) * 8, i;
+        put(4, 4); put(bytes.length, ver < 10 ? 8 : 16);
+        bytes.forEach(function (b) { put(b, 8); });
+        put(0, Math.min(4, cap - bits.length));
+        while (bits.length % 8) bits.push(0);
+        for (var pad = 0xEC; bits.length < cap; pad ^= 0xEC ^ 0x11) put(pad, 8);
+        var data = [];
+        for (i = 0; i < bits.length; i += 8) { var v = 0, k; for (k = 0; k < 8; k++) v = (v << 1) | bits[i + k]; data.push(v); }
+
+        /* error correction + interleave */
+        var nb = BLK[ecl][ver], eccLen = CW[ecl][ver], raw = Math.floor(rawModules(ver) / 8);
+        var nShort = nb - raw % nb, shortLen = Math.floor(raw / nb), blocks = [], div = rsDivisor(eccLen), at = 0;
+        for (i = 0; i < nb; i++) {
+          var dat = data.slice(at, at + shortLen - eccLen + (i < nShort ? 0 : 1)); at += dat.length;
+          var ecc = rsRemainder(dat, div);
+          if (i < nShort) dat.push(0);
+          blocks.push(dat.concat(ecc));
+        }
+        var all = [], j;
+        for (i = 0; i < blocks[0].length; i++) {
+          for (j = 0; j < nb; j++) { if (i !== shortLen - eccLen || j >= nShort) all.push(blocks[j][i]); }
+        }
+
+        /* matrix */
+        var n = ver * 4 + 17, m = [], fn = [], y, x;
+        for (y = 0; y < n; y++) { m.push([]); fn.push([]); for (x = 0; x < n; x++) { m[y].push(false); fn[y].push(false); } }
+        function setFn(px, py, dark) { m[py][px] = dark; fn[py][px] = true; }
+        for (i = 0; i < n; i++) { setFn(6, i, i % 2 === 0); setFn(i, 6, i % 2 === 0); }
+        function finder(cx, cy) {
+          var dx, dy;
+          for (dy = -4; dy <= 4; dy++) for (dx = -4; dx <= 4; dx++) {
+            var d = Math.max(Math.abs(dx), Math.abs(dy)), xx = cx + dx, yy = cy + dy;
+            if (xx >= 0 && xx < n && yy >= 0 && yy < n) setFn(xx, yy, d !== 2 && d !== 4);
+          }
+        }
+        finder(3, 3); finder(n - 4, 3); finder(3, n - 4);
+        var pos = [];
+        if (ver > 1) {
+          var na = Math.floor(ver / 7) + 2, step = ver === 32 ? 26 : Math.ceil((ver * 4 + 4) / (na * 2 - 2)) * 2;
+          pos = [6];
+          for (var p = n - 7; pos.length < na; p -= step) pos.splice(1, 0, p);
+        }
+        for (i = 0; i < pos.length; i++) for (j = 0; j < pos.length; j++) {
+          if ((i === 0 && j === 0) || (i === 0 && j === pos.length - 1) || (i === pos.length - 1 && j === 0)) continue;
+          var dx2, dy2;
+          for (dy2 = -2; dy2 <= 2; dy2++) for (dx2 = -2; dx2 <= 2; dx2++) setFn(pos[i] + dx2, pos[j] + dy2, Math.max(Math.abs(dx2), Math.abs(dy2)) !== 1);
+        }
+        function bit(v, k) { return ((v >>> k) & 1) !== 0; }
+        function formatBits(mask) {
+          var d = (FMT[ecl] << 3) | mask, r = d, k;
+          for (k = 0; k < 10; k++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+          var b = ((d << 10) | r) ^ 0x5412;
+          for (k = 0; k <= 5; k++) setFn(8, k, bit(b, k));
+          setFn(8, 7, bit(b, 6)); setFn(8, 8, bit(b, 7)); setFn(7, 8, bit(b, 8));
+          for (k = 9; k < 15; k++) setFn(14 - k, 8, bit(b, k));
+          for (k = 0; k < 8; k++) setFn(n - 1 - k, 8, bit(b, k));
+          for (k = 8; k < 15; k++) setFn(8, n - 15 + k, bit(b, k));
+          setFn(8, n - 8, true);
+        }
+        formatBits(0);
+        if (ver >= 7) {
+          var r2 = ver, k2;
+          for (k2 = 0; k2 < 12; k2++) r2 = (r2 << 1) ^ ((r2 >>> 11) * 0x1F25);
+          var vb = (ver << 12) | r2;
+          for (k2 = 0; k2 < 18; k2++) { var a2 = n - 11 + k2 % 3, b2 = Math.floor(k2 / 3); setFn(a2, b2, bit(vb, k2)); setFn(b2, a2, bit(vb, k2)); }
+        }
+        /* place data */
+        var bi = 0, right, vert, jj, upward;
+        for (right = n - 1; right >= 1; right -= 2) {
+          if (right === 6) right = 5;
+          for (vert = 0; vert < n; vert++) for (jj = 0; jj < 2; jj++) {
+            x = right - jj; upward = ((right + 1) & 2) === 0; y = upward ? n - 1 - vert : vert;
+            if (!fn[y][x] && bi < all.length * 8) { m[y][x] = bit(all[bi >>> 3], 7 - (bi & 7)); bi++; }
+          }
+        }
+        /* masks */
+        var MASKS = [
+          function (a, b) { return (a + b) % 2 === 0; }, function (a, b) { return b % 2 === 0; },
+          function (a, b) { return a % 3 === 0; }, function (a, b) { return (a + b) % 3 === 0; },
+          function (a, b) { return (Math.floor(a / 3) + Math.floor(b / 2)) % 2 === 0; },
+          function (a, b) { return a * b % 2 + a * b % 3 === 0; },
+          function (a, b) { return (a * b % 2 + a * b % 3) % 2 === 0; },
+          function (a, b) { return ((a + b) % 2 + a * b % 3) % 2 === 0; }
+        ];
+        function applyMask(k) { for (y = 0; y < n; y++) for (x = 0; x < n; x++) if (!fn[y][x] && MASKS[k](x, y)) m[y][x] = !m[y][x]; }
+        function penalty() {
+          var s = 0, dark = 0, run, c, line, t, q;
+          var P1 = '10111010000', P2 = '00001011101';
+          for (t = 0; t < 2; t++) {
+            for (y = 0; y < n; y++) {
+              line = ''; run = 0; c = null;
+              for (x = 0; x < n; x++) {
+                var v2 = t ? m[x][y] : m[y][x];
+                line += v2 ? '1' : '0';
+                if (v2 === c) { run++; if (run === 5) s += 3; else if (run > 5) s++; } else { c = v2; run = 1; }
+              }
+              for (q = 0; q + 11 <= n; q++) { var w = line.substr(q, 11); if (w === P1 || w === P2) s += 40; }
+            }
+          }
+          for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
+            if (m[y][x]) dark++;
+            if (x < n - 1 && y < n - 1 && m[y][x] === m[y][x + 1] && m[y][x] === m[y + 1][x] && m[y][x] === m[y + 1][x + 1]) s += 3;
+          }
+          var total = n * n;
+          s += (Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1) * 10;
+          return s;
+        }
+        var best = 0, bestP = Infinity, mk, pp;
+        for (mk = 0; mk < 8; mk++) {
+          applyMask(mk); formatBits(mk); pp = penalty(); applyMask(mk);
+          if (pp < bestP) { bestP = pp; best = mk; }
+        }
+        applyMask(best); formatBits(best);
+        return { size: n, version: ver, modules: m };
+      }
+      return { encode: encode };
+    })();
+
+    /* ===== drawing: KravN colours, rounded finder eyes, K badge in the middle ===== */
+    var FONT = 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+    function parseColor(v) {
+      if (!v) return null;
+      var c = document.createElement('canvas').getContext('2d');
+      c.fillStyle = '#010203'; c.fillStyle = v;
+      var s = String(c.fillStyle), nums;
+      if (s === '#010203') return null;                       // value was not a valid colour
+      if (s.charAt(0) === '#' && s.length === 7) return [parseInt(s.substr(1, 2), 16), parseInt(s.substr(3, 2), 16), parseInt(s.substr(5, 2), 16)];
+      nums = s.match(/[\d.]+/g);
+      if (!nums || nums.length < 3) return null;
+      if (s.indexOf('color(') === 0) return [nums[0] * 255, nums[1] * 255, nums[2] * 255];
+      return [+nums[0], +nums[1], +nums[2]];
+    }
+    function css(rgb, k) { k = k === undefined ? 1 : k; return 'rgb(' + Math.round(rgb[0] * k) + ',' + Math.round(rgb[1] * k) + ',' + Math.round(rgb[2] * k) + ')'; }
+    function palette() {
+      var cs = getComputedStyle(document.body);
+      var a = parseColor(cs.getPropertyValue('--accent').trim()) || [124, 58, 237];
+      var b = parseColor(cs.getPropertyValue('--accent-2').trim()) || a;
+      /* ink + eye colours are the accent darkened, so scanners always see strong contrast on white */
+      return { a: css(a), b: css(b), ink: css(a, .3), eye: css(a, .5), deep: css(a, .16) };
+    }
+
+    /* QR painting (shared by the card and the saved image) */
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath(); ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath(); ctx.fill();
+    }
+    function paintBadge(ctx, x, y, s, pal) {
+      var g = ctx.createLinearGradient(x, y, x + s, y + s);
+      g.addColorStop(0, pal.b); g.addColorStop(1, pal.a);
+      ctx.fillStyle = g; roundRect(ctx, x, y, s, s, s * .3);
+      ctx.fillStyle = '#fff'; ctx.font = '800 ' + Math.round(s * .62) + 'px ' + FONT;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('K', x + s / 2, y + s / 2 + s * .04);
+    }
+    function paintQR(cv, qr, px, pal) {
+      var n = qr.size, quiet = 4, cell = px / (n + quiet * 2), ctx = cv.getContext('2d'), x, y;
+      var L = Math.max(5, Math.min(9, Math.floor(n * .19) | 1));   // odd number of modules left empty for the badge
+      var lo = (n - L) / 2, hi = lo + L;
+      function E(i) { return Math.round((i + quiet) * cell); }
+      function eyeZone(a, b) { return (a < 7 && b < 7) || (a >= n - 7 && b < 7) || (a < 7 && b >= n - 7); }
+      cv.width = px; cv.height = px;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, px, px);
+      ctx.fillStyle = pal.ink;
+      for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
+        if (!qr.modules[y][x] || eyeZone(x, y)) continue;
+        if (x >= lo && x < hi && y >= lo && y < hi) continue;
+        ctx.fillRect(E(x), E(y), E(x + 1) - E(x), E(y + 1) - E(y));
+      }
+      function eye(ex, ey) {
+        var X = E(ex), Y = E(ey), S = E(ex + 7) - X;
+        ctx.fillStyle = pal.ink; roundRect(ctx, X, Y, S, S, cell * 2);
+        ctx.fillStyle = '#fff'; roundRect(ctx, E(ex + 1), E(ey + 1), E(ex + 6) - E(ex + 1), E(ey + 6) - E(ey + 1), cell * 1.3);
+        ctx.fillStyle = pal.eye; roundRect(ctx, E(ex + 2), E(ey + 2), E(ex + 5) - E(ex + 2), E(ey + 5) - E(ey + 2), cell * .9);
+      }
+      eye(0, 0); eye(n - 7, 0); eye(0, n - 7);
+      var bx = E(lo), bw = E(hi) - bx;
+      ctx.fillStyle = '#fff'; roundRect(ctx, bx, bx, bw, bw, cell * .9);
+      paintBadge(ctx, bx + cell * .5, bx + cell * .5, bw - cell, pal);
+    }
+
+    /* the image people can save: dark KravN card with the QR in the middle */
+    function fit(ctx, text, maxW) {
+      if (ctx.measureText(text).width <= maxW) return text;
+      while (text.length > 4 && ctx.measureText(text + '…').width > maxW) text = text.slice(0, -1);
+      return text + '…';
+    }
+    function poster(qr, name, url, pal) {
+      var W = 960, H = 1200, c = document.createElement('canvas'), ctx = c.getContext('2d'), q = document.createElement('canvas');
+      c.width = W; c.height = H;
+      var bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, pal.deep); bg.addColorStop(1, '#07070b');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+      var glow = ctx.createRadialGradient(W / 2, 0, 20, W / 2, 0, 760); glow.addColorStop(0, pal.a); glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalAlpha = .38; ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+      /* brand */
+      ctx.font = '800 56px ' + FONT; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      var tw = ctx.measureText('KravN').width, bs = 76, gap = 20, bx = (W - (bs + gap + tw)) / 2;
+      paintBadge(ctx, bx, 96, bs, pal);
+      ctx.fillStyle = '#fff'; ctx.fillText('KravN', bx + bs + gap, 96 + bs / 2 + 3);
+      /* QR panel */
+      var S = 640, qx = (W - S) / 2, qy = 250;
+      paintQR(q, qr, S, pal);
+      ctx.save(); ctx.fillStyle = '#fff'; roundRect(ctx, qx - 14, qy - 14, S + 28, S + 28, 44);
+      ctx.beginPath(); ctx.moveTo(qx + 30, qy); ctx.arcTo(qx + S, qy, qx + S, qy + S, 30); ctx.arcTo(qx + S, qy + S, qx, qy + S, 30);
+      ctx.arcTo(qx, qy + S, qx, qy, 30); ctx.arcTo(qx, qy, qx + S, qy, 30); ctx.closePath(); ctx.clip();
+      ctx.drawImage(q, qx, qy, S, S); ctx.restore();
+      /* text */
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = '#fff'; ctx.font = '700 60px ' + FONT; ctx.fillText(fit(ctx, '@' + name, W - 160), W / 2, 1000);
+      ctx.fillStyle = 'rgba(255,255,255,.66)'; ctx.font = '500 30px ' + FONT; ctx.fillText('Scan to open this profile on KravN', W / 2, 1056);
+      ctx.fillStyle = 'rgba(255,255,255,.42)'; ctx.font = '500 26px ' + FONT; ctx.fillText(fit(ctx, url.replace(/^https?:\/\//, ''), W - 160), W / 2, 1110);
+      return c;
+    }
+
+    /* ===== the card ===== */
+    var ICON = {
+      copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
+      share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></svg>',
+      save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
+      close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+    };
+    var box, canvas, frame, fail, nameEl, urlEl, copyLbl, shareBtn, saveBtn, lastFocus, cur = null;
+
+    function mk(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html) e.innerHTML = html; return e; }
+    function btn(cls, icon, label) { var b = mk('button', 'qr-btn ' + cls, icon + '<span>' + label + '</span>'); b.type = 'button'; return b; }
+
+    function build() {
+      box = mk('div', 'qr'); box.hidden = true; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'qr-title');
+      var card = mk('div', 'qr-card');
+      var x = mk('button', 'qr-x', ICON.close); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.addEventListener('click', close);
+      var brand = mk('div', 'qr-brand', '<span class="qr-mark" aria-hidden="true">K</span><span>KravN</span>');
+      nameEl = mk('h3', 'qr-name'); nameEl.id = 'qr-title';
+      var sub = mk('p', 'qr-sub', 'Scan with your camera to open this profile');
+      frame = mk('div', 'qr-frame'); canvas = mk('canvas', 'qr-canvas'); canvas.setAttribute('role', 'img'); frame.appendChild(canvas);
+      fail = mk('p', 'qr-fail', 'This link is too long to turn into a QR code. Use Copy link instead.'); fail.hidden = true;
+      urlEl = mk('div', 'qr-url');
+      var actions = mk('div', 'qr-actions');
+      var copyBtn = btn('qr-btn--primary', ICON.copy, 'Copy link'); copyLbl = copyBtn.querySelector('span');
+      shareBtn = btn('', ICON.share, 'Share'); shareBtn.hidden = !navigator.share;
+      saveBtn = btn('', ICON.save, 'Save image');
+      copyBtn.addEventListener('click', copyLink); shareBtn.addEventListener('click', nativeShare); saveBtn.addEventListener('click', saveImage);
+      actions.appendChild(copyBtn); actions.appendChild(shareBtn); actions.appendChild(saveBtn);
+      [x, brand, nameEl, sub, frame, fail, urlEl, actions].forEach(function (n) { card.appendChild(n); });
+      box.appendChild(card); document.body.appendChild(box);
+      box.addEventListener('click', function (e) { if (e.target === box) close(); });
+      box.addEventListener('keydown', function (e) {
+        if (e.key !== 'Tab') return;
+        var f = Array.prototype.filter.call(box.querySelectorAll('button'), function (b) { return !b.hidden && b.offsetParent !== null; });
+        if (!f.length) return;
+        var first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      });
+    }
+
+    function open(b) {
+      if (!box) build();
+      var url = location.origin + b.getAttribute('data-url');
+      var name = b.getAttribute('data-name') || (b.getAttribute('data-title') || '').replace(/ on KravN$/, '');
+      var qr = null;
+      try { qr = KravQR.encode(url, 'H'); } catch (err) { qr = null; }
+      cur = { url: url, name: name, title: b.getAttribute('data-title') || name + ' on KravN', qr: qr };
+      nameEl.textContent = '@' + name; urlEl.textContent = url.replace(/^https?:\/\//, ''); copyLbl.textContent = 'Copy link';
+      shareBtn.hidden = !navigator.share;
+      frame.hidden = !qr; fail.hidden = !!qr; saveBtn.hidden = !qr;
+      if (qr) {
+        var css = 248, dpr = Math.min(window.devicePixelRatio || 1, 3);
+        paintQR(canvas, qr, Math.round(css * dpr), palette());
+        canvas.setAttribute('aria-label', 'QR code that opens the KravN profile of ' + name);
+      }
+      lastFocus = document.activeElement; document.documentElement.style.overflow = 'hidden';
+      box.hidden = false;
+      box.querySelector('.qr-btn--primary').focus();
+    }
+    function close() {
+      if (!box || box.hidden) return;
+      box.hidden = true; document.documentElement.style.overflow = '';
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+
+    function copyLink() {
+      var url = cur.url;
+      function done() { copyLbl.textContent = 'Link copied'; setTimeout(function () { copyLbl.textContent = 'Copy link'; }, 1800); }
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, function () { window.prompt('Copy this link', url); });
+      else window.prompt('Copy this link', url);
+    }
+    function nativeShare() {
+      if (navigator.share) navigator.share({ title: cur.title, url: cur.url }).catch(function () {});
+    }
+    function saveImage() {
+      if (!cur.qr) return;
+      var c = poster(cur.qr, cur.name, cur.url, palette());
+      var file = 'kravn-' + (cur.name.toLowerCase().replace(/[^a-z0-9_-]+/g, '') || 'profile') + '-qr.png';
+      function dl(href, revoke) {
+        var a = document.createElement('a'); a.href = href; a.download = file; document.body.appendChild(a); a.click(); a.remove();
+        if (revoke) setTimeout(function () { URL.revokeObjectURL(href); }, 2000);
+      }
+      if (c.toBlob) c.toBlob(function (blob) { if (blob) dl(URL.createObjectURL(blob), true); }, 'image/png');
+      else dl(c.toDataURL('image/png'), false);
+    }
+
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-share-profile]');
+      if (!b) return;
+      e.preventDefault(); open(b);
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  })();
+</script>
+<%- include('partials/foot') %>

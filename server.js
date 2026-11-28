@@ -122,6 +122,7 @@ app.use('/', require('./routes/movies'));
 app.use('/', require('./routes/posts'));
 app.use('/', require('./routes/watchlist')); // before users, so /users/:name/watchlist is never shadowed
 app.use('/', require('./routes/wrapped'));
+app.use('/', require('./routes/curate'));    // KravN Curate: /curate, /api/curate/:username, /profile/curate/visibility
 app.use('/', require('./routes/users'));
 
 /* ------------------------------ 404 + errors ------------------------------ */
@@ -144,6 +145,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`KravN running on http://localhost:${PORT}`);
   if (!tmdb.isReady()) console.warn('WARNING: TMDB_API_KEY is not set — movie data will be unavailable.');
+  if (typeof fetch !== 'function') console.warn('WARNING: this Node version has no global fetch — KravN Curate needs Node 18 or newer.');
 });
 
 pool
@@ -153,3 +155,6 @@ pool
 
 // create the watchlist tables once at startup (safe to run every time)
 require('./routes/watchlist').ready().then(() => console.log('Watchlist tables ready.')).catch((err) => console.error('Watchlist setup failed:', err));
+
+// create the Curate privacy table once at startup (safe to run every time)
+require('./lib/curate').ready().then(() => console.log('Curate table ready.')).catch((err) => console.error('Curate setup failed:', err));

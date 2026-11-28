@@ -25,6 +25,10 @@
   // Lists tab: visitors only see it when there is at least one public list; the owner always sees it.
   const wlLists = (typeof watchLists !== 'undefined' && Array.isArray(watchLists)) ? watchLists : [];
   const hasLists = (typeof watchLists !== 'undefined' && Array.isArray(watchLists)) && (wlLists.length > 0 || !!isOwn);
+  // KravN Curate: the owner always sees the button; visitors only when it is public. It opens the full Curate page.
+  const hasCurate = !!isOwn || (typeof curatePublic === 'undefined' || !!curatePublic); 
+  const curateHref = isOwn ? '/curate' : '/curate/' + encodeURIComponent(u.username);
+  const tabN = 2 + (hasLikes ? 1 : 0) + (hasLists ? 1 : 0);
   const wlBase = '/users/' + encodeURIComponent(u.username) + '/watchlist';
   const wlTotal = wlLists.reduce((n, l) => n + (Number(l.count) || 0), 0);
   // Verified tick by number of posts: 100+ blue, more than 200 gold
@@ -63,7 +67,7 @@
 <%- include('partials/nav') %>
 
 <style>
-  /* PROFILE: header (+ bio) -> stats -> movies you vibe with -> tabs (discussions / comments / likes / lists)
+  /* PROFILE: header (+ bio) -> stats (+ vibes) -> tabs (discussions / comments / likes / lists)
      (cards come from partials/movieCard + movie-card.css) */
 
   /* ---------- header ---------- */
@@ -88,10 +92,7 @@
   .vtick--gold { color: #e8b100; }
   .profile-id .muted { margin: 0; font-size: 12.5px; }
 
-  /* ---------- founder badge (only for the KravN founder) ----------
-     Champagne-gold glass pill: hairline gold border, soft inner glow, thin-line crown and spaced small caps.
-     One colour family on purpose (restrained = elegant). Mid-tone golds stay readable on dark and light themes.
-     It sits next to the tick, never replaces it. */
+  /* ---------- founder badge (only for the KravN founder): champagne-gold glass pill, sits next to the tick ---------- */
   .fbadge {
     position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 12px 0 9px; margin: 0;
     border-radius: 999px; overflow: hidden; white-space: nowrap; cursor: default; vertical-align: middle;
@@ -108,9 +109,9 @@
     position: relative; z-index: 1; font: 600 10px/1 var(--font); letter-spacing: .2em; text-transform: uppercase; padding-left: .1em;
     background: linear-gradient(100deg, #e9c46a, #b98a2b 48%, #e9c46a); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
   }
-  
 
-  .profile-actions { display: flex; gap: 8px; flex: none; }
+  /* ---------- actions ---------- */
+  .profile-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: none; }
   .profile-actions .btn {
     display: inline-flex !important; visibility: visible !important; opacity: 1 !important; align-items: center; justify-content: center; gap: 8px;
     height: 40px; padding: 0 18px; margin: 0; border-radius: 999px; font: 600 12.5px/1 var(--font); letter-spacing: .03em; white-space: nowrap; text-decoration: none; cursor: pointer;
@@ -124,10 +125,23 @@
   .profile-actions .btn-primary:hover { filter: brightness(1.08); }
   .profile-actions .btn-glass { color: var(--text); background: transparent; box-shadow: none; border: 1px solid color-mix(in srgb, var(--text) 32%, transparent); }
   .profile-actions .btn-glass:hover { background: color-mix(in srgb, var(--text) 8%, transparent); border-color: color-mix(in srgb, var(--text) 55%, transparent); }
+  /* KravN Curate: gold gradient, soft glow, subtle shine */
+  .profile-actions .btn.btn-curate {
+    position: relative; overflow: hidden; color: #1a1205; border: 0; background: linear-gradient(135deg, #f5b544, #f97316);
+    box-shadow: 0 14px 34px -14px rgba(245, 181, 68, .85), inset 0 0 0 1px rgba(255, 255, 255, .25);
+  }
+  .profile-actions .btn.btn-curate::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; transform: skewX(-20deg); pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .45), transparent); animation: curate-shine 5s ease-in-out 1.2s infinite;
+  }
+  .profile-actions .btn.btn-curate:hover { filter: brightness(1.06); }
+  .btn-curate-star { font-size: 14px; line-height: 1; }
+  @keyframes curate-shine { 0%, 70% { left: -60%; } 100% { left: 130%; } }
 
   /* ---------- stats ---------- */
   .page .stats { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0 0 4px; padding: 0; overflow: hidden; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); background: color-mix(in srgb, var(--text) 3%, var(--surface)); }
-  .page .stats .stat { display: flex; align-items: baseline; justify-content: center; gap: 8px; padding: 15px 8px; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; min-width: 0; }
+  .page .stats .stat { display: flex; align-items: baseline; justify-content: center; gap: 8px; padding: 15px 8px; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none; min-width: 0; transition: background .2s; }
+  .page .stats .stat:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
   .page .stats .stat + .stat { border-left: 1px solid color-mix(in srgb, var(--text) 8%, transparent); }
   .page .stats .stat strong { font-size: 21px; font-weight: 700; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text); }
   .page .stats .stat span { font-size: 11px; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; color: color-mix(in srgb, var(--text) 55%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -190,7 +204,7 @@
 
   /* ---------- poster grid ---------- */
   .pf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 14px; align-items: start; }
-  .pf-item { min-width: 0; }
+  .pf-item { min-width: 0; content-visibility: auto; contain-intrinsic-size: auto 270px; }
   .pf-item[hidden] { display: none; }
   .pf-empty { text-align: center; padding: 36px 0; }
 
@@ -219,9 +233,9 @@
     .fbadge { height: 22px; padding: 0 11px 0 8px; gap: 5px; }
     .fbadge svg { width: 12px; height: 12px; }
     .fbadge-t { font-size: 9px; letter-spacing: .17em; }
-    .profile-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr; gap: 8px; }
-    .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr 1fr; }
+    .profile-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .profile-actions .btn { width: 100%; padding: 0 10px; }
+    .profile-actions .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
     .page .stats { border-radius: 14px; }
     .page .stats .stat { flex-direction: column; align-items: center; gap: 4px; padding: 12px 2px; }
     .page .stats .stat strong { font-size: 18px; }
@@ -235,10 +249,11 @@
     .dd-panel { border-radius: 18px; }
     .pf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 10px; }
   }
-  @media (max-width: 360px) { .profile-actions:has(.btn + .btn) { grid-template-columns: 1fr; } }
+  @media (max-width: 360px) { .profile-actions { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) {
     .dd-panel { animation: none; }
     .dd-pill, .dd-pill .chev, .dd-opt { transition: none; }
+    .profile-actions .btn.btn-curate::after { animation: none; display: none; }
   }
 </style>
 
@@ -251,6 +266,8 @@
     overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
     background: color-mix(in srgb, var(--text) 5%, var(--surface)); border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
   }
+  .pf-tabs.has-4 { max-width: 640px; }
+  .pf-tabs::-webkit-scrollbar { display: none; }
   .pf-tab {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; height: 42px; padding: 0 14px; margin: 0; border: 0; border-radius: 999px;
     cursor: pointer; white-space: nowrap; font: 600 13px/1 var(--font); letter-spacing: .01em; background: none; -webkit-tap-highlight-color: transparent;
@@ -259,7 +276,6 @@
   .pf-tab svg { width: 15px; height: 15px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .pf-tab:hover { color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); }
   .pf-tab:active { transform: scale(.97); }
-  .pf-tabs::-webkit-scrollbar { display: none; }
   .pf-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   .pf-tab.on { color: #fff; background: var(--accent); box-shadow: 0 10px 24px -12px color-mix(in srgb, var(--accent) 80%, transparent); }
   .pf-tab em {
@@ -293,7 +309,6 @@
   .pf-liked-grid { margin-top: 20px; }
 
   /* ---------- public lists (watchlist collections) ---------- */
-  .pf-tabs.has-4 { max-width: 640px; }
   .pf-lists-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0 0; min-width: 0; }
   .pf-lists-head p { margin: 0; font-size: 13px; color: color-mix(in srgb, var(--text) 58%, transparent); min-width: 0; }
   .pf-lists-all {
@@ -334,14 +349,13 @@
     .pf-liked-grid { margin-top: 24px; }
   }
   @media (max-width: 640px) {
-    .profile-actions .btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
     .pf-tabs, .pf-tabs.has-4 { max-width: none; margin-top: 14px; border-radius: 18px; }
     .pf-lists-head { margin-top: 14px; }
     .pf-lists { grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
     .pf-list { padding: 10px 10px 12px; border-radius: 16px; }
-    .pf-tab, .pf-tabs.has-4 .pf-tab { flex-direction: column; justify-content: center; height: 54px; padding: 0 8px; gap: 5px; font-size: 12px; border-radius: 14px; }
+    .pf-tab { flex-direction: column; justify-content: center; height: 54px; padding: 0 8px; gap: 5px; font-size: 12px; border-radius: 14px; }
     .pf-tab svg { display: none; }
-    .pf-tab em, .pf-tabs.has-4 .pf-tab em { padding: 2px 8px; font-size: 11px; }
+    .pf-tab em { padding: 2px 8px; font-size: 11px; }
     .pf-comments-list { grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
     .pf-comment { padding: 14px 15px 12px; }
     .pf-liked-grid { margin-top: 14px; }
@@ -462,12 +476,13 @@
   .vb-head { flex: none; padding-right: 44px; }
   .vb-head h3 { margin: 0 0 4px; font: 700 18px/1.25 var(--font); letter-spacing: -.02em; color: var(--text); }
   .vb-head p { margin: 0; font-size: 12.5px; line-height: 1.45; color: color-mix(in srgb, var(--text) 60%, transparent); }
-  .vb-x {
-    position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; margin: 0; border-radius: 50%; cursor: pointer;
+  .vb-x, .qr-x {
+    position: absolute; display: grid; place-items: center; padding: 0; margin: 0; border-radius: 50%; cursor: pointer;
     color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); transition: background .2s;
   }
-  .vb-x:hover { background: color-mix(in srgb, var(--text) 15%, transparent); }
-  .vb-x svg, .vb-pick-x svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .vb-x { top: 14px; right: 14px; width: 36px; height: 36px; }
+  .vb-x:hover, .qr-x:hover { background: color-mix(in srgb, var(--text) 15%, transparent); }
+  .vb-x svg, .vb-pick-x svg, .qr-x svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
   .vb-picked { flex: none; display: grid; grid-template-columns: repeat(3, 64px); gap: 10px; }
   .vb-pick {
     position: relative; display: grid; place-items: center; aspect-ratio: 2 / 3; overflow: hidden; border-radius: 10px; font: 600 13px/1 var(--font);
@@ -528,12 +543,7 @@
     animation: qr-pop .22s ease-out;
   }
   @supports (height: 100dvh) { .qr-card { max-height: calc(100dvh - 32px); } }
-  .qr-x {
-    position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; margin: 0; border-radius: 50%; cursor: pointer;
-    color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); transition: background .2s;
-  }
-  .qr-x:hover { background: color-mix(in srgb, var(--text) 15%, transparent); }
-  .qr-x svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .qr-x { top: 12px; right: 12px; width: 36px; height: 36px; }
   .qr-brand { display: inline-flex; align-items: center; gap: 9px; font: 700 18px/1 var(--font); letter-spacing: -.02em; color: var(--text); }
   .qr-mark {
     width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px; color: #fff; font: 800 16px/1 var(--font);
@@ -573,7 +583,7 @@
 
 <style>
   /* Kravn Cards reel: the real card (same as post.ejs) at its natural size, scaled as a whole to fit the screen.
-     Tap = open post, double-tap = like. Buttons: Like + Share only. */
+     Tap = open post, double-tap = like. The Like/Share row under the card is kept in the markup but hidden. */
   .kc {
     position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; color: #fff; overflow: hidden;
     height: 100vh; background: #08080c; opacity: 0; visibility: hidden; pointer-events: none;
@@ -600,17 +610,17 @@
   .kc-close:hover { background: rgba(255,255,255,.18); }
   .kc-close:active { transform: scale(.94); }
   .kc-close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .kc-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .kc-feed { position: relative; z-index: 1; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scroll-snap-type: y mandatory; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .kc-feed::-webkit-scrollbar { display: none; }
   .kc-slide {
     height: 100%; box-sizing: border-box; padding: 4px 12px calc(12px + env(safe-area-inset-bottom)); scroll-snap-align: center; scroll-snap-stop: always;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
   }
   .kc-slide[hidden] { display: none; }
 
-  /* .kc-fit takes the scaled size in layout; .kc-stage keeps the card's natural size and is scaled with transform,
-     so the card looks exactly like it does on the post page, just smaller or larger. */
+  /* .kc-fit takes the scaled size in layout; .kc-stage keeps the card's natural size and is scaled with transform */
   .kc-fit { position: relative; flex: none; width: 380px; height: 480px; }
   .kc-stage {
     position: absolute; top: 0; left: 0; width: 380px; transform-origin: 0 0; cursor: pointer;
@@ -622,21 +632,7 @@
   .kc-heart.pop { animation: kc-pop .75s ease-out; }
   @keyframes kc-pop { 0% { opacity: 0; transform: scale(.4); } 22% { opacity: 1; transform: scale(1.15); } 60% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
 
-  /* action bar: Like + Share, two equal buttons as wide as the card */
-  .kc-bar { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: max(var(--kc-fw, 280px), 240px); max-width: 100%; }
-  .kc-btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; height: 46px; padding: 0 14px; margin: 0; border-radius: 999px; cursor: pointer; white-space: nowrap; text-decoration: none;
-    font: 600 14px/1 var(--font); color: #fff; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.26);
-    -webkit-tap-highlight-color: transparent; transition: background .2s, border-color .2s, transform .2s;
-  }
-  .kc-btn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .kc-btn span { overflow: hidden; text-overflow: ellipsis; }
-  .kc-btn:hover { background: rgba(255,255,255,.18); color: #fff; }
-  .kc-btn:active { transform: scale(.96); }
-  .kc-btn:focus-visible, .kc-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .kc-like b { font-weight: 600; font-variant-numeric: tabular-nums; }
-  .kc-like.on { background: var(--accent); border-color: var(--accent); }
-  .kc-like.on svg { fill: currentColor; }
+  .kc-bar { display: none; }
   .kc-empty { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; padding: 24px; text-align: center; font-size: 14px; color: rgba(255,255,255,.7); pointer-events: none; }
   .kc-empty[hidden] { display: none; }
 
@@ -644,16 +640,12 @@
   @media (max-height: 520px) {
     .kc-top { padding-top: calc(6px + env(safe-area-inset-top)); padding-bottom: 2px; }
     .kc-close { width: 38px; height: 38px; }
-    .kc-slide { gap: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
-    .kc-btn { height: 40px; }
+    .kc-slide { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .kc, .kc-bg, .kc-progress i, .kc-btn, .kc-close { transition: none; }
+    .kc, .kc-bg, .kc-progress i, .kc-close { transition: none; }
     .kc-heart.pop { animation: none; opacity: 1; }
   }
-    /* hide the Like / Share row under the card */
-  .kc-bar { display: none; }
-  .kc-slide { gap: 0; }
 </style>
 
 <main class="page">
@@ -684,7 +676,7 @@
       </div>
       <div class="profile-actions">
         <% if (items.length) { %><button type="button" class="btn btn-primary" data-cards-open="#feed"><svg class="kv-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="13" height="14" rx="2"/><path d="M8 3.5h11a2 2 0 0 1 2 2V17"/></svg> Kravn Cards</button><% } %>
-        <% if (isOwn) { %><a class="btn btn-glass" href="/posts/new"><%- include('partials/icon', { n: 'plus' }) %> New discussion</a><% } %>
+        <% if (hasCurate) { %><a class="btn btn-curate" href="<%= curateHref %>"><span class="btn-curate-star" aria-hidden="true">★</span> KravN Curate</a><% } %>
         <% if (isOwn) { %><a class="btn btn-glass" href="/wrapped">✨ KravN Wrapped</a><% } %>
         <button type="button" class="btn btn-glass" aria-haspopup="dialog" data-share-profile data-name="<%= u.username %>" data-title="<%= u.username %> on KravN" data-url="/users/<%= encodeURIComponent(u.username) %>"><%- include('partials/icon', { n: 'share' }) %> <span>Share</span></button>
       </div>
@@ -723,7 +715,7 @@
 
     <div class="sprocket" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
 
-    <div class="pf-tabs<%= (hasLikes && hasLists) ? ' has-4' : '' %>" role="tablist" aria-label="Profile sections">
+    <div class="pf-tabs<%= tabN >= 4 ? ' has-4' : '' %>" role="tablist" aria-label="Profile sections">
       <button type="button" class="pf-tab on" role="tab" id="tab-discussions" aria-controls="panel-discussions" aria-selected="true" data-tab="discussions">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
         Discussions <em><%= items.length %></em>
@@ -963,6 +955,7 @@
       panels.forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== name; });
       try { history.replaceState(null, '', name === 'discussions' ? location.pathname + location.search : '#' + name); } catch (e) {}
     }
+    function fromHash() { var h = (location.hash || '').replace('#', ''); if (h === 'comments' || h === 'likes' || h === 'lists') show(h); }
     tabs.forEach(function (t, i) {
       t.addEventListener('click', function () { show(t.getAttribute('data-tab')); });
       t.addEventListener('keydown', function (e) {
@@ -971,8 +964,8 @@
         e.preventDefault(); show(tabs[(n + tabs.length) % tabs.length].getAttribute('data-tab'), true);
       });
     });
-    var h = (location.hash || '').replace('#', '');
-    if (h === 'comments' || h === 'likes' || h === 'lists') show(h);
+    fromHash();
+    window.addEventListener('hashchange', fromHash);
   })();
 </script>
 
@@ -1001,20 +994,18 @@
       empty.hidden = order.length > 0;
     }
 
-    /* scale the whole card (never reshape it) so card + buttons fit the screen; grows a little on big screens */
+    /* scale the whole card (never reshape it) so it fits the screen; grows a little on big screens */
     function fit(slide) {
       if (!slide || slide.hidden) return;
-      var box = slide.querySelector('.kc-fit'), st = slide.querySelector('.kc-stage'), br = slide.querySelector('.kc-bar');
+      var box = slide.querySelector('.kc-fit'), st = slide.querySelector('.kc-stage');
       var w = st.offsetWidth, h = st.offsetHeight;
       if (!w || !h || !slide.clientHeight) return;
-      var cs = getComputedStyle(slide), gap = parseFloat(cs.rowGap) || 14;
+      var cs = getComputedStyle(slide);
       var availW = slide.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-      var availH = slide.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - br.offsetHeight - gap;
+      var availH = slide.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
       var s = Math.max(0.3, Math.min(availW / w, availH / h, MAX_SCALE));
-      var fw = Math.floor(w * s), fh = Math.floor(h * s);
       st.style.transform = 'scale(' + s + ')';
-      box.style.width = fw + 'px'; box.style.height = fh + 'px';
-      slide.style.setProperty('--kc-fw', fw + 'px');
+      box.style.width = Math.floor(w * s) + 'px'; box.style.height = Math.floor(h * s) + 'px';
     }
     function fitAll() {
       if (fitQueued) return; fitQueued = true;
@@ -1065,19 +1056,9 @@
       if (h) { h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop'); }
       if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
     }
-    function share(b) {
-      var url = location.origin + b.getAttribute('data-url'), title = b.getAttribute('data-title') || 'KravN';
-      if (navigator.share) { navigator.share({ title: title, url: url }).catch(function () {}); return; }
-      var label = b.querySelector('span'), old = label.textContent;
-      function done() { label.textContent = 'Copied'; setTimeout(function () { label.textContent = old; }, 1800); }
-      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, function () { window.prompt('Copy this link', url); });
-      else window.prompt('Copy this link', url);
-    }
 
     feed.addEventListener('scroll', function () { if (ticking) return; ticking = true; requestAnimationFrame(function () { ticking = false; sync(); }); }, { passive: true });
     feed.addEventListener('click', function (e) {
-      var s = e.target.closest('[data-kc-share]');
-      if (s) { share(s); return; }
       if (e.target === feed || e.target.classList.contains('kc-slide')) { close(); return; }
 
       /* tap on the card: second tap within 260ms likes, otherwise open the post */

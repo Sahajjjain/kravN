@@ -5,6 +5,7 @@ const pool = require('../config/db');
 const tmdb = require('../config/tmdb');
 const requireLogin = require('../middleware/authMiddleware');
 const { listPosts } = require('../lib/posts');
+const curate = require('../lib/curate');
 
 // true  = anyone can see which discussions a user has liked (Likes tab on every profile)
 // false = only the owner sees the Likes tab on their own dashboard
@@ -59,7 +60,7 @@ const jsonAuth = (req, res) => {
 async function renderProfile(req, res, user, isOwn) {
   const showLikes = SHOW_LIKES_PUBLIC || isOwn;
 
-  const [{ posts }, likedResult, [recentComments], [vibeRows], watchLists] = await Promise.all([
+  const [{ posts }, likedResult, [recentComments], [vibeRows], watchLists, curatePublic] = await Promise.all([
     listPosts({
       userId: req.session.userId, where: 'posts.user_id = ?', params: [user.id], limit: 500,
     }),
@@ -93,6 +94,8 @@ async function renderProfile(req, res, user, isOwn) {
         return undefined;
       }
     })(),
+    // KravN Curate visibility (private by default); never lets a Curate problem break the profile
+    curate.isPublic(user.id).catch(() => false),
   ]);
 
   res.render('profile', {
@@ -104,6 +107,7 @@ async function renderProfile(req, res, user, isOwn) {
     recentComments,
     vibeMovies: vibeRows,
     watchLists,
+    curatePublic,
     stats: {
       discussions: posts.length,
       likes: posts.reduce((n, p) => n + Number(p.like_count), 0),
